@@ -173,4 +173,16 @@ export default defineComponent({
   background: var(--color-brand) !important;
   box-shadow: 0 16px 44px rgba(37, 99, 235, 0.22) !important;
 }
+
+/* PrimeVue Drawer surface (solid, readable) */
+:deep(.p-drawer) {
+  background: #ffffff !important;
+}
+:deep(.p-drawer-header) {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(11, 18, 32, 0.08);
+}
+:deep(.p-drawer-content) {
+  background: #ffffff !important;
+}
 </style>
