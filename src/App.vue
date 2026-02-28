@@ -177,7 +177,7 @@
       </footer>
     </main>
 
-    <CmsDialog v-if="isDev" v-model:open="cmsOpen" :model="model" @update:model="(m) => (model = m)" />
+    <CmsDialog v-if="isDev" v-model:open="cmsOpen" :model="model" @update:model="updateModel" />
 
     <Dialog v-if="isDev" v-model:visible="importOpen" modal header="Import JSON" :style="{ width: 'min(680px, 92vw)' }">
       <div class="space-y-3">
@@ -202,10 +202,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
-import { computed, ref, watch } from "vue";
-import { useLocalStorage } from "@vueuse/core";
-
+import { defineComponent, computed, onMounted, ref, watch } from "vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Textarea from "primevue/textarea";
@@ -213,7 +210,13 @@ import Toast from "primevue/toast";
 import { useToast } from "primevue/usetoast";
 
 import CmsDialog from "./components/CmsDialog.vue";
-import { defaultModel, type BioModel, sanitizeModel, stableStringify } from "./lib/model";
+import {
+  defaultModel,
+  type BioModel,
+  sanitizeModel,
+  stableStringify,
+} from "./lib/model";
+import { fetchModel, persistModel } from "./lib/persistence";
 
 export default defineComponent({
   name: "App",
@@ -229,24 +232,23 @@ export default defineComponent({
 
     const toast = useToast();
 
-    const stored = useLocalStorage<BioModel>("libio:model", defaultModel(), {
-      serializer: {
-        read: (v: string) => {
-          try {
-            return sanitizeModel(JSON.parse(v));
-          } catch {
-            return defaultModel();
-          }
-        },
-        write: (v: BioModel) => stableStringify(v),
-      },
+    const model = ref<BioModel>(defaultModel());
+    const modelLoaded = ref(false);
+
+    onMounted(async () => {
+      const remoteModel = await fetchModel();
+      model.value = remoteModel;
+      modelLoaded.value = true;
     });
 
-    const model = ref<BioModel>(stored.value);
     watch(
       model,
-      (m) => {
-        stored.value = sanitizeModel(m);
+      (next) => {
+        if (!modelLoaded.value) {
+          return;
+        }
+
+        void persistModel(next);
       },
       { deep: true }
     );
@@ -315,26 +317,21 @@ export default defineComponent({
     const importOpen = ref(false);
     const importText = ref("");
 
+    const updateModel = (next: BioModel) => {
+      model.value = sanitizeModel(next);
+    };
+
     const applyImport = () => {
-      try {
-        const parsed = sanitizeModel(JSON.parse(importText.value));
-        model.value = parsed;
-        importOpen.value = false;
-        importText.value = "";
-        toast.add({
-          severity: "success",
-          summary: "Imported",
-          detail: "Your site content was updated.",
-          life: 2200,
-        });
-      } catch {
-        toast.add({
-          severity: "error",
-          summary: "Invalid JSON",
-          detail: "Please paste a valid export.",
-          life: 2600,
-        });
-      }
+      const parsed = sanitizeModel(JSON.parse(importText.value));
+      updateModel(parsed);
+      importOpen.value = false;
+      importText.value = "";
+      toast.add({
+        severity: "success",
+        summary: "Imported",
+        detail: "Your site content was updated.",
+        life: 2200,
+      });
     };
 
     return {
@@ -352,6 +349,7 @@ export default defineComponent({
       importOpen,
       importText,
       applyImport,
+      updateModel,
     };
   },
 });

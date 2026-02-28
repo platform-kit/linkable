@@ -8,7 +8,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "export": "node scripts/export-data.mjs"
   },
   "dependencies": {
     "@primevue/themes": "^4.5.4",
