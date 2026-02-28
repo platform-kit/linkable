@@ -1,5 +1,10 @@
 <template>
-  <Drawer v-model:visible="visible" position="right" :style="{ width: 'min(520px, 96vw)' }">
+  <Drawer
+    v-model:visible="visible"
+    position="right"
+    :style="{ width: 'min(520px, 96vw)' }"
+    :showCloseIcon="false"
+  >
     <template #header>
       <div class="flex items-center justify-between gap-3">
         <div class="min-w-0">
@@ -68,7 +73,14 @@
       </div>
 
       <div class="flex items-center justify-between gap-2">
-        <Button rounded text severity="danger" class="!rounded-full" @click="$emit('delete')" :disabled="busy">
+        <Button
+          rounded
+          text
+          severity="danger"
+          class="!rounded-full"
+          @click="$emit('delete')"
+          :disabled="busy"
+        >
           <i class="pi pi-trash" />
           <span class="ml-2">Delete</span>
         </Button>

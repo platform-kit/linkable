@@ -1,5 +1,10 @@
 <template>
-  <Drawer v-model:visible="visible" position="right" :style="{ width: 'min(520px, 96vw)' }">
+  <Drawer
+    v-model:visible="visible"
+    position="right"
+    :style="{ width: 'min(520px, 96vw)' }"
+    :showCloseIcon="false"
+  >
     <template #header>
       <div class="flex items-center justify-between gap-3">
         <div class="min-w-0">
