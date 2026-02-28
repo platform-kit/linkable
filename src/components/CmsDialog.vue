@@ -15,39 +15,65 @@
 
     <div class="cms">
       <div class="cms__tabBar">
-        <div class="cms__tabs">
-          <button
-            type="button"
-            class="cms__tab"
-            :class="{ 'is-active': tab === 'profile' }"
-            @click="tab = 'profile'"
-          >
-            <span class="cms__tab-icon"><i class="pi pi-user" /></span>
-            <span class="cms__tab-label">Profile</span>
-            <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">0</span>
-          </button>
+        <div class="cms__tabBarInner">
+          <div class="cms__tabs">
+            <button
+              type="button"
+              class="cms__tab"
+              :class="{ 'is-active': tab === 'profile' }"
+              @click="tab = 'profile'"
+            >
+              <span class="cms__tab-icon"><i class="pi pi-user" /></span>
+              <span class="cms__tab-label">Profile</span>
+              <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">0</span>
+            </button>
 
-          <button
-            type="button"
-            class="cms__tab"
-            :class="{ 'is-active': tab === 'links' }"
-            @click="tab = 'links'"
-          >
-            <span class="cms__tab-icon"><i class="pi pi-link" /></span>
-            <span class="cms__tab-label">Links</span>
-            <span class="cms__tab-pill">{{ draft.links.length }}</span>
-          </button>
+            <button
+              type="button"
+              class="cms__tab"
+              :class="{ 'is-active': tab === 'links' }"
+              @click="tab = 'links'"
+            >
+              <span class="cms__tab-icon"><i class="pi pi-link" /></span>
+              <span class="cms__tab-label">Links</span>
+              <span class="cms__tab-pill">{{ draft.links.length }}</span>
+            </button>
 
-          <button
-            type="button"
-            class="cms__tab"
-            :class="{ 'is-active': tab === 'socials' }"
-            @click="tab = 'socials'"
-          >
-            <span class="cms__tab-icon"><i class="pi pi-share-alt" /></span>
-            <span class="cms__tab-label">Socials</span>
-            <span class="cms__tab-pill">{{ draft.socials.length }}</span>
-          </button>
+            <button
+              type="button"
+              class="cms__tab"
+              :class="{ 'is-active': tab === 'socials' }"
+              @click="tab = 'socials'"
+            >
+              <span class="cms__tab-icon"><i class="pi pi-share-alt" /></span>
+              <span class="cms__tab-label">Socials</span>
+              <span class="cms__tab-pill">{{ draft.socials.length }}</span>
+            </button>
+          </div>
+
+          <div class="cms__actions">
+            <Button
+              severity="secondary"
+              rounded
+              class="!px-3 !py-2 !text-sm"
+              @click="togglePreview"
+            >
+              <i class="pi" :class="previewMode ? 'pi-pencil' : 'pi-eye'" />
+              <span class="ml-2 hidden sm:inline">
+                {{ previewMode ? "Enter Edit Mode" : "Return to Preview" }}
+              </span>
+            </Button>
+
+            <Button
+              severity="secondary"
+              rounded
+              class="!px-3 !py-2 !text-sm"
+              @click="openGithub"
+            >
+              <i class="pi pi-github" />
+              <span class="ml-2 hidden sm:inline">GitHub</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -281,8 +307,9 @@ export default defineComponent({
   props: {
     open: { type: Boolean, required: true },
     model: { type: Object as () => BioModel, required: true },
+    previewMode: { type: Boolean, default: true },
   },
-  emits: ["update:open", "update:model"],
+  emits: ["update:open", "update:model", "toggle-preview", "open-github"],
   setup(props, { emit }) {
     const toast = useToast();
 
@@ -452,6 +479,10 @@ export default defineComponent({
 
     if (!draft.value) draft.value = defaultModel();
 
+    const previewMode = computed(() => props.previewMode);
+    const togglePreview = () => emit("toggle-preview");
+    const openGithub = () => emit("open-github");
+
     return {
       visible,
       tab,
@@ -473,6 +504,9 @@ export default defineComponent({
       deleteActiveSocial,
       socialLabel,
       primeSocialIcon,
+      previewMode,
+      togglePreview,
+      openGithub,
     };
   },
 });
@@ -496,10 +530,35 @@ export default defineComponent({
   -webkit-backdrop-filter: blur(14px);
 }
 
+.cms__tabBarInner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .cms__tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+}
+
+.cms__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (min-width: 720px) {
+  .cms__tabBarInner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .cms__actions {
+    flex-shrink: 0;
+  }
 }
 
 .cms__tab {

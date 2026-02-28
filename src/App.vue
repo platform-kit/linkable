@@ -41,33 +41,12 @@
               <div class="flex items-center gap-2">
                 <Button
                   v-if="canUseCms"
-                  severity="secondary"
-                  rounded
-                  class="!px-3 !py-2 !text-sm"
-                  @click="previewMode = !previewMode"
-                >
-                  <i class="pi" :class="previewMode ? 'pi-pencil' : 'pi-eye'" />
-                  <span class="ml-2 hidden sm:inline">
-                    {{ previewMode ? "Enter Edit Mode" : "Return to Preview" }}
-                  </span>
-                </Button>
-                <Button
-                  v-if="canUseCms"
                   rounded
                   class="!border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 !text-sm shadow-[0_14px_38px_rgba(37,99,235,0.22)] hover:shadow-[0_18px_52px_rgba(37,99,235,0.26)]"
                   @click="cmsOpen = true"
                 >
                   <i class="pi pi-sliders-h" />
                   <span class="ml-2 hidden sm:inline">CMS</span>
-                </Button>
-                <Button
-                  severity="secondary"
-                  rounded
-                  class="!px-3 !py-2 !text-sm"
-                  @click="githubDialogOpen = true"
-                >
-                  <i class="pi pi-github" />
-                  <span class="ml-2 hidden sm:inline">GitHub</span>
                 </Button>
               </div>
             </div>
@@ -185,7 +164,15 @@
       </footer>
     </main>
 
-    <CmsDialog v-if="canUseCms" v-model:open="cmsOpen" :model="model" @update:model="updateModel" />
+    <CmsDialog
+      v-if="canUseCms"
+      v-model:open="cmsOpen"
+      :model="model"
+      :preview-mode="previewMode"
+      @update:model="updateModel"
+      @toggle-preview="togglePreviewMode"
+      @open-github="openGithubSettings"
+    />
 
     <Dialog
       v-if="isDev"
@@ -241,7 +228,7 @@ import {
   sanitizeModel,
   stableStringify,
 } from "./lib/model";
-import { fetchModel, persistModel, type PersistResult } from "./lib/persistence";
+import { fetchModel, persistModel } from "./lib/persistence";
 import {
   GITHUB_SYNC_EVENT,
   canUseGithubSync,
@@ -463,6 +450,14 @@ export default defineComponent({
       return "bg-amber-400 shadow-[0_0_0_4px_rgba(245,158,11,0.20)]";
     });
 
+    const togglePreviewMode = () => {
+      previewMode.value = !previewMode.value;
+    };
+
+    const openGithubSettings = () => {
+      githubDialogOpen.value = true;
+    };
+
     return {
       isDev,
       model,
@@ -483,6 +478,8 @@ export default defineComponent({
       githubDialogOpen,
       syncStatusText,
       syncIndicatorClass,
+      togglePreviewMode,
+      openGithubSettings,
     };
   },
 });
