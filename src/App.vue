@@ -40,10 +40,10 @@
 
               <div class="flex items-center gap-2">
                 <Button
-                  v-if="canUseCms"
+                  v-if="canUseCms && cmsButtonVisible"
                   rounded
                   class="!border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 !text-sm shadow-[0_14px_38px_rgba(37,99,235,0.22)] hover:shadow-[0_18px_52px_rgba(37,99,235,0.26)]"
-                  @click="cmsOpen = true"
+                  @click="openCms"
                 >
                   <i class="pi pi-sliders-h" />
                   <span class="ml-2 hidden sm:inline">CMS</span>
@@ -147,7 +147,7 @@
             v-if="canUseCms"
             rounded
             class="mt-4 !border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 shadow-[0_14px_38px_rgba(37,99,235,0.22)]"
-            @click="cmsOpen = true"
+            @click="openCms"
           >
             Add links
           </Button>
@@ -254,6 +254,7 @@ export default defineComponent({
     const modelLoaded = ref(false);
     const suppressPersist = ref(true);
     const cmsOpen = ref(false);
+    const cmsButtonVisible = ref(false);
     const githubDialogOpen = ref(false);
     const previewMode = ref(true);
 
@@ -264,6 +265,12 @@ export default defineComponent({
     const updateGithubStatus = () => {
       githubReady.value = canUseGithubSync();
       githubSettings.value = loadGithubSettings();
+    };
+
+    const handleGlobalKeydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !cmsOpen.value) {
+        cmsButtonVisible.value = true;
+      }
     };
 
     onMounted(async () => {
@@ -278,12 +285,20 @@ export default defineComponent({
       updateGithubStatus();
       if (typeof window !== "undefined") {
         window.addEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
+        window.addEventListener("keydown", handleGlobalKeydown);
       }
     });
 
     onBeforeUnmount(() => {
       if (typeof window !== "undefined") {
         window.removeEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
+        window.removeEventListener("keydown", handleGlobalKeydown);
+      }
+    });
+
+    watch(cmsOpen, (open) => {
+      if (open) {
+        cmsButtonVisible.value = false;
       }
     });
 
@@ -458,10 +473,15 @@ export default defineComponent({
       githubDialogOpen.value = true;
     };
 
+    const openCms = () => {
+      cmsOpen.value = true;
+    };
+
     return {
       isDev,
       model,
       cmsOpen,
+      cmsButtonVisible,
       previewMode,
       enabledLinks,
       enabledSocials,
@@ -480,6 +500,7 @@ export default defineComponent({
       syncIndicatorClass,
       togglePreviewMode,
       openGithubSettings,
+      openCms,
     };
   },
 });
