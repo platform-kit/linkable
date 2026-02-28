@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+    Arial, "Apple Color Emoji", "Segoe UI Emoji";
+
+  /* Confident, colorful system (no gradients, no pure-black primary) */
+  --color-ink: #202238;
+  --color-ink-soft: #3a3d63;
+  --color-surface: #ffffff;
+  --color-surface-2: #f6f7ff;
+  --color-border: rgba(32, 34, 56, 0.12);
+
+  --color-brand: #5b5af7;
+  --color-brand-2: #18a6a6;
+  --color-accent: #ff6b6b;
+
+  --radius-xl: 1.25rem;
+  --radius-lg: 1rem;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background: var(--color-surface-2);
+}
+
+::selection {
+  background: rgba(91, 90, 247, 0.22);
+}
+
+/* PrimeVue tweaks to feel more "designed" */
+.p-button {
+  border-radius: 999px !important;
+}
+
+.p-inputtext,
+.p-textarea {
+  border-radius: 14px !important;
+}
+
+.p-dialog {
+  border-radius: 22px !important;
+  overflow: hidden;
+}
