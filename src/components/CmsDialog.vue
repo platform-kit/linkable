@@ -3,10 +3,13 @@
     v-model:visible="visible"
     modal
     header="Your mini CMS"
-    :style="{ width: 'min(860px, 94vw)' }"
+    :style="{ width: 'min(900px, 94vw)' }"
+    :contentStyle="{ overflow: 'visible' }"
   >
     <div class="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
-      <section class="rounded-[var(--radius-xl)] border border-white/55 bg-white/45 p-4 shadow-sm backdrop-blur-md">
+      <section
+        class="rounded-[var(--radius-xl)] border border-white/55 bg-white/55 p-4 shadow-sm backdrop-blur-md"
+      >
         <div class="flex items-center justify-between gap-3">
           <div>
             <div class="text-sm font-semibold">Links</div>
@@ -14,7 +17,12 @@
               Drag to reorder · Toggle to hide
             </div>
           </div>
-          <Button rounded class="!border-0 !bg-[color:var(--color-brand)] shadow-[0_14px_36px_rgba(99,102,241,0.28)]" @click="addLink">
+
+          <Button
+            rounded
+            class="!border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 shadow-[0_14px_36px_rgba(99,102,241,0.22)]"
+            @click="addLink"
+          >
             <i class="pi pi-plus" />
             <span class="ml-2">Add</span>
           </Button>
@@ -29,21 +37,25 @@
             class="grid gap-2"
           >
             <template #item="{ element, index }">
-              <div class="group rounded-2xl border border-white/60 bg-white/50 p-3 shadow-sm backdrop-blur-md transition hover:bg-white/65">
+              <div
+                class="group rounded-2xl border border-white/60 bg-white/60 p-3 shadow-sm backdrop-blur-md transition hover:bg-white/70"
+              >
                 <div class="flex items-start gap-3">
                   <button
                     type="button"
-                    class="drag mt-1 grid h-9 w-9 place-items-center rounded-xl border border-white/60 bg-white/55 text-[color:var(--color-ink-soft)] shadow-sm backdrop-blur-md transition group-hover:bg-white/70"
+                    class="drag mt-1 grid h-9 w-9 place-items-center rounded-xl border border-white/60 bg-white/65 text-[color:var(--color-ink-soft)] shadow-sm backdrop-blur-md transition group-hover:bg-white/75"
                     aria-label="Drag"
                   >
                     <i class="pi pi-bars" />
                   </button>
 
                   <div class="min-w-0 flex-1">
-                    <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-start justify-between gap-3">
                       <div class="min-w-0">
                         <div class="flex items-center gap-2">
-                          <span class="truncate text-sm font-semibold">{{ element.title || "Untitled" }}</span>
+                          <span class="truncate text-sm font-semibold">{{
+                            element.title || "Untitled"
+                          }}</span>
                           <Tag
                             v-if="!element.enabled"
                             severity="warning"
@@ -53,6 +65,12 @@
                         </div>
                         <div class="mt-0.5 truncate text-xs text-[color:var(--color-ink-soft)]">
                           {{ element.url || "(no url)" }}
+                        </div>
+                        <div
+                          v-if="element.imageUrl"
+                          class="mt-1 truncate text-[11px] text-[color:var(--color-ink-soft)]"
+                        >
+                          Image: {{ element.imageUrl }}
                         </div>
                       </div>
 
@@ -83,16 +101,6 @@
                         <span class="text-xs text-[color:var(--color-ink-soft)]">Enabled</span>
                         <ToggleSwitch v-model="element.enabled" />
                       </div>
-                      <div class="inline-flex items-center gap-2">
-                        <span class="text-xs text-[color:var(--color-ink-soft)]">Icon</span>
-                        <Dropdown
-                          v-model="element.icon"
-                          :options="iconOptions"
-                          optionLabel="label"
-                          optionValue="value"
-                          class="w-40"
-                        />
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -102,7 +110,7 @@
 
           <div
             v-if="draft.links.length === 0"
-            class="mt-3 rounded-2xl border border-dashed border-white/60 bg-white/35 p-6 text-center shadow-sm backdrop-blur-md"
+            class="mt-3 rounded-2xl border border-dashed border-white/60 bg-white/40 p-6 text-center shadow-sm backdrop-blur-md"
           >
             <div class="text-sm font-semibold">Your buttons will appear here</div>
             <div class="mt-1 text-sm text-[color:var(--color-ink-soft)]">
@@ -112,7 +120,9 @@
         </div>
       </section>
 
-      <section class="rounded-[var(--radius-xl)] border border-white/55 bg-white/45 p-4 shadow-sm backdrop-blur-md">
+      <section
+        class="rounded-[var(--radius-xl)] border border-white/55 bg-white/55 p-4 shadow-sm backdrop-blur-md"
+      >
         <div class="text-sm font-semibold">Profile</div>
         <div class="mt-3 grid gap-3">
           <div class="grid gap-1">
@@ -135,7 +145,7 @@
               <div class="text-sm font-semibold">Social chips</div>
               <div class="text-xs text-[color:var(--color-ink-soft)]">Optional, shown under your name</div>
             </div>
-            <Button rounded severity="secondary" class="!px-3" @click="addSocial">
+            <Button rounded severity="secondary" class="!px-4 !py-2.5" @click="addSocial">
               <i class="pi pi-plus" />
               <span class="ml-2">Add</span>
             </Button>
@@ -145,7 +155,7 @@
             <div
               v-for="(s, i) in draft.socials"
               :key="s.id"
-              class="rounded-2xl border border-white/60 bg-white/50 p-3 shadow-sm backdrop-blur-md transition hover:bg-white/65"
+              class="rounded-2xl border border-white/60 bg-white/60 p-3 shadow-sm backdrop-blur-md transition hover:bg-white/70"
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="grid flex-1 gap-2">
@@ -177,10 +187,14 @@
 
     <template #footer>
       <div class="flex w-full items-center justify-between gap-3">
-        <Button rounded severity="secondary" @click="resetToDefaults">Reset</Button>
+        <Button rounded severity="secondary" class="!px-4 !py-2.5" @click="resetToDefaults">Reset</Button>
         <div class="flex items-center gap-2">
-          <Button rounded severity="secondary" @click="visible = false">Close</Button>
-          <Button rounded class="!border-0 !bg-[color:var(--color-brand)] shadow-[0_14px_36px_rgba(99,102,241,0.28)]" @click="save">
+          <Button rounded severity="secondary" class="!px-4 !py-2.5" @click="visible = false">Close</Button>
+          <Button
+            rounded
+            class="!border-0 !bg-[color:var(--color-brand)] !px-5 !py-2.5 shadow-[0_14px_36px_rgba(99,102,241,0.22)]"
+            @click="save"
+          >
             Save
           </Button>
         </div>
@@ -199,35 +213,59 @@
         <label class="text-xs font-medium text-[color:var(--color-ink-soft)]">Title</label>
         <InputText v-model="editing.title" class="w-full" />
       </div>
+
       <div class="grid gap-1">
         <label class="text-xs font-medium text-[color:var(--color-ink-soft)]">Subtitle</label>
         <InputText v-model="editing.subtitle" class="w-full" placeholder="Optional" />
       </div>
+
       <div class="grid gap-1">
         <label class="text-xs font-medium text-[color:var(--color-ink-soft)]">URL</label>
         <InputText v-model="editing.url" class="w-full" placeholder="https://..." />
       </div>
+
+      <div class="grid gap-1">
+        <label class="text-xs font-medium text-[color:var(--color-ink-soft)]">Image URL (optional)</label>
+        <InputText v-model="editing.imageUrl" class="w-full" placeholder="https://..." />
+      </div>
+
       <div class="flex flex-wrap items-center gap-3">
         <div class="inline-flex items-center gap-2">
           <span class="text-xs text-[color:var(--color-ink-soft)]">Enabled</span>
           <ToggleSwitch v-model="editing.enabled" />
         </div>
-        <div class="inline-flex items-center gap-2">
-          <span class="text-xs text-[color:var(--color-ink-soft)]">Icon</span>
-          <Dropdown
-            v-model="editing.icon"
-            :options="iconOptions"
-            optionLabel="label"
-            optionValue="value"
-            class="w-44"
+      </div>
+
+      <div
+        v-if="editing.imageUrl"
+        class="rounded-2xl border border-white/60 bg-white/60 p-3 shadow-sm backdrop-blur-md"
+      >
+        <div class="text-xs font-semibold">Preview</div>
+        <div class="mt-2 flex items-center gap-3">
+          <img
+            :src="editing.imageUrl"
+            alt=""
+            class="h-12 w-12 rounded-xl object-cover"
+            @error="onEditingImageError"
           />
+          <div class="min-w-0">
+            <div class="truncate text-sm font-semibold">{{ editing.title || "Untitled" }}</div>
+            <div class="truncate text-xs text-[color:var(--color-ink-soft)]">
+              {{ editing.subtitle || editing.url || "" }}
+            </div>
+          </div>
+        </div>
+        <div v-if="editingImageErrored" class="mt-2 text-xs text-[color:var(--color-ink-soft)]">
+          That image couldn’t be loaded — the link will fall back to a generic icon.
         </div>
       </div>
     </div>
 
     <template #footer>
       <div class="flex justify-end gap-2">
-        <Button rounded severity="secondary" @click="editOpen = false">Done</Button>
+        <Button rounded severity="secondary" class="!px-4 !py-2.5" @click="editOpen = false">
+          Done
+        </Button>
       </div>
     </template>
   </Dialog>
@@ -246,14 +284,7 @@ import Tag from "primevue/tag";
 import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
 
-import {
-  defaultModel,
-  type BioModel,
-  newId,
-  newLink,
-  newSocial,
-  sanitizeModel,
-} from "../lib/model";
+import { defaultModel, type BioModel, newLink, newSocial, sanitizeModel } from "../lib/model";
 
 export default defineComponent({
   name: "CmsDialog",
@@ -296,17 +327,6 @@ export default defineComponent({
       { deep: true }
     );
 
-    const iconOptions = [
-      { label: "Link", value: "link" },
-      { label: "Sparkle", value: "sparkle" },
-      { label: "Shop", value: "shop" },
-      { label: "Music", value: "music" },
-      { label: "Video", value: "video" },
-      { label: "Mail", value: "mail" },
-      { label: "Calendar", value: "calendar" },
-      { label: "Doc", value: "doc" },
-    ];
-
     const socialTypeOptions = [
       { label: "Website", value: "website" },
       { label: "Instagram", value: "instagram" },
@@ -326,6 +346,15 @@ export default defineComponent({
 
     const editOpen = ref(false);
     const editing = ref<null | BioModel["links"][number]>(null);
+
+    const editingImageErrored = ref(false);
+    watch(editing, () => {
+      editingImageErrored.value = false;
+    });
+
+    const onEditingImageError = () => {
+      editingImageErrored.value = true;
+    };
 
     const openEditLink = (index: number) => {
       editing.value = draft.value.links[index];
@@ -354,7 +383,6 @@ export default defineComponent({
     return {
       visible,
       draft,
-      iconOptions,
       socialTypeOptions,
       addLink,
       removeLink,
@@ -365,7 +393,8 @@ export default defineComponent({
       removeSocial,
       save,
       resetToDefaults,
-      newId,
+      editingImageErrored,
+      onEditingImageError,
     };
   },
 });

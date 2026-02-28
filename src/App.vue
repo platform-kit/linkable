@@ -50,7 +50,7 @@
                 </Button>
                 <Button
                   rounded
-                  class="!border-0 !px-3 !py-2 !text-sm !bg-[color:var(--color-brand)] shadow-[0_14px_38px_rgba(37,99,235,0.22)] hover:shadow-[0_18px_52px_rgba(37,99,235,0.26)]"
+                  class="!border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 !text-sm shadow-[0_14px_38px_rgba(37,99,235,0.22)] hover:shadow-[0_18px_52px_rgba(37,99,235,0.26)]"
                   @click="cmsOpen = true"
                 >
                   <i class="pi pi-sliders-h" />
@@ -122,22 +122,31 @@
             target="_blank"
             rel="noreferrer"
           >
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <span
-                  class="grid h-9 w-9 place-items-center rounded-xl border border-white/70 bg-white/60 text-sm shadow-sm backdrop-blur-md"
-                >
-                  <i class="pi" :class="linkIcon(link.icon)" />
-                </span>
-                <div class="min-w-0">
-                  <div class="truncate text-sm font-semibold">{{ link.title }}</div>
-                  <div v-if="link.subtitle" class="truncate text-xs text-[color:var(--color-ink-soft)]">
-                    {{ link.subtitle }}
-                  </div>
+            <div class="flex min-w-0 items-center gap-3">
+              <div
+                class="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-white/70 bg-white/60 shadow-sm backdrop-blur-md"
+              >
+                <img
+                  v-if="link.imageUrl"
+                  :src="link.imageUrl"
+                  alt=""
+                  class="h-full w-full object-cover"
+                  loading="lazy"
+                />
+                <i v-else class="pi pi-link text-[color:var(--color-ink-soft)]" />
+              </div>
+
+              <div class="min-w-0">
+                <div class="truncate text-sm font-semibold">{{ link.title }}</div>
+                <div v-if="link.subtitle" class="truncate text-xs text-[color:var(--color-ink-soft)]">
+                  {{ link.subtitle }}
                 </div>
               </div>
             </div>
-            <i class="pi pi-arrow-right text-[color:var(--color-ink-soft)] transition group-hover:translate-x-0.5" />
+
+            <i
+              class="pi pi-arrow-right text-[color:var(--color-ink-soft)] transition group-hover:translate-x-0.5"
+            />
           </a>
         </div>
 
@@ -149,7 +158,7 @@
           <Button
             v-if="isDev"
             rounded
-            class="mt-4 !border-0 !bg-[color:var(--color-brand)] shadow-[0_14px_38px_rgba(37,99,235,0.22)]"
+            class="mt-4 !border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 shadow-[0_14px_38px_rgba(37,99,235,0.22)]"
             @click="cmsOpen = true"
             >Add links</Button
           >
@@ -160,26 +169,17 @@
         <div
           class="inline-flex items-center gap-2 rounded-full border border-white/65 bg-white/50 px-3 py-1.5 shadow-sm backdrop-blur-md"
         >
-          <span class="h-1.5 w-1.5 rounded-full bg-[color:var(--color-accent)] shadow-[0_0_0_4px_rgba(255,90,122,0.12)]"></span>
+          <span
+            class="h-1.5 w-1.5 rounded-full bg-[color:var(--color-accent)] shadow-[0_0_0_4px_rgba(255,90,122,0.12)]"
+          ></span>
           <span>Tip: drag links in the CMS to reorder.</span>
         </div>
       </footer>
     </main>
 
-    <CmsDialog
-      v-if="isDev"
-      v-model:open="cmsOpen"
-      :model="model"
-      @update:model="(m) => (model = m)"
-    />
+    <CmsDialog v-if="isDev" v-model:open="cmsOpen" :model="model" @update:model="(m) => (model = m)" />
 
-    <Dialog
-      v-if="isDev"
-      v-model:visible="importOpen"
-      modal
-      header="Import JSON"
-      :style="{ width: 'min(680px, 92vw)' }"
-    >
+    <Dialog v-if="isDev" v-model:visible="importOpen" modal header="Import JSON" :style="{ width: 'min(680px, 92vw)' }">
       <div class="space-y-3">
         <p class="text-sm text-[color:var(--color-ink-soft)]">
           Paste an exported JSON to restore your profile/links.
@@ -189,7 +189,7 @@
           <Button severity="secondary" rounded @click="importOpen = false">Cancel</Button>
           <Button
             rounded
-            class="!border-0 !bg-[color:var(--color-brand)] shadow-[0_14px_38px_rgba(37,99,235,0.22)]"
+            class="!border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 shadow-[0_14px_38px_rgba(37,99,235,0.22)]"
             @click="applyImport"
             >Import</Button
           >
@@ -301,28 +301,6 @@ export default defineComponent({
       }
     };
 
-    const linkIcon = (icon: string) => {
-      switch (icon) {
-        case "sparkle":
-          return "pi-star";
-        case "shop":
-          return "pi-shopping-bag";
-        case "music":
-          return "pi-volume-up";
-        case "video":
-          return "pi-play";
-        case "mail":
-          return "pi-envelope";
-        case "calendar":
-          return "pi-calendar";
-        case "doc":
-          return "pi-file";
-        case "link":
-        default:
-          return "pi-link";
-      }
-    };
-
     const exportJson = async () => {
       const json = stableStringify(model.value);
       await navigator.clipboard.writeText(json);
@@ -370,7 +348,6 @@ export default defineComponent({
       avatarSrc,
       onAvatarError,
       socialIcon,
-      linkIcon,
       exportJson,
       importOpen,
       importText,

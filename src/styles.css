@@ -15,9 +15,9 @@
   --bg: #f5f7fb;
 
   /* Glass surfaces */
-  --glass: rgba(255, 255, 255, 0.64);
-  --glass-2: rgba(255, 255, 255, 0.50);
-  --glass-strong: rgba(255, 255, 255, 0.78);
+  --glass: rgba(255, 255, 255, 0.66);
+  --glass-2: rgba(255, 255, 255, 0.52);
+  --glass-strong: rgba(255, 255, 255, 0.82);
 
   /* Borders */
   --color-border: rgba(255, 255, 255, 0.62);
@@ -48,11 +48,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Subtle Apple-like blooms (no harsh saturation) */
   background:
-    radial-gradient(900px 700px at 18% 8%, rgba(59, 130, 246, 0.18), transparent 60%),
-    radial-gradient(820px 620px at 86% 18%, rgba(255, 90, 122, 0.12), transparent 62%),
-    radial-gradient(900px 720px at 45% 92%, rgba(16, 185, 129, 0.10), transparent 62%),
+    radial-gradient(900px 700px at 18% 8%, rgba(59, 130, 246, 0.14), transparent 60%),
+    radial-gradient(820px 620px at 86% 18%, rgba(255, 90, 122, 0.10), transparent 62%),
+    radial-gradient(900px 720px at 45% 92%, rgba(16, 185, 129, 0.08), transparent 62%),
     linear-gradient(180deg, #f7f9ff 0%, var(--bg) 55%, #ffffff 100%);
 }
 
@@ -62,11 +61,11 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.035;
+  opacity: 0.028;
   mix-blend-mode: multiply;
   background-image: url("/placeholder.svg");
   background-size: 280px 280px;
-  filter: grayscale(1) contrast(1.1);
+  filter: grayscale(1) contrast(1.08);
 }
 
 ::selection {
@@ -82,13 +81,59 @@ body::before {
   -webkit-backdrop-filter: blur(18px);
 }
 
-/* "iOS pill" button style that works with PrimeVue */
+/* PrimeVue: Dialog backdrop (THIS fixes "hard to see" and adds iOS-like depth) */
+.p-dialog-mask.p-component-overlay {
+  background: rgba(10, 16, 28, 0.35) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Dialog surface */
+.p-dialog {
+  border-radius: 26px !important;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow: var(--shadow-strong);
+}
+
+.p-dialog .p-dialog-header {
+  background: rgba(255, 255, 255, 0.50);
+  border-bottom: 1px solid rgba(11, 18, 32, 0.08);
+  padding: 1rem 1.1rem;
+}
+
+.p-dialog .p-dialog-title {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.p-dialog .p-dialog-content {
+  background: transparent;
+  padding: 1rem 1.1rem 1.1rem;
+}
+
+.p-dialog .p-dialog-footer {
+  background: rgba(255, 255, 255, 0.50);
+  border-top: 1px solid rgba(11, 18, 32, 0.08);
+  padding: 0.9rem 1.1rem;
+}
+
+/* Buttons: consistent iOS pill */
 .p-button {
   border-radius: 999px !important;
-  font-weight: 650;
+  font-weight: 700;
   letter-spacing: -0.015em;
+  padding: 0.62rem 0.95rem !important; /* fixes clipping + cramped text */
+  line-height: 1 !important;
   box-shadow: 0 10px 28px rgba(11, 18, 32, 0.10);
   transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+}
+
+.p-button .p-button-label {
+  line-height: 1 !important;
 }
 
 .p-button:enabled:hover {
@@ -102,16 +147,26 @@ body::before {
   box-shadow: 0 10px 28px rgba(11, 18, 32, 0.10);
 }
 
+/* Secondary */
 .p-button.p-button-secondary {
   background: rgba(255, 255, 255, 0.62) !important;
   border: 1px solid rgba(255, 255, 255, 0.70) !important;
-  color: rgba(11, 18, 32, 0.90) !important;
+  color: rgba(11, 18, 32, 0.92) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
 .p-button.p-button-text {
   box-shadow: none;
+}
+
+/* Ensure "primary" (custom bg) buttons always have readable white text */
+.p-button:not(.p-button-secondary):not(.p-button-text) {
+  color: #ffffff !important;
+}
+
+.p-button:not(.p-button-secondary):not(.p-button-text) .p-button-icon {
+  color: #ffffff !important;
 }
 
 /* Inputs */
@@ -130,31 +185,6 @@ body::before {
 .p-dropdown:focus-within {
   border-color: rgba(59, 130, 246, 0.55) !important;
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14) !important;
-}
-
-/* Dialogs */
-.p-dialog {
-  border-radius: 26px !important;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  box-shadow: var(--shadow-strong);
-}
-
-.p-dialog .p-dialog-header {
-  background: transparent;
-  border-bottom: 1px solid rgba(11, 18, 32, 0.06);
-}
-
-.p-dialog .p-dialog-content {
-  background: transparent;
-}
-
-.p-dialog .p-dialog-footer {
-  background: transparent;
-  border-top: 1px solid rgba(11, 18, 32, 0.06);
 }
 
 .p-tag {

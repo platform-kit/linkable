@@ -1,13 +1,3 @@
-export type LinkIcon =
-  | "link"
-  | "sparkle"
-  | "shop"
-  | "music"
-  | "video"
-  | "mail"
-  | "calendar"
-  | "doc";
-
 export type SocialType =
   | "website"
   | "instagram"
@@ -21,7 +11,7 @@ export type BioLink = {
   title: string;
   subtitle: string;
   url: string;
-  icon: LinkIcon;
+  imageUrl: string; // optional
   enabled: boolean;
 };
 
@@ -55,7 +45,7 @@ export const newLink = (): BioLink => ({
   title: "New link",
   subtitle: "",
   url: "https://",
-  icon: "link",
+  imageUrl: "",
   enabled: true,
 });
 
@@ -80,7 +70,7 @@ export const defaultModel = (): BioModel => ({
       title: "My portfolio",
       subtitle: "Selected work & case studies",
       url: "https://example.com",
-      icon: "sparkle",
+      imageUrl: "",
       enabled: true,
     },
     {
@@ -88,7 +78,7 @@ export const defaultModel = (): BioModel => ({
       title: "Book a call",
       subtitle: "15 minutes to see if we fit",
       url: "https://example.com",
-      icon: "calendar",
+      imageUrl: "",
       enabled: true,
     },
     {
@@ -96,7 +86,7 @@ export const defaultModel = (): BioModel => ({
       title: "Shop presets",
       subtitle: "UI kits, templates, packs",
       url: "https://example.com",
-      icon: "shop",
+      imageUrl: "",
       enabled: true,
     },
   ],
@@ -133,17 +123,6 @@ const sanitizeUrl = (v: unknown) => {
   }
 };
 
-const iconSet: LinkIcon[] = [
-  "link",
-  "sparkle",
-  "shop",
-  "music",
-  "video",
-  "mail",
-  "calendar",
-  "doc",
-];
-
 const socialSet: SocialType[] = [
   "website",
   "instagram",
@@ -152,9 +131,6 @@ const socialSet: SocialType[] = [
   "tiktok",
   "github",
 ];
-
-const asLinkIcon = (v: unknown): LinkIcon =>
-  (iconSet.includes(v as LinkIcon) ? (v as LinkIcon) : "link");
 
 const asSocialType = (v: unknown): SocialType =>
   (socialSet.includes(v as SocialType) ? (v as SocialType) : "website");
@@ -175,7 +151,7 @@ export const sanitizeModel = (input: unknown): BioModel => {
       title: asString(l?.title).slice(0, 60),
       subtitle: asString(l?.subtitle).slice(0, 90),
       url: sanitizeUrl(l?.url),
-      icon: asLinkIcon(l?.icon),
+      imageUrl: sanitizeUrl(l?.imageUrl),
       enabled: typeof l?.enabled === "boolean" ? l.enabled : true,
     }))
     .filter((l: BioLink) => !!l.id)
