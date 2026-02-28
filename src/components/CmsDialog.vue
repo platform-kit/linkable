@@ -7,52 +7,49 @@
     :contentStyle="{ overflow: 'hidden' }"
   >
     <div class="cms">
-      <!-- Left nav -->
-      <aside class="cms__nav">
-        <button
-          type="button"
-          class="cms__tab"
-          :class="{ 'is-active': tab === 'profile' }"
-          @click="tab = 'profile'"
-        >
-          <span class="cms__tab-icon"><i class="pi pi-user" /></span>
-          <span class="cms__tab-label">Profile</span>
-          <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">0</span>
-        </button>
+      <div class="cms__tabBar">
+        <div class="cms__tabs">
+          <button
+            type="button"
+            class="cms__tab"
+            :class="{ 'is-active': tab === 'profile' }"
+            @click="tab = 'profile'"
+          >
+            <span class="cms__tab-icon"><i class="pi pi-user" /></span>
+            <span class="cms__tab-label">Profile</span>
+            <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">0</span>
+          </button>
 
-        <button
-          type="button"
-          class="cms__tab"
-          :class="{ 'is-active': tab === 'links' }"
-          @click="tab = 'links'"
-        >
-          <span class="cms__tab-icon"><i class="pi pi-link" /></span>
-          <span class="cms__tab-label">Links</span>
-          <span class="cms__tab-pill">{{ draft.links.length }}</span>
-        </button>
+          <button
+            type="button"
+            class="cms__tab"
+            :class="{ 'is-active': tab === 'links' }"
+            @click="tab = 'links'"
+          >
+            <span class="cms__tab-icon"><i class="pi pi-link" /></span>
+            <span class="cms__tab-label">Links</span>
+            <span class="cms__tab-pill">{{ draft.links.length }}</span>
+          </button>
 
-        <button
-          type="button"
-          class="cms__tab"
-          :class="{ 'is-active': tab === 'socials' }"
-          @click="tab = 'socials'"
-        >
-          <span class="cms__tab-icon"><i class="pi pi-share-alt" /></span>
-          <span class="cms__tab-label">Socials</span>
-          <span class="cms__tab-pill">{{ draft.socials.length }}</span>
-        </button>
-
-        <div class="cms__nav-footer">
-          <div class="cms__status" :class="{ 'is-dirty': hasChanges }">
-            <span class="cms__dot" />
-            <span>{{ hasChanges ? "Unsaved changes" : "Saved" }}</span>
-          </div>
+          <button
+            type="button"
+            class="cms__tab"
+            :class="{ 'is-active': tab === 'socials' }"
+            @click="tab = 'socials'"
+          >
+            <span class="cms__tab-icon"><i class="pi pi-share-alt" /></span>
+            <span class="cms__tab-label">Socials</span>
+            <span class="cms__tab-pill">{{ draft.socials.length }}</span>
+          </button>
         </div>
-      </aside>
 
-      <!-- Main content -->
-      <main class="cms__main">
-        <!-- Profile -->
+        <div class="cms__status" :class="{ 'is-dirty': hasChanges }">
+          <span class="cms__dot" />
+          <span>{{ hasChanges ? "Unsaved changes" : "Saved" }}</span>
+        </div>
+      </div>
+
+      <div class="cms__content">
         <section v-if="tab === 'profile'" class="cms__panel">
           <div class="cms__panel-head">
             <div class="cms__title">Profile</div>
@@ -73,18 +70,13 @@
 
               <div class="cms__field">
                 <label class="cms__label">Avatar URL (optional)</label>
-                <InputText
-                  v-model="draft.profile.avatarUrl"
-                  class="w-full"
-                  placeholder="https://..."
-                />
+                <InputText v-model="draft.profile.avatarUrl" class="w-full" placeholder="https://..." />
                 <div class="cms__help">If empty or invalid, initials will show.</div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- Links -->
         <section v-else-if="tab === 'links'" class="cms__panel">
           <div class="cms__panel-head cms__panel-head--row">
             <div>
@@ -134,12 +126,7 @@
                   </span>
 
                   <span class="cms__row-meta">
-                    <Tag
-                      v-if="!element.enabled"
-                      severity="warning"
-                      value="Hidden"
-                      class="!rounded-full"
-                    />
+                    <Tag v-if="!element.enabled" severity="warning" value="Hidden" class="!rounded-full" />
                     <i v-else class="pi pi-check-circle cms__ok" />
                     <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
                   </span>
@@ -149,7 +136,6 @@
           </div>
         </section>
 
-        <!-- Socials -->
         <section v-else class="cms__panel">
           <div class="cms__panel-head cms__panel-head--row">
             <div>
@@ -197,7 +183,7 @@
             </div>
           </div>
         </section>
-      </main>
+      </div>
     </div>
 
     <template #footer>
@@ -221,7 +207,6 @@
       </div>
     </template>
 
-    <!-- Editors -->
     <LinkEditorDrawer
       v-if="activeLink"
       v-model:open="linkEditorOpen"
@@ -305,7 +290,6 @@ export default defineComponent({
         stableStringify(sanitizeModel(props.model))
     );
 
-    // --- Links editor
     const linkEditorOpen = ref(false);
     const activeLinkId = ref<string>("");
 
@@ -353,7 +337,6 @@ export default defineComponent({
       if (!open) activeLinkId.value = "";
     });
 
-    // --- Socials editor
     const socialEditorOpen = ref(false);
     const activeSocialId = ref<string>("");
 
@@ -401,7 +384,6 @@ export default defineComponent({
       if (!open) activeSocialId.value = "";
     });
 
-    // Labels/icons
     const socialLabel = (type: string) => {
       const m: Record<string, string> = {
         website: "Website",
@@ -452,24 +434,18 @@ export default defineComponent({
       hasChanges,
       discard,
       save,
-
-      // links
       linkEditorOpen,
       activeLink,
       activeLinkProxy,
       openLinkEditor,
       createAndEditLink,
       deleteActiveLink,
-
-      // socials
       socialEditorOpen,
       activeSocial,
       activeSocialProxy,
       openSocialEditor,
       createAndEditSocial,
       deleteActiveSocial,
-
-      // helpers
       socialLabel,
       primeSocialIcon,
     };
@@ -479,84 +455,80 @@ export default defineComponent({
 
 <style scoped>
 .cms {
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   height: min(72vh, 740px);
   min-height: 520px;
 }
 
-/* Stable layout: always reserve potential scrollbar space so widths don't jump */
-.cms__main {
-  scrollbar-gutter: stable both-edges;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.cms__nav {
+.cms__tabBar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
   border-radius: 22px;
   border: 1px solid rgba(11, 18, 32, 0.08);
   background: rgba(255, 255, 255, 0.62);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  overflow: hidden;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  padding: 10px;
 }
 
-/* Compact, consistent tabs */
-.cms__tab {
-  width: 100%;
-  height: 38px;
+.cms__tabs {
   display: grid;
-  grid-template-columns: 30px 1fr 34px;
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cms__tab {
+  height: 48px;
+  display: grid;
+  grid-template-columns: 32px 1fr 34px;
   align-items: center;
-  padding: 0 10px;
-  border-radius: 14px;
+  gap: 10px;
+  padding: 0 12px;
+  border-radius: 18px;
   border: 1px solid transparent;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.62);
   color: rgba(11, 18, 32, 0.88);
-  font-weight: 950;
+  font-weight: 900;
   letter-spacing: -0.01em;
   cursor: pointer;
-  transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
-  margin-bottom: 6px;
-  text-align: left;
+  transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
 }
 
 .cms__tab:hover {
-  background: rgba(255, 255, 255, 0.55);
-  border-color: rgba(11, 18, 32, 0.06);
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(11, 18, 32, 0.1);
+  transform: translateY(-1px);
 }
 
 .cms__tab.is-active {
-  background: rgba(59, 130, 246, 0.12);
-  border-color: rgba(59, 130, 246, 0.24);
-  box-shadow: 0 10px 28px rgba(11, 18, 32, 0.06);
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.32);
+  box-shadow: 0 18px 44px rgba(59, 130, 246, 0.18);
+  color: rgba(11, 18, 32, 0.96);
 }
 
 .cms__tab-icon {
-  height: 26px;
-  width: 26px;
+  height: 28px;
+  width: 28px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
-  border: 1px solid rgba(11, 18, 32, 0.06);
-  background: rgba(255, 255, 255, 0.55);
-  color: rgba(11, 18, 32, 0.58);
+  border-radius: 12px;
+  border: 1px solid rgba(11, 18, 32, 0.08);
+  background: rgba(255, 255, 255, 0.76);
+  color: rgba(11, 18, 32, 0.55);
 }
 
 .cms__tab.is-active .cms__tab-icon {
-  background: rgba(59, 130, 246, 0.14);
-  border-color: rgba(59, 130, 246, 0.22);
-  color: rgba(37, 99, 235, 0.95);
+  background: rgba(59, 130, 246, 0.22);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: rgba(37, 99, 235, 0.96);
 }
 
 .cms__tab-label {
-  font-size: 12px;
-  line-height: 1;
+  font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -564,7 +536,7 @@ export default defineComponent({
 
 .cms__tab-pill {
   justify-self: end;
-  min-width: 26px;
+  min-width: 28px;
   height: 20px;
   padding: 0 8px;
   display: inline-flex;
@@ -572,9 +544,9 @@ export default defineComponent({
   justify-content: center;
   border-radius: 999px;
   border: 1px solid rgba(11, 18, 32, 0.08);
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.68);
   font-size: 11px;
-  font-weight: 950;
+  font-weight: 900;
   color: rgba(11, 18, 32, 0.62);
 }
 
@@ -583,22 +555,18 @@ export default defineComponent({
   pointer-events: none;
 }
 
-.cms__nav-footer {
-  padding-top: 10px;
-  border-top: 1px solid rgba(11, 18, 32, 0.06);
-}
-
 .cms__status {
-  display: flex;
+  align-self: flex-end;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(11, 18, 32, 0.10);
-  background: rgba(255, 255, 255, 0.55);
-  color: rgba(11, 18, 32, 0.72);
-  font-weight: 900;
+  border: 1px solid rgba(11, 18, 32, 0.1);
+  background: rgba(255, 255, 255, 0.6);
   font-size: 12px;
+  font-weight: 800;
+  color: rgba(11, 18, 32, 0.7);
 }
 
 .cms__dot {
@@ -614,19 +582,22 @@ export default defineComponent({
   box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.14);
 }
 
-/* Keep the rest of your existing styling as-is */
-.cms__main {
+.cms__content {
+  flex: 1;
   border-radius: 22px;
   border: 1px solid rgba(11, 18, 32, 0.08);
   background: rgba(255, 255, 255, 0.62);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   padding: 14px;
+  overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
 }
 
 .cms__panel-head {
   margin-bottom: 12px;
 }
+
 .cms__panel-head--row {
   display: flex;
   align-items: flex-start;
@@ -669,12 +640,12 @@ export default defineComponent({
 .cms__label {
   font-size: 12px;
   font-weight: 950;
-  color: rgba(11, 18, 32, 0.70);
+  color: rgba(11, 18, 32, 0.7);
 }
 
 .cms__help {
   font-size: 12px;
-  color: rgba(11, 18, 32, 0.60);
+  color: rgba(11, 18, 32, 0.6);
   font-weight: 650;
 }
 
@@ -701,7 +672,7 @@ export default defineComponent({
   grid-template-columns: 34px 44px 1fr auto;
   gap: 10px;
   align-items: center;
-  padding: 10px 10px;
+  padding: 10px;
   border-radius: 18px;
   border: 1px solid rgba(11, 18, 32, 0.06);
   background: rgba(255, 255, 255, 0.62);
@@ -715,7 +686,7 @@ export default defineComponent({
 
 .cms__row:hover {
   background: rgba(255, 255, 255, 0.76);
-  border-color: rgba(11, 18, 32, 0.10);
+  border-color: rgba(11, 18, 32, 0.1);
 }
 
 .cms__row-drag {
@@ -783,10 +754,12 @@ export default defineComponent({
   padding: 16px 12px;
   text-align: center;
 }
+
 .cms__empty-title {
   font-weight: 950;
   letter-spacing: -0.02em;
 }
+
 .cms__empty-sub {
   margin-top: 4px;
   font-size: 12px;
@@ -801,6 +774,7 @@ export default defineComponent({
   justify-content: space-between;
   gap: 10px;
 }
+
 .cms__footer-right {
   display: flex;
   align-items: center;
@@ -808,53 +782,29 @@ export default defineComponent({
 }
 
 @media (max-width: 820px) {
-  /* Use :deep so it applies inside PrimeVue Dialog portal reliably */
-  :deep(.cms) {
-    grid-template-columns: 1fr;
-    height: min(80vh, 820px);
-    min-height: 560px;
+  .cms {
+    height: min(82vh, 820px);
   }
 
-  :deep(.cms__nav) {
-    grid-template-rows: auto;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-    align-items: center;
+  .cms__tabBar {
     padding: 10px;
-    overflow: hidden;
   }
 
-  :deep(.cms__tab) {
-    margin: 0;
-    width: 100%;
-    min-width: 0;
-    height: 34px;
-    grid-template-columns: 24px 1fr 26px;
+  .cms__tab {
+    height: 44px;
+    grid-template-columns: 28px 1fr 26px;
     gap: 8px;
-    padding: 0 8px;
-    border-radius: 14px;
+    padding: 0 10px;
   }
 
-  :deep(.cms__tab-icon) {
-    height: 20px;
-    width: 20px;
-    border-radius: 8px;
+  .cms__tab-label {
+    font-size: 12px;
   }
 
-  :deep(.cms__tab-label) {
-    font-size: 11px;
-  }
-
-  :deep(.cms__tab-pill) {
-    min-width: 22px;
+  .cms__tab-pill {
+    min-width: 24px;
     height: 18px;
-    padding: 0 6px;
     font-size: 10px;
-  }
-
-  :deep(.cms__nav-footer) {
-    display: none;
   }
 }
 </style>
