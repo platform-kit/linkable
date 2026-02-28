@@ -83,16 +83,16 @@ body::before {
 
 /* -----------------------------
    PrimeVue: MODAL BACKDROP
-   Keep ONLY the dialog mask styling, do not touch generic overlay classes.
+   Apply ONLY blur (no dark overlay).
 -------------------------------- */
 .p-dialog-mask {
   position: fixed !important;
   inset: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
-  background: rgba(0, 0, 0, 0.8) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
+  background: transparent !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
 }
 
 /* Ensure mask is above app content */
