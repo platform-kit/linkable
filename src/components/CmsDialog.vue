@@ -56,21 +56,23 @@
             <div class="cms__sub">Edit your site name and description.</div>
           </div>
 
-          <div class="cms__form">
-            <div class="cms__field">
-              <label class="cms__label">Name</label>
-              <InputText v-model="draft.profile.displayName" class="w-full" />
-            </div>
+          <div class="cms__card">
+            <div class="cms__form">
+              <div class="cms__field">
+                <label class="cms__label">Name</label>
+                <InputText v-model="draft.profile.displayName" class="w-full" />
+              </div>
 
-            <div class="cms__field">
-              <label class="cms__label">Description</label>
-              <Textarea v-model="draft.profile.tagline" autoResize rows="4" class="w-full" />
-            </div>
+              <div class="cms__field">
+                <label class="cms__label">Description</label>
+                <Textarea v-model="draft.profile.tagline" autoResize rows="4" class="w-full" />
+              </div>
 
-            <div class="cms__field">
-              <label class="cms__label">Avatar URL (optional)</label>
-              <InputText v-model="draft.profile.avatarUrl" class="w-full" placeholder="https://..." />
-              <div class="cms__help">If empty or invalid, initials will show.</div>
+              <div class="cms__field">
+                <label class="cms__label">Avatar URL (optional)</label>
+                <InputText v-model="draft.profile.avatarUrl" class="w-full" placeholder="https://..." />
+                <div class="cms__help">If empty or invalid, initials will show.</div>
+              </div>
             </div>
           </div>
         </section>
@@ -83,91 +85,50 @@
               <div class="cms__sub">Add, edit, and reorder your buttons.</div>
             </div>
 
-            <Button rounded class="cms__primary" @click="addLink">
+            <Button rounded class="cms__primary" @click="createAndEditLink">
               <i class="pi pi-plus" />
               <span class="ml-2">Add link</span>
             </Button>
           </div>
 
-          <div class="cms__split">
-            <div class="cms__list">
-              <draggable
-                v-model="draft.links"
-                item-key="id"
-                handle=".drag"
-                :animation="160"
-                class="cms__list-inner"
-              >
-                <template #item="{ element }">
-                  <button
-                    type="button"
-                    class="cms__row"
-                    :class="{ 'is-active': selectedLinkId === element.id }"
-                    @click="selectedLinkId = element.id"
-                  >
-                    <span class="cms__row-drag drag" aria-label="Drag">
-                      <i class="pi pi-bars" />
-                    </span>
-
-                    <span class="cms__row-text">
-                      <span class="cms__row-title">{{ element.title || "Untitled" }}</span>
-                      <span class="cms__row-sub">{{ element.url || "(no url)" }}</span>
-                    </span>
-
-                    <span class="cms__row-meta">
-                      <Tag v-if="!element.enabled" severity="warning" value="Hidden" class="!rounded-full" />
-                      <i v-else class="pi pi-check-circle cms__ok" />
-                    </span>
-                  </button>
-                </template>
-              </draggable>
-
-              <div v-if="draft.links.length === 0" class="cms__empty">
-                <div class="cms__empty-title">No links yet</div>
-                <div class="cms__empty-sub">Click “Add link” to create your first one.</div>
-              </div>
+          <div class="cms__card">
+            <div v-if="draft.links.length === 0" class="cms__empty">
+              <div class="cms__empty-title">No links yet</div>
+              <div class="cms__empty-sub">Click “Add link” to create your first one.</div>
             </div>
 
-            <div class="cms__editor">
-              <div v-if="selectedLink" class="cms__form">
-                <div class="cms__field">
-                  <label class="cms__label">Title</label>
-                  <InputText v-model="selectedLink.title" class="w-full" />
-                </div>
+            <draggable
+              v-else
+              v-model="draft.links"
+              item-key="id"
+              handle=".drag"
+              :animation="160"
+              class="cms__list"
+            >
+              <template #item="{ element }">
+                <button type="button" class="cms__row" @click="openLinkEditor(element.id)">
+                  <span class="cms__row-drag drag" aria-label="Drag">
+                    <i class="pi pi-bars" />
+                  </span>
 
-                <div class="cms__field">
-                  <label class="cms__label">Description (optional)</label>
-                  <InputText v-model="selectedLink.subtitle" class="w-full" placeholder="Short helper text…" />
-                </div>
+                  <span class="cms__row-thumb">
+                    <img v-if="element.imageUrl" :src="element.imageUrl" alt="" class="h-full w-full object-cover" />
+                    <i v-else class="pi pi-link text-[color:var(--color-ink-soft)]" />
+                  </span>
 
-                <div class="cms__field">
-                  <label class="cms__label">URL</label>
-                  <InputText v-model="selectedLink.url" class="w-full" placeholder="https://..." />
-                </div>
+                  <span class="cms__row-text">
+                    <span class="cms__row-title">{{ element.title || "Untitled" }}</span>
+                    <span class="cms__row-sub">{{ element.url || "(no url)" }}</span>
+                  </span>
 
-                <div class="cms__field">
-                  <label class="cms__label">Thumbnail image URL (optional)</label>
-                  <InputText v-model="selectedLink.imageUrl" class="w-full" placeholder="https://..." />
-                </div>
-
-                <div class="cms__inline">
-                  <div class="cms__inline-item">
-                    <span class="cms__label">Enabled</span>
-                    <ToggleSwitch v-model="selectedLink.enabled" />
-                  </div>
-
-                  <Button rounded text severity="danger" @click="removeSelectedLink">
-                    <i class="pi pi-trash" />
-                    <span class="ml-2">Delete</span>
-                  </Button>
-                </div>
-              </div>
-
-              <div v-else class="cms__empty cms__empty--soft">
-                <div class="cms__empty-title">Select a link</div>
-                <div class="cms__empty-sub">Choose a link on the left to edit it.</div>
-              </div>
-            </div>
+                  <span class="cms__row-meta">
+                    <Tag v-if="!element.enabled" severity="warning" value="Hidden" class="!rounded-full" />
+                    <i v-else class="pi pi-check-circle cms__ok" />
+                    <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
+                  </span>
+                </button>
+              </template>
+            </draggable>
           </div>
         </section>
 
@@ -176,75 +137,44 @@
           <div class="cms__panel-head cms__panel-head--row">
             <div>
               <div class="cms__title">Social links</div>
-              <div class="cms__sub">
-                Choose a type for automatic icons, or provide a Lucide icon name override.
-              </div>
+              <div class="cms__sub">Add socials that show under your name.</div>
             </div>
 
-            <Button rounded class="cms__primary" @click="addSocial">
+            <Button rounded class="cms__primary" @click="createAndEditSocial">
               <i class="pi pi-plus" />
               <span class="ml-2">Add social</span>
             </Button>
           </div>
 
-          <div class="cms__socials">
-            <div v-for="(s, i) in draft.socials" :key="s.id" class="cms__card">
-              <div class="cms__card-top">
-                <div class="cms__card-title">
-                  <span class="cms__chip">
-                    <i class="pi" :class="primeSocialIcon(s.type)" />
-                  </span>
-                  <span>{{ socialLabel(s.type) }}</span>
-                </div>
-
-                <Button rounded text severity="danger" @click="removeSocial(i)">
-                  <i class="pi pi-trash" />
-                  <span class="ml-2">Delete</span>
-                </Button>
-              </div>
-
-              <div class="cms__grid">
-                <div class="cms__field">
-                  <label class="cms__label">Type</label>
-                  <Dropdown
-                    v-model="s.type"
-                    :options="socialTypeOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    class="w-full"
-                  />
-                </div>
-
-                <div class="cms__field">
-                  <label class="cms__label">Label</label>
-                  <InputText v-model="s.label" class="w-full" placeholder="e.g. @yourname" />
-                </div>
-
-                <div class="cms__field cms__field--wide">
-                  <label class="cms__label">URL</label>
-                  <InputText v-model="s.url" class="w-full" placeholder="https://..." />
-                </div>
-
-                <div class="cms__field">
-                  <label class="cms__label">Lucide icon override (optional)</label>
-                  <InputText v-model="(s as any).lucideIcon" class="w-full" placeholder="e.g. Github, Instagram, Globe" />
-                  <div class="cms__help">
-                    This is stored in your JSON, but your public page currently uses automatic icons.
-                  </div>
-                </div>
-
-                <div class="cms__inline cms__field--wide">
-                  <div class="cms__inline-item">
-                    <span class="cms__label">Enabled</span>
-                    <ToggleSwitch v-model="s.enabled" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
+          <div class="cms__card">
             <div v-if="draft.socials.length === 0" class="cms__empty">
               <div class="cms__empty-title">No socials yet</div>
               <div class="cms__empty-sub">Add GitHub, Instagram, X, YouTube, TikTok, or Website.</div>
+            </div>
+
+            <div v-else class="cms__socialList">
+              <button
+                v-for="s in draft.socials"
+                :key="s.id"
+                type="button"
+                class="cms__row"
+                @click="openSocialEditor(s.id)"
+              >
+                <span class="cms__row-drag cms__row-drag--muted" aria-hidden="true">
+                  <i class="pi" :class="primeSocialIcon(s.type)" />
+                </span>
+
+                <span class="cms__row-text">
+                  <span class="cms__row-title">{{ s.label || socialLabel(s.type) }}</span>
+                  <span class="cms__row-sub">{{ s.url || "(no url)" }}</span>
+                </span>
+
+                <span class="cms__row-meta">
+                  <Tag v-if="!s.enabled" severity="warning" value="Hidden" class="!rounded-full" />
+                  <i v-else class="pi pi-check-circle cms__ok" />
+                  <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
+                </span>
+              </button>
             </div>
           </div>
         </section>
@@ -271,6 +201,20 @@
         </div>
       </div>
     </template>
+
+    <!-- Editors -->
+    <LinkEditorDrawer
+      v-if="activeLink"
+      v-model:open="linkEditorOpen"
+      v-model="activeLinkProxy"
+      @delete="deleteActiveLink"
+    />
+    <SocialEditorDrawer
+      v-if="activeSocial"
+      v-model:open="socialEditorOpen"
+      v-model="activeSocialProxy"
+      @delete="deleteActiveSocial"
+    />
   </Dialog>
 </template>
 
@@ -280,26 +224,26 @@ import draggable from "vuedraggable";
 
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
-import Dropdown from "primevue/dropdown";
 import InputText from "primevue/inputtext";
 import Tag from "primevue/tag";
 import Textarea from "primevue/textarea";
-import ToggleSwitch from "primevue/toggleswitch";
 import { useToast } from "primevue/usetoast";
 
-import { type BioModel, defaultModel, newLink, newSocial, sanitizeModel, stableStringify } from "../lib/model";
+import LinkEditorDrawer from "./LinkEditorDrawer.vue";
+import SocialEditorDrawer from "./SocialEditorDrawer.vue";
+import { type BioLink, type BioModel, type SocialLink, defaultModel, newLink, newSocial, sanitizeModel, stableStringify } from "../lib/model";
 
 export default defineComponent({
   name: "CmsDialog",
   components: {
     Dialog,
     Button,
-    Dropdown,
     InputText,
     Textarea,
     Tag,
-    ToggleSwitch,
     draggable,
+    LinkEditorDrawer,
+    SocialEditorDrawer,
   },
   props: {
     open: { type: Boolean, required: true },
@@ -329,52 +273,103 @@ export default defineComponent({
 
     const hasChanges = computed(() => stableStringify(sanitizeModel(draft.value)) !== stableStringify(sanitizeModel(props.model)));
 
-    // Links
-    const selectedLinkId = ref<string>("");
+    // --- Links editor
+    const linkEditorOpen = ref(false);
+    const activeLinkId = ref<string>("");
 
-    watch(
-      () => draft.value.links,
-      (links) => {
-        if (!selectedLinkId.value) selectedLinkId.value = links[0]?.id || "";
-        if (selectedLinkId.value && !links.some((l) => l.id === selectedLinkId.value)) {
-          selectedLinkId.value = links[0]?.id || "";
-        }
+    const activeLink = computed<BioLink | null>(() => {
+      const id = activeLinkId.value;
+      if (!id) return null;
+      return draft.value.links.find((l) => l.id === id) ?? null;
+    });
+
+    const activeLinkProxy = computed<BioLink>({
+      get() {
+        return activeLink.value ?? newLink();
       },
-      { deep: true, immediate: true }
-    );
+      set(v) {
+        const idx = draft.value.links.findIndex((l) => l.id === v.id);
+        if (idx >= 0) draft.value.links[idx] = v;
+      },
+    });
 
-    const selectedLink = computed(() => draft.value.links.find((l) => l.id === selectedLinkId.value) ?? null);
+    const openLinkEditor = (id: string) => {
+      activeLinkId.value = id;
+      linkEditorOpen.value = true;
+    };
 
-    const addLink = () => {
+    const createAndEditLink = () => {
       const l = newLink();
-      // Rename "subtitle" to act as the requested optional description field.
-      l.subtitle = "";
+      l.subtitle = ""; // optional description field
       draft.value.links.unshift(l);
-      selectedLinkId.value = l.id;
+      activeLinkId.value = l.id;
       tab.value = "links";
-      toast.add({ severity: "success", summary: "Added", detail: "Link created.", life: 1800 });
+      linkEditorOpen.value = true;
+      toast.add({ severity: "success", summary: "Added", detail: "Link created.", life: 1600 });
     };
 
-    const removeSelectedLink = () => {
-      const l = selectedLink.value;
+    const deleteActiveLink = () => {
+      const l = activeLink.value;
       if (!l) return;
-      const idx = draft.value.links.findIndex((x) => x.id === l.id);
-      if (idx >= 0) {
-        draft.value.links.splice(idx, 1);
-        toast.add({ severity: "warn", summary: "Deleted", detail: "Link removed.", life: 1800 });
-      }
+      draft.value.links = draft.value.links.filter((x) => x.id !== l.id);
+      linkEditorOpen.value = false;
+      activeLinkId.value = "";
+      toast.add({ severity: "warn", summary: "Deleted", detail: "Link removed.", life: 1600 });
     };
 
-    // Socials
-    const socialTypeOptions = [
-      { label: "Website", value: "website" },
-      { label: "GitHub", value: "github" },
-      { label: "Instagram", value: "instagram" },
-      { label: "X", value: "x" },
-      { label: "YouTube", value: "youtube" },
-      { label: "TikTok", value: "tiktok" },
-    ];
+    watch(linkEditorOpen, (open) => {
+      if (!open) activeLinkId.value = "";
+    });
 
+    // --- Socials editor
+    const socialEditorOpen = ref(false);
+    const activeSocialId = ref<string>("");
+
+    const activeSocial = computed<SocialLink | null>(() => {
+      const id = activeSocialId.value;
+      if (!id) return null;
+      return draft.value.socials.find((s) => s.id === id) ?? null;
+    });
+
+    const activeSocialProxy = computed<SocialLink>({
+      get() {
+        return activeSocial.value ?? newSocial();
+      },
+      set(v) {
+        const idx = draft.value.socials.findIndex((s) => s.id === v.id);
+        if (idx >= 0) (draft.value.socials[idx] as any) = v as any;
+      },
+    });
+
+    const openSocialEditor = (id: string) => {
+      activeSocialId.value = id;
+      socialEditorOpen.value = true;
+    };
+
+    const createAndEditSocial = () => {
+      const s = newSocial();
+      s.enabled = true;
+      draft.value.socials.unshift(s);
+      activeSocialId.value = s.id;
+      tab.value = "socials";
+      socialEditorOpen.value = true;
+      toast.add({ severity: "success", summary: "Added", detail: "Social created.", life: 1600 });
+    };
+
+    const deleteActiveSocial = () => {
+      const s = activeSocial.value;
+      if (!s) return;
+      draft.value.socials = draft.value.socials.filter((x) => x.id !== s.id);
+      socialEditorOpen.value = false;
+      activeSocialId.value = "";
+      toast.add({ severity: "warn", summary: "Deleted", detail: "Social removed.", life: 1600 });
+    };
+
+    watch(socialEditorOpen, (open) => {
+      if (!open) activeSocialId.value = "";
+    });
+
+    // Labels/icons
     const socialLabel = (type: string) => {
       const m: Record<string, string> = {
         website: "Website",
@@ -405,40 +400,17 @@ export default defineComponent({
       }
     };
 
-    const addSocial = () => {
-      draft.value.socials.unshift(newSocial());
-      tab.value = "socials";
-      toast.add({ severity: "success", summary: "Added", detail: "Social created.", life: 1800 });
-    };
-
-    const removeSocial = (index: number) => {
-      draft.value.socials.splice(index, 1);
-      toast.add({ severity: "warn", summary: "Deleted", detail: "Social removed.", life: 1800 });
-    };
-
     const discard = () => {
       draft.value = sanitizeModel(props.model);
-      toast.add({ severity: "info", summary: "Discarded", detail: "Changes reverted.", life: 1800 });
+      toast.add({ severity: "info", summary: "Discarded", detail: "Changes reverted.", life: 1600 });
     };
 
     const save = () => {
       emit("update:model", sanitizeModel(draft.value));
       visible.value = false;
-      toast.add({ severity: "success", summary: "Saved", detail: "Your content was updated.", life: 2000 });
+      toast.add({ severity: "success", summary: "Saved", detail: "Your content was updated.", life: 1800 });
     };
 
-    // If user wipes everything somehow, keep UI usable
-    watch(
-      () => draft.value,
-      (m) => {
-        if (!m.profile?.displayName && !m.profile?.tagline && m.links.length === 0 && m.socials.length === 0) {
-          // do nothing; valid state
-        }
-      },
-      { deep: true }
-    );
-
-    // Safety: ensure draft always exists (never used, but avoids null edge)
     if (!draft.value) draft.value = defaultModel();
 
     return {
@@ -446,17 +418,28 @@ export default defineComponent({
       tab,
       draft,
       hasChanges,
-      selectedLinkId,
-      selectedLink,
-      addLink,
-      removeSelectedLink,
-      socialTypeOptions,
-      socialLabel,
-      primeSocialIcon,
-      addSocial,
-      removeSocial,
       discard,
       save,
+
+      // links
+      linkEditorOpen,
+      activeLink,
+      activeLinkProxy,
+      openLinkEditor,
+      createAndEditLink,
+      deleteActiveLink,
+
+      // socials
+      socialEditorOpen,
+      activeSocial,
+      activeSocialProxy,
+      openSocialEditor,
+      createAndEditSocial,
+      deleteActiveSocial,
+
+      // helpers
+      socialLabel,
+      primeSocialIcon,
     };
   },
 });
@@ -467,7 +450,7 @@ export default defineComponent({
   display: grid;
   grid-template-columns: 240px 1fr;
   gap: 12px;
-  height: min(72vh, 720px);
+  height: min(72vh, 740px);
   min-height: 520px;
 }
 
@@ -586,6 +569,14 @@ export default defineComponent({
   font-weight: 700;
 }
 
+.cms__card {
+  border-radius: 22px;
+  border: 1px solid rgba(11, 18, 32, 0.08);
+  background: rgba(255, 255, 255, 0.55);
+  overflow: hidden;
+  padding: 12px;
+}
+
 .cms__form {
   display: grid;
   gap: 12px;
@@ -614,55 +605,38 @@ export default defineComponent({
   box-shadow: 0 16px 44px rgba(37, 99, 235, 0.22) !important;
 }
 
-.cms__split {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 12px;
-  align-items: start;
-}
-
-.cms__list,
-.cms__editor {
-  border-radius: 20px;
-  border: 1px solid rgba(11, 18, 32, 0.08);
-  background: rgba(255, 255, 255, 0.55);
-  overflow: hidden;
-}
-
 .cms__list {
-  height: 520px;
-  overflow: auto;
-}
-
-.cms__list-inner {
   display: grid;
   gap: 8px;
-  padding: 10px;
+}
+
+.cms__socialList {
+  display: grid;
+  gap: 8px;
 }
 
 .cms__row {
   width: 100%;
   text-align: left;
   display: grid;
-  grid-template-columns: 34px 1fr auto;
+  grid-template-columns: 34px 44px 1fr auto;
   gap: 10px;
   align-items: center;
   padding: 10px 10px;
   border-radius: 18px;
   border: 1px solid rgba(11, 18, 32, 0.06);
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.62);
   cursor: pointer;
   transition: background 140ms ease, border-color 140ms ease;
 }
 
-.cms__row:hover {
-  background: rgba(255, 255, 255, 0.72);
-  border-color: rgba(11, 18, 32, 0.08);
+.cms__socialList .cms__row {
+  grid-template-columns: 44px 1fr auto;
 }
 
-.cms__row.is-active {
-  background: rgba(59, 130, 246, 0.12);
-  border-color: rgba(59, 130, 246, 0.24);
+.cms__row:hover {
+  background: rgba(255, 255, 255, 0.76);
+  border-color: rgba(11, 18, 32, 0.10);
 }
 
 .cms__row-drag {
@@ -674,6 +648,27 @@ export default defineComponent({
   display: grid;
   place-items: center;
   color: rgba(11, 18, 32, 0.55);
+}
+
+.cms__row-drag--muted {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+}
+
+.cms__row-thumb {
+  height: 44px;
+  width: 44px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.58);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.cms__row-text {
+  min-width: 0;
 }
 
 .cms__row-title {
@@ -695,83 +690,19 @@ export default defineComponent({
   text-overflow: ellipsis;
 }
 
+.cms__row-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .cms__ok {
   color: #10b981;
-}
-
-.cms__editor {
-  padding: 12px;
-}
-
-.cms__inline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.cms__inline-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.cms__socials {
-  display: grid;
-  gap: 12px;
-}
-
-.cms__card {
-  border-radius: 20px;
-  border: 1px solid rgba(11, 18, 32, 0.08);
-  background: rgba(255, 255, 255, 0.55);
-  padding: 12px;
-}
-
-.cms__card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.cms__card-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 950;
-  letter-spacing: -0.02em;
-}
-
-.cms__chip {
-  height: 34px;
-  width: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.58);
-  color: rgba(11, 18, 32, 0.55);
-}
-
-.cms__grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.cms__field--wide {
-  grid-column: 1 / -1;
 }
 
 .cms__empty {
   padding: 16px 12px;
   text-align: center;
-}
-.cms__empty--soft {
-  border-radius: 18px;
-  border: 1px dashed rgba(11, 18, 32, 0.14);
-  background: rgba(255, 255, 255, 0.45);
 }
 .cms__empty-title {
   font-weight: 950;
@@ -800,8 +731,8 @@ export default defineComponent({
 @media (max-width: 820px) {
   .cms {
     grid-template-columns: 1fr;
-    height: min(78vh, 760px);
-    min-height: 540px;
+    height: min(80vh, 820px);
+    min-height: 560px;
   }
   .cms__nav {
     grid-template-rows: auto;
@@ -816,16 +747,6 @@ export default defineComponent({
   }
   .cms__nav-footer {
     display: none;
-  }
-  .cms__split {
-    grid-template-columns: 1fr;
-  }
-  .cms__list {
-    height: auto;
-    max-height: 260px;
-  }
-  .cms__grid {
-    grid-template-columns: 1fr;
   }
 }
 </style>
