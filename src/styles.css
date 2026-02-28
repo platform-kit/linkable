@@ -2,36 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Sleek glassmorphism theme */
+/* iOS-ish: subtle, cool, sophisticated */
 :root {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
-    Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "SF Pro Text", Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 
   /* Ink */
-  --color-ink: #0f172a; /* slate-900 */
-  --color-ink-soft: rgba(15, 23, 42, 0.72);
+  --color-ink: #0b1220;
+  --color-ink-soft: rgba(11, 18, 32, 0.62);
+
+  /* Background */
+  --bg: #f5f7fb;
 
   /* Glass surfaces */
-  --glass: rgba(255, 255, 255, 0.62);
-  --glass-2: rgba(255, 255, 255, 0.42);
+  --glass: rgba(255, 255, 255, 0.64);
+  --glass-2: rgba(255, 255, 255, 0.50);
   --glass-strong: rgba(255, 255, 255, 0.78);
 
   /* Borders */
-  --color-border: rgba(255, 255, 255, 0.46);
-  --color-border-2: rgba(15, 23, 42, 0.10);
+  --color-border: rgba(255, 255, 255, 0.62);
+  --color-border-2: rgba(11, 18, 32, 0.10);
 
-  /* Brand system (modern + vibrant) */
-  --color-brand: #6366f1; /* indigo-500 */
-  --color-brand-2: #22c55e; /* green-500 */
-  --color-accent: #fb7185; /* rose-400 */
+  /* Accent system (restrained) */
+  --color-brand: #3b82f6; /* iOS-ish blue */
+  --color-brand-strong: #2563eb;
+  --color-accent: #ff5a7a;
 
-  /* Shadows */
-  --shadow-soft: 0 12px 30px rgba(15, 23, 42, 0.10);
-  --shadow-strong: 0 18px 55px rgba(15, 23, 42, 0.18);
+  /* Shadows (soft, lifted) */
+  --shadow-soft: 0 18px 55px rgba(11, 18, 32, 0.10);
+  --shadow-strong: 0 28px 90px rgba(11, 18, 32, 0.16);
 
   /* Radius */
-  --radius-xl: 1.4rem;
-  --radius-lg: 1.1rem;
+  --radius-xl: 1.6rem;
+  --radius-lg: 1.2rem;
 }
 
 html,
@@ -45,79 +48,79 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Modern gradient background (requested) */
+  /* Subtle Apple-like blooms (no harsh saturation) */
   background:
-    radial-gradient(1200px 800px at 10% 10%, rgba(99, 102, 241, 0.35), transparent 55%),
-    radial-gradient(900px 700px at 90% 25%, rgba(251, 113, 133, 0.30), transparent 55%),
-    radial-gradient(1000px 900px at 50% 95%, rgba(34, 197, 94, 0.18), transparent 55%),
-    linear-gradient(180deg, #eef2ff 0%, #f8fafc 55%, #ffffff 100%);
+    radial-gradient(900px 700px at 18% 8%, rgba(59, 130, 246, 0.18), transparent 60%),
+    radial-gradient(820px 620px at 86% 18%, rgba(255, 90, 122, 0.12), transparent 62%),
+    radial-gradient(900px 720px at 45% 92%, rgba(16, 185, 129, 0.10), transparent 62%),
+    linear-gradient(180deg, #f7f9ff 0%, var(--bg) 55%, #ffffff 100%);
 }
 
-/* Subtle noise to add polish without being “busy” */
+/* Super subtle noise */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.06;
+  opacity: 0.035;
   mix-blend-mode: multiply;
   background-image: url("/placeholder.svg");
-  background-size: 240px 240px;
-  filter: grayscale(1) contrast(1.2);
+  background-size: 280px 280px;
+  filter: grayscale(1) contrast(1.1);
 }
 
-/* Selection */
 ::selection {
-  background: rgba(99, 102, 241, 0.22);
+  background: rgba(59, 130, 246, 0.18);
 }
 
-/* Utility-ish: glass panel look */
+/* Glass surface helper */
 .glass {
   background: var(--glass);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
-/* PrimeVue: make it feel designed (buttons, inputs, dialogs, chips) */
+/* "iOS pill" button style that works with PrimeVue */
 .p-button {
   border-radius: 999px !important;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.10);
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  box-shadow: 0 10px 28px rgba(11, 18, 32, 0.10);
   transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
 }
 
 .p-button:enabled:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.14);
-  filter: brightness(1.02);
+  box-shadow: 0 14px 40px rgba(11, 18, 32, 0.14);
+  filter: saturate(1.02);
 }
 
 .p-button:enabled:active {
   transform: translateY(0px);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.10);
+  box-shadow: 0 10px 28px rgba(11, 18, 32, 0.10);
 }
 
 .p-button.p-button-secondary {
-  background: rgba(255, 255, 255, 0.55) !important;
-  border: 1px solid rgba(255, 255, 255, 0.55) !important;
-  color: rgba(15, 23, 42, 0.88) !important;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(255, 255, 255, 0.62) !important;
+  border: 1px solid rgba(255, 255, 255, 0.70) !important;
+  color: rgba(11, 18, 32, 0.90) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .p-button.p-button-text {
   box-shadow: none;
 }
 
+/* Inputs */
 .p-inputtext,
 .p-textarea,
 .p-dropdown {
   border-radius: 16px !important;
-  border: 1px solid rgba(15, 23, 42, 0.10) !important;
-  background: rgba(255, 255, 255, 0.72) !important;
+  border: 1px solid rgba(11, 18, 32, 0.10) !important;
+  background: rgba(255, 255, 255, 0.74) !important;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
@@ -125,23 +128,24 @@ body::before {
 .p-inputtext:focus,
 .p-textarea:focus,
 .p-dropdown:focus-within {
-  border-color: rgba(99, 102, 241, 0.55) !important;
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.16) !important;
+  border-color: rgba(59, 130, 246, 0.55) !important;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14) !important;
 }
 
+/* Dialogs */
 .p-dialog {
-  border-radius: 24px !important;
+  border-radius: 26px !important;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.65);
   background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
   box-shadow: var(--shadow-strong);
 }
 
 .p-dialog .p-dialog-header {
   background: transparent;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  border-bottom: 1px solid rgba(11, 18, 32, 0.06);
 }
 
 .p-dialog .p-dialog-content {
@@ -150,7 +154,7 @@ body::before {
 
 .p-dialog .p-dialog-footer {
   background: transparent;
-  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  border-top: 1px solid rgba(11, 18, 32, 0.06);
 }
 
 .p-tag {
@@ -161,12 +165,11 @@ body::before {
   z-index: 9999;
 }
 
-/* Make PrimeIcons a bit crisper */
+/* Crisp icons */
 .pi {
   transform: translateY(0.5px);
 }
 
-/* Improve default links hover clarity */
 a {
   text-decoration: none;
 }
