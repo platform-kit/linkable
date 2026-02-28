@@ -43,19 +43,31 @@
           </div>
 
           <div class="grid gap-1.5">
+            <ImageUploadField
+              v-model="draft.imageUrl"
+              label="Thumbnail image (optional)"
+              description="Drag in a square image to give this button extra presence."
+            >
+              <template #helper>
+                <div class="text-xs font-semibold text-[color:var(--color-ink-soft)]">
+                  Uploaded files live in
+                  <span
+                    class="rounded-full bg-white/60 px-2 py-0.5 font-bold text-[color:var(--color-ink)]"
+                    >public/uploads</span
+                  >
+                  while you iterate locally.
+                </div>
+              </template>
+            </ImageUploadField>
+          </div>
+
+          <div class="grid gap-1.5">
             <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]"
-              >Thumbnail image (optional)</label
+              >Thumbnail image URL (optional)</label
             >
             <InputText v-model="draft.imageUrl" class="w-full" placeholder="https://..." />
-            <div v-if="draft.imageUrl" class="mt-2 flex items-center gap-3">
-              <div
-                class="relative grid h-12 w-12 place-items-center overflow-hidden rounded-xl border border-white/70 bg-white/60 shadow-sm backdrop-blur-md"
-              >
-                <img :src="draft.imageUrl" alt="" class="h-full w-full object-cover" />
-              </div>
-              <div class="text-xs font-semibold text-[color:var(--color-ink-soft)]">
-                Preview (if the URL is valid)
-              </div>
+            <div class="text-xs font-semibold text-[color:var(--color-ink-soft)]">
+              Paste a fully qualified URL if your asset is already hosted elsewhere.
             </div>
           </div>
 
@@ -107,11 +119,12 @@ import Drawer from "primevue/drawer";
 import InputText from "primevue/inputtext";
 import ToggleSwitch from "primevue/toggleswitch";
 
+import ImageUploadField from "./ImageUploadField.vue";
 import type { BioLink } from "../lib/model";
 
 export default defineComponent({
   name: "LinkEditorDrawer",
-  components: { Drawer, Button, InputText, ToggleSwitch },
+  components: { Drawer, Button, InputText, ToggleSwitch, ImageUploadField },
   props: {
     open: { type: Boolean, required: true },
     modelValue: { type: Object as () => BioLink, required: true },

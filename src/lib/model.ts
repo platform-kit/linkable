@@ -114,6 +114,18 @@ const asBool = (v: unknown) => (typeof v === "boolean" ? v : false);
 const sanitizeUrl = (v: unknown) => {
   const raw = asString(v).trim();
   if (!raw) return "";
+
+  if (raw.startsWith("/")) {
+    try {
+      const normalized = new URL(raw, "http://localhost");
+      const output = normalized.pathname + normalized.search + normalized.hash;
+      if (output.includes("..")) return "";
+      return output;
+    } catch {
+      return "";
+    }
+  }
+
   try {
     const u = new URL(raw);
     if (u.protocol === "http:" || u.protocol === "https:") return u.toString();
