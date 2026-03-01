@@ -77,6 +77,16 @@
 
           <div v-if="canUseCms" class="flex items-center gap-2">
             <Button
+              v-if="isDev"
+              rounded
+              severity="secondary"
+              class="!px-3 !py-2 !text-sm"
+              @click="gitDialogOpen = true"
+            >
+              <i class="pi pi-git-branch" />
+              <span class="ml-2 hidden sm:inline">Commit & Push</span>
+            </Button>
+            <Button
               v-if="!previewMode"
               rounded
               severity="secondary"
@@ -200,6 +210,7 @@
     </Dialog>
 
     <GithubSettingsDialog v-model:open="githubDialogOpen" />
+    <GitCommitDialog v-if="isDev" v-model:open="gitDialogOpen" />
 
     <Toast />
   </div>
@@ -221,6 +232,7 @@ import Toast from "primevue/toast";
 import { useToast } from "primevue/usetoast";
 
 import CmsDialog from "./components/CmsDialog.vue";
+import GitCommitDialog from "./components/GitCommitDialog.vue";
 import GithubSettingsDialog from "./components/GithubSettingsDialog.vue";
 import {
   defaultModel,
@@ -245,6 +257,7 @@ export default defineComponent({
     Toast,
     CmsDialog,
     GithubSettingsDialog,
+    GitCommitDialog,
   },
   setup() {
     const isDev = import.meta.env.DEV;
@@ -255,6 +268,7 @@ export default defineComponent({
     const suppressPersist = ref(true);
     const cmsOpen = ref(false);
     const githubDialogOpen = ref(false);
+    const gitDialogOpen = ref(false);
     const previewMode = ref(true);
 
     const githubReady = ref(false);
@@ -476,6 +490,7 @@ export default defineComponent({
       updateModel,
       canUseCms,
       githubDialogOpen,
+      gitDialogOpen,
       syncStatusText,
       syncIndicatorClass,
       togglePreviewMode,
