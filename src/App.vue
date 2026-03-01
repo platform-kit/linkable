@@ -1,7 +1,17 @@
 <template>
   <div class="min-h-dvh">
     <header class="mx-auto w-full max-w-[740px] px-4 pt-6 sm:pt-10">
-      <div class="glass rounded-[var(--radius-xl)] p-4 sm:p-6">
+      <div class="glass overflow-hidden rounded-[var(--radius-xl)]">
+        <!-- Banner image -->
+        <img
+          v-if="bannerSrc"
+          :src="bannerSrc"
+          alt="Banner"
+          class="h-40 w-full object-cover sm:h-52"
+          @error="onBannerError"
+        />
+
+        <div class="p-4 sm:p-6">
         <div class="flex items-start gap-4">
           <div
             class="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-white/60 bg-white/45 shadow-sm backdrop-blur-md"
@@ -38,17 +48,6 @@
                 </p>
               </div>
 
-              <div class="flex items-center gap-2">
-                <Button
-                  v-if="canUseCms"
-                  rounded
-                  class="!border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 !text-sm shadow-[0_14px_38px_rgba(37,99,235,0.22)] hover:shadow-[0_18px_52px_rgba(37,99,235,0.26)]"
-                  @click="cmsOpen = true"
-                >
-                  <i class="pi pi-sliders-h" />
-                  <span class="ml-2 hidden sm:inline">CMS</span>
-                </Button>
-              </div>
             </div>
 
             <div class="mt-3 flex flex-wrap items-center gap-2">
@@ -56,8 +55,8 @@
                 v-for="s in enabledSocials"
                 :key="s.id"
                 class="inline-flex items-center gap-2 rounded-full border border-white/65 bg-white/50 px-3 py-1.5 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm backdrop-blur-md transition hover:bg-white/65"
-                :href="s.url"
-                target="_blank"
+                :href="s.type === 'email' && s.url && !s.url.startsWith('mailto:') ? 'mailto:' + s.url : s.url"
+                :target="s.type === 'email' ? undefined : '_blank'"
                 rel="noreferrer"
               >
                 <i class="pi" :class="socialIcon(s.type)" />
@@ -67,47 +66,7 @@
           </div>
         </div>
 
-        <div v-if="canUseCms" class="mt-4 flex items-center justify-between gap-3">
-          <div class="text-xs text-[color:var(--color-ink-soft)]">
-            <span class="inline-flex items-center gap-2">
-              <span class="h-2 w-2 rounded-full transition-all" :class="syncIndicatorClass"></span>
-              <span>{{ syncStatusText }}</span>
-            </span>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <Button
-              v-if="unsynced"
-              rounded
-              severity="secondary"
-              class="!px-3 !py-2 !text-sm"
-              @click="gitDialogOpen = true"
-            >
-              <i class="pi pi-git-branch" />
-              <span class="ml-2 hidden sm:inline">Commit & Push</span>
-            </Button>
-            <Button
-              v-if="!previewMode"
-              rounded
-              severity="secondary"
-              class="!px-3 !py-2 !text-sm"
-              @click="exportJson"
-            >
-              <i class="pi pi-download" />
-              <span class="ml-2 hidden sm:inline">Export</span>
-            </Button>
-            <Button
-              v-if="!previewMode && isDev"
-              rounded
-              severity="secondary"
-              class="!px-3 !py-2 !text-sm"
-              @click="importOpen = true"
-            >
-              <i class="pi pi-upload" />
-              <span class="ml-2 hidden sm:inline">Import</span>
-            </Button>
-          </div>
-        </div>
+      </div>
       </div>
     </header>
 
@@ -165,12 +124,15 @@
       </section>
 
       <footer class="mt-6 text-center text-xs text-[color:var(--color-ink-soft)]">
-        <div
-          class="inline-flex items-center gap-2 rounded-full border border-white/65 bg-white/50 px-3 py-1.5 shadow-sm backdrop-blur-md"
+        <a
+          href="https://github.com/platform-kit-team/linkable"
+          target="_blank"
+          rel="noreferrer"
+          class="inline-flex items-center gap-2 rounded-full border border-white/65 bg-white/50 px-3 py-1.5 shadow-sm backdrop-blur-md transition hover:bg-white/65"
         >
-          <span class="h-1.5 w-1.5 rounded-full bg-[color:var(--color-accent)] shadow-[0_0_0_4px_rgba(255,90,122,0.12)]"></span>
-          <span>Tip: drag links in the CMS to reorder.</span>
-        </div>
+          <span class="h-1.5 w-1.5 rounded-full bg-[color:var(--color-brand)] shadow-[0_0_0_4px_rgba(37,99,235,0.12)]"></span>
+          <span>Made with Linkable</span>
+        </a>
       </footer>
     </main>
 
@@ -213,6 +175,59 @@
     <GitCommitDialog v-if="unsynced" v-model:open="gitDialogOpen" @commit="performCommit" />
 
     <Toast />
+
+    <!-- Floating CMS button -->
+    <Button
+      v-if="canUseCms"
+      rounded
+      class="!fixed !bottom-6 !right-6 !z-50 !border-0 !bg-[color:var(--color-brand)] !px-5 !py-3 !text-sm !shadow-[0_14px_38px_rgba(37,99,235,0.28)] hover:!shadow-[0_18px_52px_rgba(37,99,235,0.32)]"
+      @click="cmsOpen = true"
+    >
+      <i class="pi pi-sliders-h" />
+      <span class="ml-2">CMS</span>
+    </Button>
+
+    <!-- Floating status bar -->
+    <div
+      v-if="canUseCms"
+      class="fixed bottom-6 left-6 z-50 flex items-center gap-3 rounded-full border border-white/65 bg-white/70 px-4 py-2 text-xs text-[color:var(--color-ink-soft)] shadow-sm backdrop-blur-md"
+    >
+      <span class="inline-flex items-center gap-2">
+        <span class="h-2 w-2 rounded-full transition-all" :class="syncIndicatorClass"></span>
+        <span>{{ syncStatusText }}</span>
+      </span>
+
+      <div class="flex items-center gap-1.5">
+        <Button
+          v-if="unsynced"
+          rounded
+          severity="secondary"
+          class="!px-2.5 !py-1.5 !text-xs"
+          @click="gitDialogOpen = true"
+        >
+          <i class="pi pi-git-branch" />
+          <span class="ml-1.5 hidden sm:inline">Commit</span>
+        </Button>
+        <Button
+          v-if="!previewMode"
+          rounded
+          severity="secondary"
+          class="!px-2.5 !py-1.5 !text-xs"
+          @click="exportJson"
+        >
+          <i class="pi pi-download" />
+        </Button>
+        <Button
+          v-if="!previewMode && isDev"
+          rounded
+          severity="secondary"
+          class="!px-2.5 !py-1.5 !text-xs"
+          @click="importOpen = true"
+        >
+          <i class="pi pi-upload" />
+        </Button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -224,6 +239,7 @@ import {
   onMounted,
   ref,
   watch,
+  watchEffect,
 } from "vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
@@ -427,6 +443,37 @@ export default defineComponent({
       avatarErrored.value = true;
     };
 
+    const bannerErrored = ref(false);
+    const bannerSrc = computed(() => {
+      const u = (model.value.profile.bannerUrl || "").trim();
+      if (!u) return "";
+      if (bannerErrored.value) return "";
+      return u;
+    });
+
+    watch(
+      () => model.value.profile.bannerUrl,
+      () => {
+        bannerErrored.value = false;
+      },
+    );
+
+    const onBannerError = () => {
+      bannerErrored.value = true;
+    };
+
+    watchEffect(() => {
+      const name = (model.value.profile.displayName || "").trim();
+      const tagline = (model.value.profile.tagline || "").trim();
+      if (name && tagline) {
+        document.title = `${name} — ${tagline}`;
+      } else if (name) {
+        document.title = name;
+      } else {
+        document.title = "Linkable";
+      }
+    });
+
     const socialIcon = (type: string) => {
       switch (type) {
         case "instagram":
@@ -439,6 +486,8 @@ export default defineComponent({
           return "pi-video";
         case "github":
           return "pi-github";
+        case "email":
+          return "pi-envelope";
         case "website":
         default:
           return "pi-globe";
@@ -587,6 +636,8 @@ export default defineComponent({
       initials,
       avatarSrc,
       onAvatarError,
+      bannerSrc,
+      onBannerError,
       socialIcon,
       exportJson,
       importOpen,

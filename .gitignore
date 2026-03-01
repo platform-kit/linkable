@@ -25,3 +25,8 @@ dist-ssr
 .dyad/
 .env
 .env.local
+
+# User content (personal data, not part of the template)
+cms-data.json
+public/data.json
+public/uploads/

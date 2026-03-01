@@ -4,7 +4,8 @@ export type SocialType =
   | "x"
   | "youtube"
   | "tiktok"
-  | "github";
+  | "github"
+  | "email";
 
 export type BioLink = {
   id: string;
@@ -27,9 +28,11 @@ export type BioProfile = {
   displayName: string;
   tagline: string;
   avatarUrl: string;
+  bannerUrl: string;
 };
 
 export type BioModel = {
+  schemaVersion: number;
   profile: BioProfile;
   links: BioLink[];
   socials: SocialLink[];
@@ -58,10 +61,12 @@ export const newSocial = (): SocialLink => ({
 });
 
 export const defaultModel = (): BioModel => ({
+  schemaVersion: 1,
   profile: {
     displayName: "Linkable",
     tagline: "Design-forward links. Clean, fast, yours.",
     avatarUrl: "",
+    bannerUrl: "",
   },
   links: [
     {
@@ -127,7 +132,7 @@ const sanitizeUrl = (v: unknown) => {
 
   try {
     const u = new URL(raw);
-    if (u.protocol === "http:" || u.protocol === "https:") return u.toString();
+    if (u.protocol === "http:" || u.protocol === "https:" || u.protocol === "mailto:") return u.toString();
     return "";
   } catch {
     return "";
@@ -141,18 +146,22 @@ const socialSet: SocialType[] = [
   "youtube",
   "tiktok",
   "github",
+  "email",
 ];
 
 const asSocialType = (v: unknown): SocialType =>
   (socialSet.includes(v as SocialType) ? (v as SocialType) : "website");
 
+import { migrateToLatest, CURRENT_SCHEMA_VERSION } from "./migrations";
+
 export const sanitizeModel = (input: unknown): BioModel => {
-  const obj = (input ?? {}) as any;
+  const obj = migrateToLatest(input);
 
   const profile: BioProfile = {
     displayName: asString(obj.profile?.displayName).slice(0, 80),
     tagline: asString(obj.profile?.tagline).slice(0, 140),
     avatarUrl: sanitizeUrl(obj.profile?.avatarUrl),
+    bannerUrl: sanitizeUrl(obj.profile?.bannerUrl),
   };
 
   const linksRaw = Array.isArray(obj.links) ? obj.links : [];
@@ -180,7 +189,7 @@ export const sanitizeModel = (input: unknown): BioModel => {
     .filter((s: SocialLink) => !!s.id)
     .slice(0, 24);
 
-  return { profile, links, socials };
+  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, links, socials };
 };
 
 export const stableStringify = (model: BioModel) => JSON.stringify(model, null, 2);

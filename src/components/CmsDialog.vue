@@ -86,6 +86,28 @@
 
               <div class="cms__field">
                 <ImageUploadField
+                  v-model="draft.profile.bannerUrl"
+                  label="Banner image (optional)"
+                  description="A wide image displayed full-width above your profile card."
+                >
+                  <template #helper>
+                    <div class="cms__help">
+                      Recommended size: 1480 × 420 px. Uploads sync to public/uploads in dev and commit to GitHub in production.
+                    </div>
+                  </template>
+                </ImageUploadField>
+              </div>
+
+              <div class="cms__field">
+                <label class="cms__label">Banner URL (optional)</label>
+                <InputText v-model="draft.profile.bannerUrl" class="w-full" placeholder="https://..." />
+                <div class="cms__help">
+                  Paste a hosted URL if you prefer; leave blank for no banner.
+                </div>
+              </div>
+
+              <div class="cms__field">
+                <ImageUploadField
                   v-model="draft.profile.avatarUrl"
                   label="Avatar image (optional)"
                   description="Use a crisp, square image to headline your profile."

@@ -131,6 +131,7 @@ export default defineComponent({
 
     const socialTypeOptions = [
       { label: "Website", value: "website" },
+      { label: "Email", value: "email" },
       { label: "GitHub", value: "github" },
       { label: "Instagram", value: "instagram" },
       { label: "X", value: "x" },

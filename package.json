@@ -1,8 +1,16 @@
 {
   "name": "linkable",
   "version": "0.0.0",
-  "private": true,
+  "private": false,
   "type": "module",
+  "bin": {
+    "linkable": "./bin/cli.mjs"
+  },
+  "files": [
+    "bin/",
+    "dist/",
+    "default-data.json"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -11,7 +19,9 @@
     "preview": "vite preview",
     "export": "node scripts/export-data.mjs",
     "import": "node scripts/import-from-github.mjs",
-    "import:build": "node scripts/import-from-github.mjs && vite build"
+    "push": "node scripts/export-to-github.mjs",
+    "import:build": "node scripts/import-from-github.mjs && vite build",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@primevue/themes": "^4.5.4",

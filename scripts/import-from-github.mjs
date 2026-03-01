@@ -8,8 +8,8 @@
  *   GITHUB_REPO        – repo name
  *   GITHUB_TOKEN       – personal access token (fine-grained or classic)
  *   GITHUB_BRANCH      – branch to pull from (default: main)
- *   GITHUB_DATA_PATH   – path to data.json inside the repo (default: public/data.json)
- *   GITHUB_UPLOADS_DIR – path to uploads folder inside the repo (default: public/uploads)
+ *   GITHUB_DATA_PATH   – path to data.json inside the repo (default: data.json)
+ *   GITHUB_UPLOADS_DIR – path to uploads folder inside the repo (default: uploads)
  *
  * Usage:
  *   node scripts/import-from-github.mjs
@@ -68,8 +68,8 @@ const run = async () => {
   const repo = process.env.GITHUB_REPO?.trim();
   const token = process.env.GITHUB_TOKEN?.trim();
   const branch = process.env.GITHUB_BRANCH?.trim() || "main";
-  const dataPath = process.env.GITHUB_DATA_PATH?.trim() || "public/data.json";
-  const uploadsDir = process.env.GITHUB_UPLOADS_DIR?.trim() || "public/uploads";
+  const dataPath = process.env.GITHUB_DATA_PATH?.trim() || "data.json";
+  const uploadsDir = process.env.GITHUB_UPLOADS_DIR?.trim() || "uploads";
 
   if (!owner || !repo) {
     console.log(
