@@ -49,18 +49,14 @@
               <span class="cms__tab-label">Socials</span>
               <span class="cms__tab-pill">{{ draft.socials.length }}</span>
             </button>
-          </div>
 
-          <div class="cms__actions">
-            <Button
-              severity="secondary"
-              rounded
-              class="!px-3 !py-2 !text-sm"
-              @click="openGithub"
-            >
-              <i class="pi pi-github" />
-              <span class="ml-2 hidden sm:inline">GitHub</span>
-            </Button>
+            <button type="button" class="cms__tab cms__tab--github" @click="openGithub">
+              <span class="cms__tab-icon"><i class="pi pi-github" /></span>
+              <span class="cms__tab-label">GitHub</span>
+              <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">
+                <i class="pi pi-external-link" />
+              </span>
+            </button>
           </div>
         </div>
       </div>
@@ -532,27 +528,8 @@ cms__footer-right {
 
 .cms__tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 8px;
-}
-
-.cms__actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-@media (min-width: 720px) {
-  .cms__tabBarInner {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .cms__actions {
-    flex-shrink: 0;
-  }
 }
 
 .cms__tab {
@@ -572,6 +549,24 @@ cms__footer-right {
   transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
 }
 
+.cms__tab--github {
+  background: rgba(15, 23, 42, 0.72);
+  color: rgba(255, 255, 255, 0.94);
+  border-color: rgba(15, 23, 42, 0.18);
+}
+
+.cms__tab--github .cms__tab-icon {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.32);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.cms__tab--github .cms__tab-pill {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.92);
+}
+
 .cms__tab:hover {
   background: rgba(255, 255, 255, 0.78);
   border-color: rgba(11, 18, 32, 0.1);
@@ -585,6 +580,12 @@ cms__footer-right {
   color: rgba(11, 18, 32, 0.96);
 }
 
+.cms__tab.is-active .cms__tab-icon {
+  background: rgba(59, 130, 246, 0.22);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: rgba(37, 99, 235, 0.96);
+}
+
 .cms__tab-icon {
   height: 28px;
   width: 28px;
@@ -594,12 +595,6 @@ cms__footer-right {
   border: 1px solid rgba(11, 18, 32, 0.08);
   background: rgba(255, 255, 255, 0.76);
   color: rgba(11, 18, 32, 0.55);
-}
-
-.cms__tab.is-active .cms__tab-icon {
-  background: rgba(59, 130, 246, 0.22);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: rgba(37, 99, 235, 0.96);
 }
 
 .cms__tab-label {
@@ -657,6 +652,10 @@ cms__footer-right {
   box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.14);
 }
 
+cms__row {
+  width: 100%;
+}
+
 .cms__content {
   flex: 1;
   border-radius: 22px;
@@ -706,6 +705,10 @@ cms__row {
   padding: 12px;
 }
 
+cms__row-meta {
+  display: inline-flex;
+}
+
 .cms__form {
   display: grid;
   gap: 12px;
@@ -724,6 +727,10 @@ cms__row {
 
 cms__row-meta {
   display: inline-flex;
+}
+
+cms__footer-right {
+  display: flex;
 }
 
 .cms__help {
@@ -745,6 +752,10 @@ cms__row-meta {
 
 cms__row {
   width: 100%;
+}
+
+cms__row-meta {
+  display: inline-flex;
 }
 
 .cms__socialList {
@@ -771,6 +782,10 @@ cms__row {
   grid-template-columns: 44px 1fr auto;
 }
 
+cms__row-meta {
+  display: inline-flex;
+}
+
 .cms__row:hover {
   background: rgba(255, 255, 255, 0.76);
   border-color: rgba(11, 18, 32, 0.1);
@@ -793,6 +808,10 @@ cms__row {
   border-radius: 16px;
 }
 
+cms__row-meta {
+  display: inline-flex;
+}
+
 .cms__row-thumb {
   height: 44px;
   width: 44px;
@@ -802,6 +821,14 @@ cms__row {
   overflow: hidden;
   display: grid;
   place-items: center;
+}
+
+cms__row-meta {
+  display: inline-flex;
+}
+
+cms__row {
+  width: 100%;
 }
 
 cms__row-meta {
@@ -820,6 +847,10 @@ cms__row-meta {
   color: rgba(11, 18, 32, 0.92);
 }
 
+cms__row-meta {
+  display: inline-flex;
+}
+
 .cms__row-sub {
   display: block;
   margin-top: 2px;
@@ -829,6 +860,10 @@ cms__row-meta {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+cms__row-meta {
+  display: inline-flex;
 }
 
 .cms__row-meta {
@@ -859,19 +894,35 @@ cms__footer-right {
   display: flex;
 }
 
-.cms__empty-sub {
+cms__row {
+  width: 100%;
+}
+
+cms__row-meta {
+  display: inline-flex;
+}
+
+cms__empty-sub {
   margin-top: 4px;
   font-size: 12px;
   color: rgba(11, 18, 32, 0.62);
   font-weight: 650;
 }
 
-.cms__footer {
+cms__footer-right {
+  display: flex;
+}
+
+cms__footer {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+}
+
+cms__footer-right {
+  display: flex;
 }
 
 .cms__footer-right {
