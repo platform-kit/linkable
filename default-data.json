@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 4,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -53,6 +53,11 @@
     "bio": "",
     "education": [],
     "employment": [],
-    "skills": []
+    "skills": [],
+    "achievements": []
+  },
+  "gallery": {
+    "enabled": false,
+    "items": []
   }
 }

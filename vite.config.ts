@@ -324,7 +324,16 @@ const cmsMiddlewarePlugin = () => ({
           host: "::",
           port: 8080,
         },
-        plugins: [cmsMiddlewarePlugin(), vue()],
+        plugins: [
+          cmsMiddlewarePlugin(),
+          vue({
+            template: {
+              compilerOptions: {
+                isCustomElement: (tag: string) => tag.startsWith("media-"),
+              },
+            },
+          }),
+        ],
         define: {
           "import.meta.env.VITE_GITHUB_OWNER": JSON.stringify(process.env.GITHUB_OWNER || ""),
           "import.meta.env.VITE_GITHUB_REPO": JSON.stringify(process.env.GITHUB_REPO || ""),

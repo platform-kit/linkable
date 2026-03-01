@@ -65,6 +65,17 @@
             <button
               type="button"
               class="cms__tab"
+              :class="{ 'is-active': tab === 'gallery' }"
+              @click="tab = 'gallery'"
+            >
+              <span class="cms__tab-icon"><i class="pi pi-images" /></span>
+              <span class="cms__tab-label">Gallery</span>
+              <span class="cms__tab-pill" :class="{ 'cms__tab-pill--ghost': !draft.gallery.enabled }">{{ draft.gallery.items.length }}</span>
+            </button>
+
+            <button
+              type="button"
+              class="cms__tab"
               :class="{ 'is-active': tab === 'github' }"
               @click="tab = 'github'"
             >
@@ -379,7 +390,124 @@
                   </Button>
                 </div>
               </div>
+
+              <!-- Achievements -->
+              <div class="cms__field">
+                <div class="flex items-center justify-between mb-2">
+                  <label class="cms__label">Achievements</label>
+                  <Button rounded size="small" class="cms__primary !py-1 !px-3 !text-xs" @click="addAchievementEntry">
+                    <i class="pi pi-plus mr-1" />
+                    Add
+                  </Button>
+                </div>
+
+                <div v-if="draft.resume.achievements.length === 0" class="cms__empty">
+                  <div class="cms__empty-sub">No achievements yet.</div>
+                </div>
+                <div v-else class="grid gap-2">
+                  <button
+                    v-for="ach in draft.resume.achievements"
+                    :key="ach.id"
+                    type="button"
+                    class="cms__row"
+                    style="grid-template-columns: 44px 1fr auto;"
+                    @click="openAchievementEditor(ach.id)"
+                  >
+                    <span class="cms__row-drag cms__row-drag--muted">
+                      <i class="pi pi-star" />
+                    </span>
+                    <span class="cms__row-text">
+                      <span class="cms__row-title">{{ ach.title || 'Untitled' }}</span>
+                      <span class="cms__row-sub">{{ ach.issuer || '(no issuer)' }}</span>
+                    </span>
+                    <span class="cms__row-meta">
+                      <span v-if="ach.year" class="text-xs text-[color:var(--color-ink-soft)]">{{ ach.year }}</span>
+                      <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
+                    </span>
+                  </button>
+                </div>
+              </div>
             </div>
+          </div>
+        </section>
+
+        <section v-else-if="tab === 'gallery'" class="cms__panel">
+          <div class="cms__panel-head cms__panel-head--row">
+            <div>
+              <div class="cms__title">Gallery</div>
+              <div class="cms__sub">Manage images and videos for your gallery.</div>
+            </div>
+
+            <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditGalleryItem">
+              <i class="pi pi-plus" />
+              <span class="cms__btn-label">Add item</span>
+              <span class="cms__btn-label--compact">Add</span>
+            </Button>
+          </div>
+
+          <div class="cms__card">
+            <div class="cms__form">
+              <!-- Enable / disable gallery -->
+              <div class="flex items-center justify-between gap-3 rounded-xl border border-white/60 bg-white/45 p-3">
+                <div>
+                  <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable gallery</div>
+                  <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+                    When disabled, the gallery tab will not appear on the public page.
+                  </div>
+                </div>
+                <ToggleSwitch v-model="draft.gallery.enabled" />
+              </div>
+            </div>
+
+            <div v-if="draft.gallery.items.length === 0" class="cms__empty mt-3">
+              <div class="cms__empty-title">No gallery items yet</div>
+              <div class="cms__empty-sub">Click "Add item" to upload an image or add a video.</div>
+            </div>
+
+            <draggable
+              v-else
+              v-model="draft.gallery.items"
+              item-key="id"
+              handle=".drag"
+              :animation="160"
+              class="cms__list mt-3"
+            >
+              <template #item="{ element }">
+                <button type="button" class="cms__row" @click="openGalleryEditor(element.id)">
+                  <span class="cms__row-drag drag" aria-label="Drag">
+                    <i class="pi pi-bars" />
+                  </span>
+
+                  <span class="cms__row-thumb">
+                    <img
+                      v-if="element.type === 'image' && element.src"
+                      :src="element.src"
+                      alt=""
+                      class="h-full w-full object-cover"
+                    />
+                    <img
+                      v-else-if="element.type === 'video' && element.coverUrl"
+                      :src="element.coverUrl"
+                      alt=""
+                      class="h-full w-full object-cover"
+                    />
+                    <i v-else-if="element.type === 'video'" class="pi pi-video text-[color:var(--color-ink-soft)]" />
+                    <i v-else class="pi pi-image text-[color:var(--color-ink-soft)]" />
+                  </span>
+
+                  <span class="cms__row-text">
+                    <span class="cms__row-title">{{ element.title || 'Untitled' }}</span>
+                    <span class="cms__row-sub">{{ element.type === 'video' ? (element.src || '(no source)') : (element.src ? 'Image' : '(no image)') }}</span>
+                  </span>
+
+                  <span class="cms__row-meta">
+                    <Tag v-if="!element.enabled" severity="warning" value="Hidden" class="!rounded-full" />
+                    <i v-else class="pi pi-check-circle cms__ok" />
+                    <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
+                  </span>
+                </button>
+              </template>
+            </draggable>
           </div>
         </section>
 
@@ -551,14 +679,23 @@
       @delete="deleteActiveSocial"
     />
     <ResumeEditorDrawer
-      v-if="activeEducation || activeEmployment"
+      v-if="activeEducation || activeEmployment || activeAchievement"
       v-model:open="resumeEditorOpen"
       :editMode="resumeEditMode"
       :education="activeEducation"
       :employment="activeEmployment"
+      :achievement="activeAchievement"
       @update:education="updateEducation"
       @update:employment="updateEmployment"
+      @update:achievement="updateAchievement"
       @delete="deleteResumeEntry"
+    />
+    <GalleryEditorDrawer
+      v-if="activeGalleryItem"
+      v-model:open="galleryEditorOpen"
+      :item="activeGalleryItem"
+      @update:item="updateGalleryItem"
+      @delete="deleteActiveGalleryItem"
     />
   </Dialog>
 </template>
@@ -579,18 +716,24 @@ import ImageUploadField from "./ImageUploadField.vue";
 import LinkEditorDrawer from "./LinkEditorDrawer.vue";
 import SocialEditorDrawer from "./SocialEditorDrawer.vue";
 import ResumeEditorDrawer from "./ResumeEditorDrawer.vue";
+import GalleryEditorDrawer from "./GalleryEditorDrawer.vue";
 import {
   type BioLink,
   type BioModel,
   type SocialLink,
   type EducationEntry,
   type EmploymentEntry,
+  type AchievementEntry,
+  type GalleryItem,
   defaultModel,
   defaultResume,
+  defaultGallery,
   newLink,
   newSocial,
   newEducation,
   newEmployment,
+  newAchievement,
+  newGalleryItem,
   sanitizeModel,
   stableStringify,
 } from "../lib/model";
@@ -618,6 +761,7 @@ export default defineComponent({
     SocialEditorDrawer,
     ImageUploadField,
     ResumeEditorDrawer,
+    GalleryEditorDrawer,
     ToggleSwitch,
   },
   props: {
@@ -635,7 +779,7 @@ export default defineComponent({
     );
     watch(visible, (v) => emit("update:open", v));
 
-    const tab = ref<"profile" | "links" | "socials" | "resume" | "github">("links");
+    const tab = ref<"profile" | "links" | "socials" | "resume" | "gallery" | "github">("links");
 
     const draft = ref<BioModel>(sanitizeModel(props.model));
     watch(
@@ -797,12 +941,17 @@ export default defineComponent({
     if (!draft.value.resume) {
       draft.value.resume = defaultResume();
     }
+    // ensure gallery section exists on draft
+    if (!draft.value.gallery) {
+      draft.value.gallery = defaultGallery();
+    }
 
     // Resume editor state
     const resumeEditorOpen = ref(false);
-    const resumeEditMode = ref<"education" | "employment">("education");
+    const resumeEditMode = ref<"education" | "employment" | "achievement">("education");
     const activeEducationId = ref("");
     const activeEmploymentId = ref("");
+    const activeAchievementId = ref("");
     const newSkillText = ref("");
 
     const activeEducation = computed<EducationEntry | null>(() => {
@@ -817,6 +966,12 @@ export default defineComponent({
       return draft.value.resume.employment.find((e) => e.id === id) ?? null;
     });
 
+    const activeAchievement = computed<AchievementEntry | null>(() => {
+      const id = activeAchievementId.value;
+      if (!id) return null;
+      return draft.value.resume.achievements.find((a) => a.id === id) ?? null;
+    });
+
     const openEducationEditor = (id: string) => {
       activeEducationId.value = id;
       resumeEditMode.value = "education";
@@ -826,6 +981,12 @@ export default defineComponent({
     const openEmploymentEditor = (id: string) => {
       activeEmploymentId.value = id;
       resumeEditMode.value = "employment";
+      resumeEditorOpen.value = true;
+    };
+
+    const openAchievementEditor = (id: string) => {
+      activeAchievementId.value = id;
+      resumeEditMode.value = "achievement";
       resumeEditorOpen.value = true;
     };
 
@@ -843,6 +1004,13 @@ export default defineComponent({
       toast.add({ severity: "success", summary: "Added", detail: "Employment entry created.", life: 1600 });
     };
 
+    const addAchievementEntry = () => {
+      const a = newAchievement();
+      draft.value.resume.achievements.push(a);
+      openAchievementEditor(a.id);
+      toast.add({ severity: "success", summary: "Added", detail: "Achievement entry created.", life: 1600 });
+    };
+
     const updateEducation = (updated: EducationEntry) => {
       const idx = draft.value.resume.education.findIndex((e) => e.id === updated.id);
       if (idx >= 0) draft.value.resume.education[idx] = { ...updated };
@@ -851,6 +1019,11 @@ export default defineComponent({
     const updateEmployment = (updated: EmploymentEntry) => {
       const idx = draft.value.resume.employment.findIndex((e) => e.id === updated.id);
       if (idx >= 0) draft.value.resume.employment[idx] = { ...updated };
+    };
+
+    const updateAchievement = (updated: AchievementEntry) => {
+      const idx = draft.value.resume.achievements.findIndex((a) => a.id === updated.id);
+      if (idx >= 0) draft.value.resume.achievements[idx] = { ...updated };
     };
 
     const deleteResumeEntry = () => {
@@ -864,6 +1037,11 @@ export default defineComponent({
           (e) => e.id !== activeEmploymentId.value
         );
         activeEmploymentId.value = "";
+      } else if (resumeEditMode.value === "achievement" && activeAchievementId.value) {
+        draft.value.resume.achievements = draft.value.resume.achievements.filter(
+          (a) => a.id !== activeAchievementId.value
+        );
+        activeAchievementId.value = "";
       }
       resumeEditorOpen.value = false;
       toast.add({ severity: "warn", summary: "Deleted", detail: "Entry removed.", life: 1600 });
@@ -886,6 +1064,47 @@ export default defineComponent({
         activeEducationId.value = "";
         activeEmploymentId.value = "";
       }
+    });
+
+    // Gallery editor state
+    const galleryEditorOpen = ref(false);
+    const activeGalleryItemId = ref("");
+
+    const activeGalleryItem = computed<GalleryItem | null>(() => {
+      const id = activeGalleryItemId.value;
+      if (!id) return null;
+      return draft.value.gallery.items.find((g) => g.id === id) ?? null;
+    });
+
+    const openGalleryEditor = (id: string) => {
+      activeGalleryItemId.value = id;
+      galleryEditorOpen.value = true;
+    };
+
+    const createAndEditGalleryItem = () => {
+      const item = newGalleryItem();
+      draft.value.gallery.items.unshift(item);
+      activeGalleryItemId.value = item.id;
+      galleryEditorOpen.value = true;
+      toast.add({ severity: "success", summary: "Added", detail: "Gallery item created.", life: 1600 });
+    };
+
+    const updateGalleryItem = (updated: GalleryItem) => {
+      const idx = draft.value.gallery.items.findIndex((g) => g.id === updated.id);
+      if (idx >= 0) draft.value.gallery.items[idx] = { ...updated };
+    };
+
+    const deleteActiveGalleryItem = () => {
+      const id = activeGalleryItemId.value;
+      if (!id) return;
+      draft.value.gallery.items = draft.value.gallery.items.filter((g) => g.id !== id);
+      galleryEditorOpen.value = false;
+      activeGalleryItemId.value = "";
+      toast.add({ severity: "warn", summary: "Deleted", detail: "Gallery item removed.", life: 1600 });
+    };
+
+    watch(galleryEditorOpen, (open) => {
+      if (!open) activeGalleryItemId.value = "";
     });
 
     // GitHub Settings
@@ -1041,16 +1260,26 @@ export default defineComponent({
       resumeEditMode,
       activeEducation,
       activeEmployment,
+      activeAchievement,
       openEducationEditor,
       openEmploymentEditor,
+      openAchievementEditor,
       addEducation,
       addEmployment,
+      addAchievementEntry,
       updateEducation,
       updateEmployment,
+      updateAchievement,
       deleteResumeEntry,
       newSkillText,
       addSkill,
       removeSkill,
+      galleryEditorOpen,
+      activeGalleryItem,
+      openGalleryEditor,
+      createAndEditGalleryItem,
+      updateGalleryItem,
+      deleteActiveGalleryItem,
     };
   },
 });
@@ -1091,7 +1320,7 @@ cms__tabBar {
 
 .cms__tabs {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 

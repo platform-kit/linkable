@@ -12,91 +12,130 @@
         />
 
         <div class="p-3 sm:p-6">
-        <div class="flex items-start gap-3 sm:gap-4">
-          <div
-            class="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-white/60 bg-white/45 shadow-sm backdrop-blur-md"
-          >
-            <img
-              v-if="avatarSrc"
-              :src="avatarSrc"
-              alt="Avatar"
-              class="h-full w-full object-cover"
-              @error="onAvatarError"
-            />
+          <div class="flex items-start gap-3 sm:gap-4">
             <div
-              v-else
-              class="grid h-full w-full place-items-center bg-white/55 text-sm font-semibold text-[color:var(--color-ink-soft)]"
+              class="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-white/60 bg-white/45 shadow-sm backdrop-blur-md"
             >
-              {{ initials }}
+              <img
+                v-if="avatarSrc"
+                :src="avatarSrc"
+                alt="Avatar"
+                class="h-full w-full object-cover"
+                @error="onAvatarError"
+              />
+              <div
+                v-else
+                class="grid h-full w-full place-items-center bg-white/55 text-sm font-semibold text-[color:var(--color-ink-soft)]"
+              >
+                {{ initials }}
+              </div>
             </div>
-          </div>
 
-          <div class="min-w-0 flex-1">
-            <div class="flex items-start justify-between gap-3" @dblclick="toggleCmsButton">
-              <div class="min-w-0 cursor-pointer select-none">
-                <h1 class="truncate text-lg font-semibold tracking-tight sm:text-2xl">
-                  {{ model.profile.displayName || "Your Name" }}
-                </h1>
-                <p
-                  v-if="model.profile.tagline"
-                  class="mt-1 line-clamp-2 text-sm text-[color:var(--color-ink-soft)]"
-                >
-                  {{ model.profile.tagline }}
-                </p>
-                <p v-else class="mt-1 text-sm text-[color:var(--color-ink-soft)]">
-                  Add a short tagline in the CMS.
-                </p>
+            <div class="min-w-0 flex-1">
+              <div
+                class="flex items-start justify-between gap-3"
+                @dblclick="toggleCmsButton"
+              >
+                <div class="min-w-0 cursor-pointer select-none">
+                  <h1
+                    class="truncate text-lg font-semibold tracking-tight sm:text-2xl"
+                  >
+                    {{ model.profile.displayName || "Your Name" }}
+                  </h1>
+                  <p
+                    v-if="model.profile.tagline"
+                    class="mt-1 line-clamp-2 text-sm text-[color:var(--color-ink-soft)]"
+                  >
+                    {{ model.profile.tagline }}
+                  </p>
+                  <p
+                    v-else
+                    class="mt-1 text-sm text-[color:var(--color-ink-soft)]"
+                  >
+                    Add a short tagline in the CMS.
+                  </p>
+                </div>
               </div>
 
-            </div>
-
-            <div class="mt-2 flex flex-wrap items-center gap-1.5 sm:mt-3 sm:gap-2">
-              <a
-                v-for="s in enabledSocials"
-                :key="s.id"
-                class="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/50 px-2.5 py-1 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm backdrop-blur-md transition hover:bg-white/65 sm:gap-2 sm:px-3 sm:py-1.5"
-                :href="s.type === 'email' && s.url && !s.url.startsWith('mailto:') ? 'mailto:' + s.url : s.url"
-                :target="s.type === 'email' ? undefined : '_blank'"
-                rel="noreferrer"
+              <div
+                class="mt-2 flex flex-wrap items-center gap-1.5 sm:mt-3 sm:gap-2"
               >
-                <i class="pi shrink-0" :class="socialIcon(s.type)" />
-                <span class="truncate">{{ s.label }}</span>
-              </a>
+                <a
+                  v-for="s in enabledSocials"
+                  :key="s.id"
+                  class="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/50 px-2.5 py-1 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm backdrop-blur-md transition hover:bg-white/65 sm:gap-2 sm:px-3 sm:py-1.5"
+                  :href="
+                    s.type === 'email' && s.url && !s.url.startsWith('mailto:')
+                      ? 'mailto:' + s.url
+                      : s.url
+                  "
+                  :target="s.type === 'email' ? undefined : '_blank'"
+                  rel="noreferrer"
+                >
+                  <i class="pi shrink-0" :class="socialIcon(s.type)" />
+                  <span class="truncate">{{ s.label }}</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>
-
-      </div>
       </div>
     </header>
 
-    <main class="mx-auto w-full max-w-[740px] px-3 pb-24 pt-4 sm:px-4 sm:pb-10 sm:pt-6">
-      <!-- Tabbed navigation: show when user has both links and an enabled resume -->
-      <div v-if="showTabs" class="mb-3 flex gap-2">
+    <main
+      class="mx-auto w-full max-w-[740px] px-3 pb-24 pt-4 sm:px-4 sm:pb-10 sm:pt-6 d-block"
+    >
+      <!-- Tabbed navigation: show when 2+ content sections are active -->
+      <div
+        v-if="showTabs"
+        class="mb-5 gap-2 mx-auto glass  overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-4 text-center"
+      >
         <button
-          class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition"
-          :class="activeTab === 'links'
-            ? 'border-[color:var(--color-brand)]/30 bg-[color:var(--color-brand)]/10 text-[color:var(--color-brand)] shadow-sm'
-            : 'border-white/65 bg-white/50 text-[color:var(--color-ink-soft)] hover:bg-white/65'"
+          v-if="enabledLinks.length > 0"
+          class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition mx-1"
+          :class="
+            activeTab === 'links'
+              ? 'bg-blue-500/10 shadow-lg border-blue-500/30   text-[color:var(--color-brand)] '
+              : 'border-white/65 bg-none text-[color:var(--color-ink-soft)] hover:bg-white'
+          "
           @click="activeTab = 'links'"
         >
           <i class="pi pi-link" />
           Links
         </button>
         <button
-          class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition"
-          :class="activeTab === 'resume'
-            ? 'border-[color:var(--color-brand)]/30 bg-[color:var(--color-brand)]/10 text-[color:var(--color-brand)] shadow-sm'
-            : 'border-white/65 bg-white/50 text-[color:var(--color-ink-soft)] hover:bg-white/65'"
+          v-if="resumeHasContent"
+          class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition mx-1"
+          :class="
+            activeTab === 'resume'
+              ? 'bg-blue-500/10 shadow-lg   border-blue-500/30    text-[color:var(--color-brand)] '
+              : 'border-white/65 bg-none text-[color:var(--color-ink-soft)] hover:bg-white'
+          "
           @click="activeTab = 'resume'"
         >
           <i class="pi pi-file" />
           Resume
         </button>
+        <button
+          v-if="galleryHasContent"
+          class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition mx-1"
+          :class="
+            activeTab === 'gallery'
+              ? 'bg-blue-500/10 shadow-lg  border-blue-500/30    text-[color:var(--color-brand)]'
+              : 'border-white/65 bg-none text-[color:var(--color-ink-soft)] hover:bg-white'
+          "
+          @click="activeTab = 'gallery'"
+        >
+          <i class="pi pi-images" />
+          Gallery
+        </button>
       </div>
 
       <!-- Links section -->
-      <section v-if="showLinksSection" class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-4">
+      <section
+        v-if="showLinksSection"
+        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-4"
+      >
         <div v-if="enabledLinks.length" class="grid gap-2">
           <a
             v-for="link in enabledLinks"
@@ -117,18 +156,28 @@
                   class="h-full w-full object-cover"
                   loading="lazy"
                 />
-                <i v-else class="pi pi-link text-[color:var(--color-ink-soft)]" />
+                <i
+                  v-else
+                  class="pi pi-link text-[color:var(--color-ink-soft)]"
+                />
               </div>
 
               <div class="min-w-0">
-                <div class="truncate text-sm font-semibold">{{ link.title }}</div>
-                <div v-if="link.subtitle" class="truncate text-xs text-[color:var(--color-ink-soft)]">
+                <div class="truncate text-sm font-semibold">
+                  {{ link.title }}
+                </div>
+                <div
+                  v-if="link.subtitle"
+                  class="truncate text-xs text-[color:var(--color-ink-soft)]"
+                >
                   {{ link.subtitle }}
                 </div>
               </div>
             </div>
 
-            <i class="pi pi-arrow-right shrink-0 text-[color:var(--color-ink-soft)] transition group-hover:translate-x-0.5" />
+            <i
+              class="pi pi-arrow-right shrink-0 text-[color:var(--color-ink-soft)] transition group-hover:translate-x-0.5"
+            />
           </a>
         </div>
 
@@ -155,13 +204,26 @@
       >
         <!-- Bio -->
         <div v-if="model.resume.bio" class="mb-4 sm:mb-5">
-          <h2 class="mb-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-2 sm:text-xs">About</h2>
-          <p class="text-[13px] leading-relaxed text-[color:var(--color-ink)] sm:text-sm" style="white-space: pre-line;">{{ model.resume.bio }}</p>
+          <h2
+            class="mb-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-2 sm:text-xs"
+          >
+            About
+          </h2>
+          <p
+            class="text-[13px] leading-relaxed text-[color:var(--color-ink)] sm:text-sm"
+            style="white-space: pre-line"
+          >
+            {{ model.resume.bio }}
+          </p>
         </div>
 
         <!-- Employment -->
         <div v-if="model.resume.employment.length" class="mb-4 sm:mb-5">
-          <h2 class="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-3 sm:text-xs">Experience</h2>
+          <h2
+            class="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-3 sm:text-xs"
+          >
+            Experience
+          </h2>
           <div class="grid gap-2 sm:gap-3">
             <div
               v-for="job in model.resume.employment"
@@ -170,21 +232,42 @@
             >
               <div class="flex items-start justify-between gap-2 sm:gap-3">
                 <div class="min-w-0 flex-1">
-                  <div class="text-[13px] font-semibold text-[color:var(--color-ink)] sm:text-sm">{{ job.role }}</div>
-                  <div class="text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs">{{ job.company }}</div>
+                  <div
+                    class="text-[13px] font-semibold text-[color:var(--color-ink)] sm:text-sm"
+                  >
+                    {{ job.role }}
+                  </div>
+                  <div
+                    class="text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs"
+                  >
+                    {{ job.company }}
+                  </div>
                 </div>
-                <div v-if="job.startYear || job.endYear" class="shrink-0 text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs">
+                <div
+                  v-if="job.startYear || job.endYear"
+                  class="shrink-0 text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs"
+                >
                   {{ job.startYear }}–{{ job.endYear }}
                 </div>
               </div>
-              <p v-if="job.description" class="mt-1.5 text-[11px] leading-relaxed text-[color:var(--color-ink-soft)] sm:mt-2 sm:text-xs" style="white-space: pre-line;">{{ job.description }}</p>
+              <p
+                v-if="job.description"
+                class="mt-1.5 text-[11px] leading-relaxed text-[color:var(--color-ink-soft)] sm:mt-2 sm:text-xs"
+                style="white-space: pre-line"
+              >
+                {{ job.description }}
+              </p>
             </div>
           </div>
         </div>
 
         <!-- Education -->
         <div v-if="model.resume.education.length" class="mb-4 sm:mb-5">
-          <h2 class="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-3 sm:text-xs">Education</h2>
+          <h2
+            class="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-3 sm:text-xs"
+          >
+            Education
+          </h2>
           <div class="grid gap-2 sm:gap-3">
             <div
               v-for="edu in model.resume.education"
@@ -193,12 +276,21 @@
             >
               <div class="flex items-start justify-between gap-2 sm:gap-3">
                 <div class="min-w-0 flex-1">
-                  <div class="text-[13px] font-semibold text-[color:var(--color-ink)] sm:text-sm">{{ edu.institution }}</div>
-                  <div class="text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs">
-                    {{ [edu.degree, edu.field].filter(Boolean).join(' · ') }}
+                  <div
+                    class="text-[13px] font-semibold text-[color:var(--color-ink)] sm:text-sm"
+                  >
+                    {{ edu.institution }}
+                  </div>
+                  <div
+                    class="text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs"
+                  >
+                    {{ [edu.degree, edu.field].filter(Boolean).join(" · ") }}
                   </div>
                 </div>
-                <div v-if="edu.startYear || edu.endYear" class="shrink-0 text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs">
+                <div
+                  v-if="edu.startYear || edu.endYear"
+                  class="shrink-0 text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs"
+                >
                   {{ edu.startYear }}–{{ edu.endYear }}
                 </div>
               </div>
@@ -207,8 +299,12 @@
         </div>
 
         <!-- Skills -->
-        <div v-if="model.resume.skills.length">
-          <h2 class="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-3 sm:text-xs">Skills</h2>
+        <div v-if="model.resume.skills.length" class="mb-4 sm:mb-5">
+          <h2
+            class="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-3 sm:text-xs"
+          >
+            Skills
+          </h2>
           <div class="flex flex-wrap gap-1.5 sm:gap-2">
             <span
               v-for="(skill, i) in model.resume.skills"
@@ -219,16 +315,227 @@
             </span>
           </div>
         </div>
+
+        <!-- Achievements -->
+        <div v-if="model.resume.achievements.length">
+          <h2
+            class="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-3 sm:text-xs"
+          >
+            Achievements
+          </h2>
+          <div class="grid gap-2 sm:gap-3">
+            <div
+              v-for="ach in model.resume.achievements"
+              :key="ach.id"
+              class="rounded-xl border border-white/65 bg-white/55 p-3 shadow-sm backdrop-blur-md sm:rounded-2xl sm:p-4"
+            >
+              <div class="flex items-start justify-between gap-2 sm:gap-3">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5">
+                    <i class="pi pi-star-fill text-[11px] text-amber-500" />
+                    <div
+                      class="text-[13px] font-semibold text-[color:var(--color-ink)] sm:text-sm"
+                    >
+                      {{ ach.title }}
+                    </div>
+                  </div>
+                  <div
+                    v-if="ach.issuer"
+                    class="text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs"
+                  >
+                    {{ ach.issuer }}
+                  </div>
+                </div>
+                <div
+                  v-if="ach.year"
+                  class="shrink-0 text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs"
+                >
+                  {{ ach.year }}
+                </div>
+              </div>
+              <p
+                v-if="ach.description"
+                class="mt-1.5 text-[11px] leading-relaxed text-[color:var(--color-ink-soft)] sm:mt-2 sm:text-xs"
+                style="white-space: pre-line"
+              >
+                {{ ach.description }}
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <footer class="mt-6 text-center text-xs text-[color:var(--color-ink-soft)]">
+      <!-- Gallery section -->
+      <section
+        v-if="showGallerySection"
+        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6"
+      >
+        <h2
+          class="mb-3 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-4 sm:text-xs"
+        >
+          Gallery
+        </h2>
+        <MasonryGrid
+          :items="masonryItems"
+          :gap="12"
+          :duration="0.6"
+          :stagger="0.04"
+          animate-from="bottom"
+          :scale-on-hover="true"
+          :hover-scale="0.97"
+        >
+          <template #default="{ item }">
+            <!-- Image item -->
+            <button
+              v-if="item.type === 'image'"
+              type="button"
+              class="group relative block h-full w-full overflow-hidden border border-white/65 bg-white/55 shadow-sm backdrop-blur-md transition hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)]"
+              @click="openLightbox(item)"
+            >
+              <img
+                :src="resolveUploadUrl(item.src as string)"
+                :alt="(item.title as string) || 'Gallery image'"
+                class="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                loading="lazy"
+              />
+              <div
+                v-if="item.title"
+                class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2.5 pb-2 pt-6 sm:px-3 sm:pb-2.5 sm:pt-8"
+              >
+                <div class="text-[11px] font-semibold text-white/90 sm:text-xs">
+                  {{ item.title }}
+                </div>
+              </div>
+            </button>
+
+            <!-- Video item -->
+            <button
+              v-else-if="item.type === 'video'"
+              type="button"
+              class="group relative block h-full w-full overflow-hidden border border-white/65 bg-white/55 shadow-sm backdrop-blur-md transition hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)]"
+              @click="openVideoPlayer(item)"
+            >
+              <img
+                v-if="item.coverUrl"
+                :src="resolveUploadUrl(item.coverUrl as string)"
+                :alt="(item.title as string) || 'Video thumbnail'"
+                class="absolute inset-0 h-full w-full object-cover transition group-hover:scale-[1.02]"
+                loading="lazy"
+              />
+              <div
+                v-else
+                class="absolute inset-0 flex items-center justify-center bg-black/10"
+              >
+                <i class="pi pi-video text-2xl text-white/60" />
+              </div>
+              <!-- Play overlay -->
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div
+                  class="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white shadow-lg backdrop-blur-sm transition group-hover:scale-110 sm:h-12 sm:w-12"
+                >
+                  <i class="pi pi-play text-sm sm:text-base" />
+                </div>
+              </div>
+              <div
+                v-if="item.title"
+                class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2.5 pb-2 pt-6 sm:px-3 sm:pb-2.5 sm:pt-8"
+              >
+                <div class="text-[11px] font-semibold text-white/90 sm:text-xs">
+                  {{ item.title }}
+                </div>
+              </div>
+            </button>
+          </template>
+        </MasonryGrid>
+      </section>
+
+      <!-- Lightbox overlay for images -->
+      <Teleport to="body">
+        <div
+          v-if="lightboxOpen && lightboxItem"
+          class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          @click.self="closeLightbox"
+        >
+          <button
+            type="button"
+            class="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30"
+            @click="closeLightbox"
+          >
+            <i class="pi pi-times text-lg" />
+          </button>
+          <div class="relative max-h-[90vh] max-w-[90vw]">
+            <img
+              :src="resolveUploadUrl(lightboxItem.src)"
+              :alt="lightboxItem.title || 'Gallery image'"
+              class="max-h-[80vh] max-w-full rounded-lg object-contain shadow-2xl"
+            />
+            <div
+              v-if="lightboxItem.title || lightboxItem.description"
+              class="mt-3 max-w-lg text-center"
+            >
+              <div
+                v-if="lightboxItem.title"
+                class="text-sm font-semibold text-white"
+              >
+                {{ lightboxItem.title }}
+              </div>
+              <div
+                v-if="lightboxItem.description"
+                class="mt-1 text-xs leading-relaxed text-white/70"
+                style="white-space: pre-line"
+              >
+                {{ lightboxItem.description }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+
+      <!-- Video player overlay -->
+      <Teleport to="body">
+        <div
+          v-if="videoPlayerOpen && videoPlayerItem"
+          class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+          @click.self="closeVideoPlayer"
+        >
+          <button
+            type="button"
+            class="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30"
+            @click="closeVideoPlayer"
+          >
+            <i class="pi pi-times text-lg" />
+          </button>
+          <div class="relative w-full max-w-4xl">
+            <VideoPlayer
+              :src="resolveUploadUrl(videoPlayerItem.src)"
+              :poster="
+                videoPlayerItem.coverUrl
+                  ? resolveUploadUrl(videoPlayerItem.coverUrl)
+                  : ''
+              "
+              :autoplay="true"
+            />
+            <div v-if="videoPlayerItem.title" class="mt-3 text-center">
+              <div class="text-sm font-semibold text-white">
+                {{ videoPlayerItem.title }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+
+      <footer
+        class="mt-6 text-center text-xs text-[color:var(--color-ink-soft)]"
+      >
         <a
           href="https://github.com/platform-kit-team/linkable"
           target="_blank"
           rel="noreferrer"
           class="inline-flex items-center gap-2 rounded-full border border-white/65 bg-white/50 px-3 py-1.5 shadow-sm backdrop-blur-md transition hover:bg-white/65"
         >
-          <span class="h-1.5 w-1.5 rounded-full bg-[color:var(--color-brand)] shadow-[0_0_0_4px_rgba(37,99,235,0.12)]"></span>
+          <span
+            class="h-1.5 w-1.5 rounded-full bg-[color:var(--color-brand)] shadow-[0_0_0_4px_rgba(37,99,235,0.12)]"
+          ></span>
           <span>Made with Linkable</span>
         </a>
       </footer>
@@ -257,7 +564,9 @@
         </p>
         <Textarea v-model="importText" autoResize rows="7" class="w-full" />
         <div class="flex justify-end gap-2">
-          <Button severity="secondary" rounded @click="importOpen = false">Cancel</Button>
+          <Button severity="secondary" rounded @click="importOpen = false"
+            >Cancel</Button
+          >
           <Button
             rounded
             class="!border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 shadow-[0_14px_38px_rgba(37,99,235,0.22)]"
@@ -270,7 +579,11 @@
     </Dialog>
 
     <GithubSettingsDialog v-model:open="githubDialogOpen" />
-    <GitCommitDialog v-if="unsynced" v-model:open="gitDialogOpen" @commit="performCommit" />
+    <GitCommitDialog
+      v-if="unsynced"
+      v-model:open="gitDialogOpen"
+      @commit="performCommit"
+    />
 
     <Toast />
 
@@ -291,7 +604,10 @@
       class="fixed bottom-4 left-3 z-50 flex max-w-[calc(100vw-5rem)] items-center gap-2 rounded-full border border-white/65 bg-white/70 px-3 py-1.5 text-[11px] text-[color:var(--color-ink-soft)] shadow-sm backdrop-blur-md sm:bottom-6 sm:left-6 sm:gap-3 sm:px-4 sm:py-2 sm:text-xs"
     >
       <span class="inline-flex items-center gap-1.5 sm:gap-2">
-        <span class="h-2 w-2 shrink-0 rounded-full transition-all" :class="syncIndicatorClass"></span>
+        <span
+          class="h-2 w-2 shrink-0 rounded-full transition-all"
+          :class="syncIndicatorClass"
+        ></span>
         <span class="truncate">{{ syncStatusText }}</span>
       </span>
 
@@ -348,13 +664,21 @@ import { useToast } from "primevue/usetoast";
 import CmsDialog from "./components/CmsDialog.vue";
 import GitCommitDialog from "./components/GitCommitDialog.vue";
 import GithubSettingsDialog from "./components/GithubSettingsDialog.vue";
+import VideoPlayer from "./components/VideoPlayer.vue";
+import MasonryGrid from "./components/MasonryGrid.vue";
+import type { MasonryItem } from "./components/MasonryGrid.vue";
 import {
   defaultModel,
   type BioModel,
   sanitizeModel,
   stableStringify,
 } from "./lib/model";
-import { fetchModel, persistModel, getStagedData, clearStagedData } from "./lib/persistence";
+import {
+  fetchModel,
+  persistModel,
+  getStagedData,
+  clearStagedData,
+} from "./lib/persistence";
 import {
   GITHUB_SYNC_EVENT,
   canUseGithubSync,
@@ -376,6 +700,8 @@ export default defineComponent({
     CmsDialog,
     GithubSettingsDialog,
     GitCommitDialog,
+    VideoPlayer,
+    MasonryGrid,
   },
   setup() {
     const isDev = import.meta.env.DEV;
@@ -407,21 +733,32 @@ export default defineComponent({
       if (typeof window !== "undefined") {
         window.addEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
 
-        const storedCmsVisible = localStorage.getItem("cms-button-visible") === "true";
+        const storedCmsVisible =
+          localStorage.getItem("cms-button-visible") === "true";
         const urlParams = new URLSearchParams(window.location.search);
         const cmsFromUrl = urlParams.has("cms");
         cmsBtnVisible.value = storedCmsVisible || cmsFromUrl;
         // kick off unsynced flag if there's pending JSON or uploads stored
-        if (localStorage.getItem("pending-cms") || localStorage.getItem("pending-uploads")) {
+        if (
+          localStorage.getItem("pending-cms") ||
+          localStorage.getItem("pending-uploads")
+        ) {
           unsynced.value = true;
         }
 
         // Keyboard shortcut: Cmd/Ctrl + Shift + E
         keydownListener = (e: KeyboardEvent) => {
-          if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "e") {
+          if (
+            (e.metaKey || e.ctrlKey) &&
+            e.shiftKey &&
+            e.key.toLowerCase() === "e"
+          ) {
             e.preventDefault();
             cmsBtnVisible.value = !cmsBtnVisible.value;
-            localStorage.setItem("cms-button-visible", cmsBtnVisible.value ? "true" : "false");
+            localStorage.setItem(
+              "cms-button-visible",
+              cmsBtnVisible.value ? "true" : "false",
+            );
           }
         };
         window.addEventListener("keydown", keydownListener);
@@ -456,7 +793,10 @@ export default defineComponent({
 
     const toggleCmsButton = () => {
       cmsBtnVisible.value = !cmsBtnVisible.value;
-      localStorage.setItem("cms-button-visible", cmsBtnVisible.value ? "true" : "false");
+      localStorage.setItem(
+        "cms-button-visible",
+        cmsBtnVisible.value ? "true" : "false",
+      );
     };
 
     const performCommit = async (message: string) => {
@@ -493,11 +833,19 @@ export default defineComponent({
             payloadLength: payload?.length ?? 0,
           });
 
-          const usedPaths = [model.value.profile.avatarUrl, model.value.profile.bannerUrl];
+          const usedPaths = [
+            model.value.profile.avatarUrl,
+            model.value.profile.bannerUrl,
+          ];
           model.value.links.forEach((l: any) => {
             if (l.imageUrl) usedPaths.push(l.imageUrl);
           });
-          await commitPendingUploads(settings, token, usedPaths.filter(Boolean), message);
+          await commitPendingUploads(
+            settings,
+            token,
+            usedPaths.filter(Boolean),
+            message,
+          );
 
           // then commit the CMS JSON
           await pushCmsDataToGithub(payload, message);
@@ -517,19 +865,27 @@ export default defineComponent({
           life: 4000,
         });
       } catch (error) {
-        const msg = error instanceof Error ? error.message : "Unable to push to GitHub.";
-        toast.add({ severity: "error", summary: "Commit failed", detail: msg, life: 3200 });
+        const msg =
+          error instanceof Error ? error.message : "Unable to push to GitHub.";
+        toast.add({
+          severity: "error",
+          summary: "Commit failed",
+          detail: msg,
+          life: 3200,
+        });
       } finally {
         syncing.value = false;
       }
     };
 
-    const enabledLinks = computed(() => model.value.links.filter((l) => l.enabled));
+    const enabledLinks = computed(() =>
+      model.value.links.filter((l) => l.enabled),
+    );
     const enabledSocials = computed(() =>
       model.value.socials.filter((s) => s.enabled && s.url),
     );
 
-    const activeTab = ref<"links" | "resume">("links");
+    const activeTab = ref<"links" | "resume" | "gallery">("links");
 
     const resumeHasContent = computed(() => {
       const r = model.value.resume;
@@ -538,25 +894,94 @@ export default defineComponent({
         r.bio.trim() ||
         r.education.length ||
         r.employment.length ||
-        r.skills.length
+        r.skills.length ||
+        r.achievements.length
       );
     });
 
-    const showTabs = computed(() => enabledLinks.value.length > 0 && resumeHasContent.value);
+    const enabledGalleryItems = computed(() => {
+      const g = model.value.gallery;
+      if (!g || !g.enabled) return [];
+      return g.items.filter((item) => item.enabled && item.src);
+    });
+
+    /** Gallery items shaped for MasonryGrid layout */
+    const masonryItems = computed<MasonryItem[]>(() =>
+      enabledGalleryItems.value.map((item) => ({
+        ...item,
+        // height hint: images get a taller card, videos get 16:9-ish
+        height: item.type === 'video' ? 300 : 400,
+      })),
+    );
+
+    const galleryHasContent = computed(
+      () => enabledGalleryItems.value.length > 0,
+    );
+
+    // Show tabs when 2+ content sections have content
+    const contentSections = computed(() => {
+      let count = 0;
+      if (enabledLinks.value.length > 0) count++;
+      if (resumeHasContent.value) count++;
+      if (galleryHasContent.value) count++;
+      return count;
+    });
+
+    const showTabs = computed(() => contentSections.value >= 2);
 
     const showLinksSection = computed(() => {
-      // Show links when: tab is 'links' (either tabbed or no tabs and no resume)
       if (showTabs.value) return activeTab.value === "links";
-      // No tabs: show links section if there are links, OR if there's no resume (show empty state)
-      return enabledLinks.value.length > 0 || !resumeHasContent.value;
+      return (
+        enabledLinks.value.length > 0 ||
+        (!resumeHasContent.value && !galleryHasContent.value)
+      );
     });
 
     const showResumeSection = computed(() => {
       if (!resumeHasContent.value) return false;
       if (showTabs.value) return activeTab.value === "resume";
-      // No tabs + resume has content: always show (only resume, no links)
       return true;
     });
+
+    const showGallerySection = computed(() => {
+      if (!galleryHasContent.value) return false;
+      if (showTabs.value) return activeTab.value === "gallery";
+      return true;
+    });
+
+    // Lightbox state
+    const lightboxOpen = ref(false);
+    const lightboxItem = ref<(typeof model.value.gallery.items)[number] | null>(
+      null,
+    );
+
+    const openLightbox = (item: (typeof model.value.gallery.items)[number]) => {
+      lightboxItem.value = item;
+      lightboxOpen.value = true;
+    };
+
+    const closeLightbox = () => {
+      lightboxOpen.value = false;
+      lightboxItem.value = null;
+    };
+
+    // Video player state
+    const videoPlayerOpen = ref(false);
+    const videoPlayerItem = ref<
+      (typeof model.value.gallery.items)[number] | null
+    >(null);
+
+    const openVideoPlayer = (
+      item: (typeof model.value.gallery.items)[number],
+    ) => {
+      videoPlayerItem.value = item;
+      videoPlayerOpen.value = true;
+    };
+
+    const closeVideoPlayer = () => {
+      videoPlayerOpen.value = false;
+      videoPlayerItem.value = null;
+    };
 
     const initials = computed(() => {
       const name = (model.value.profile.displayName || "").trim();
@@ -689,28 +1114,33 @@ export default defineComponent({
 
         // debounce to batch rapid changes (e.g. drag reorder)
         if (persistDebounceTimer) clearTimeout(persistDebounceTimer);
-        persistDebounceTimer = setTimeout(() => {
-          persistChain = persistChain.then(async () => {
-            syncing.value = true;
-            try {
-              await persistModel(model.value);
-              // Keep unsynced=true in both dev and prod.
-              // In dev: local file is saved but not pushed to GitHub yet.
-              // In prod: staged in localStorage, not committed yet.
-            } catch (error) {
-              const message =
-                error instanceof Error ? error.message : "Unable to save changes.";
-              toast.add({
-                severity: "error",
-                summary: "Save failed",
-                detail: message,
-                life: 3200,
-              });
-            } finally {
-              syncing.value = false;
-            }
-          });
-        }, isDev ? 100 : 300);
+        persistDebounceTimer = setTimeout(
+          () => {
+            persistChain = persistChain.then(async () => {
+              syncing.value = true;
+              try {
+                await persistModel(model.value);
+                // Keep unsynced=true in both dev and prod.
+                // In dev: local file is saved but not pushed to GitHub yet.
+                // In prod: staged in localStorage, not committed yet.
+              } catch (error) {
+                const message =
+                  error instanceof Error
+                    ? error.message
+                    : "Unable to save changes.";
+                toast.add({
+                  severity: "error",
+                  summary: "Save failed",
+                  detail: message,
+                  life: 3200,
+                });
+              } finally {
+                syncing.value = false;
+              }
+            });
+          },
+          isDev ? 100 : 300,
+        );
       },
       { deep: true },
     );
@@ -768,9 +1198,21 @@ export default defineComponent({
       enabledSocials,
       activeTab,
       resumeHasContent,
+      galleryHasContent,
+      enabledGalleryItems,
+      masonryItems,
       showTabs,
       showLinksSection,
       showResumeSection,
+      showGallerySection,
+      lightboxOpen,
+      lightboxItem,
+      openLightbox,
+      closeLightbox,
+      videoPlayerOpen,
+      videoPlayerItem,
+      openVideoPlayer,
+      closeVideoPlayer,
       initials,
       avatarSrc,
       onAvatarError,

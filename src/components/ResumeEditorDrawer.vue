@@ -8,7 +8,7 @@
     <template #header>
       <div>
         <div class="text-sm font-extrabold tracking-tight text-[color:var(--color-ink)]">
-          {{ editMode === 'education' ? 'Edit Education' : 'Edit Employment' }}
+          {{ editMode === 'education' ? 'Edit Education' : editMode === 'employment' ? 'Edit Employment' : 'Edit Achievement' }}
         </div>
         <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
           Update details, then close to continue.
@@ -73,6 +73,28 @@
         </div>
       </div>
 
+      <!-- Achievement entry editing -->
+      <div v-if="editMode === 'achievement' && draftAchievement" class="rounded-2xl border border-white/60 bg-white/55 p-3 shadow-sm">
+        <div class="grid gap-3">
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Title</label>
+            <InputText v-model="draftAchievement.title" class="w-full" placeholder="e.g. Best Paper Award" />
+          </div>
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Issuer / Organization</label>
+            <InputText v-model="draftAchievement.issuer" class="w-full" placeholder="e.g. IEEE, Google, Hackathon XYZ" />
+          </div>
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Year</label>
+            <InputText v-model="draftAchievement.year" class="w-full" placeholder="2024" />
+          </div>
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Description</label>
+            <Textarea v-model="draftAchievement.description" autoResize rows="3" class="w-full" placeholder="What you achieved…" />
+          </div>
+        </div>
+      </div>
+
       <div class="flex items-center justify-between gap-2">
         <Button
           rounded
@@ -97,18 +119,19 @@ import Drawer from "primevue/drawer";
 import InputText from "primevue/inputtext";
 import Textarea from "primevue/textarea";
 
-import type { EducationEntry, EmploymentEntry } from "../lib/model";
+import type { EducationEntry, EmploymentEntry, AchievementEntry } from "../lib/model";
 
 export default defineComponent({
   name: "ResumeEditorDrawer",
   components: { Drawer, Button, InputText, Textarea },
   props: {
     open: { type: Boolean, required: true },
-    editMode: { type: String as () => "education" | "employment", required: true },
+    editMode: { type: String as () => "education" | "employment" | "achievement", required: true },
     education: { type: Object as () => EducationEntry | null, default: null },
     employment: { type: Object as () => EmploymentEntry | null, default: null },
+    achievement: { type: Object as () => AchievementEntry | null, default: null },
   },
-  emits: ["update:open", "update:education", "update:employment", "delete"],
+  emits: ["update:open", "update:education", "update:employment", "update:achievement", "delete"],
   setup(props, { emit }) {
     const visible = ref(props.open);
     watch(() => props.open, (v) => (visible.value = v));
@@ -120,6 +143,9 @@ export default defineComponent({
     const draftEmployment = ref<EmploymentEntry | null>(
       props.employment ? { ...props.employment } : null
     );
+    const draftAchievement = ref<AchievementEntry | null>(
+      props.achievement ? { ...props.achievement } : null
+    );
 
     watch(() => props.education, (v) => {
       draftEducation.value = v ? { ...v } : null;
@@ -127,6 +153,10 @@ export default defineComponent({
 
     watch(() => props.employment, (v) => {
       draftEmployment.value = v ? { ...v } : null;
+    }, { deep: true });
+
+    watch(() => props.achievement, (v) => {
+      draftAchievement.value = v ? { ...v } : null;
     }, { deep: true });
 
     // Live-sync edits back to parent (inline editing pattern same as CmsDialog)
@@ -138,7 +168,11 @@ export default defineComponent({
       if (v) emit("update:employment", { ...v });
     }, { deep: true });
 
-    return { visible, draftEducation, draftEmployment };
+    watch(draftAchievement, (v) => {
+      if (v) emit("update:achievement", { ...v });
+    }, { deep: true });
+
+    return { visible, draftEducation, draftEmployment, draftAchievement };
   },
 });
 </script>

@@ -49,12 +49,40 @@ export type EmploymentEntry = {
   endYear: string;
 };
 
+export type AchievementEntry = {
+  id: string;
+  title: string;
+  issuer: string;
+  year: string;
+  description: string;
+};
+
 export type BioResume = {
   enabled: boolean;
   bio: string;
   education: EducationEntry[];
   employment: EmploymentEntry[];
   skills: string[];
+  achievements: AchievementEntry[];
+};
+
+export type GalleryItemType = "image" | "video";
+
+export type GalleryItem = {
+  id: string;
+  type: GalleryItemType;
+  /** Upload path for images/mp4s, or a YouTube/Vimeo URL */
+  src: string;
+  /** Optional cover/thumbnail image (used for video poster) */
+  coverUrl: string;
+  title: string;
+  description: string;
+  enabled: boolean;
+};
+
+export type BioGallery = {
+  enabled: boolean;
+  items: GalleryItem[];
 };
 
 export type BioModel = {
@@ -63,6 +91,7 @@ export type BioModel = {
   links: BioLink[];
   socials: SocialLink[];
   resume: BioResume;
+  gallery: BioGallery;
 };
 
 export const newId = () =>
@@ -105,12 +134,36 @@ export const newEmployment = (): EmploymentEntry => ({
   endYear: "",
 });
 
+export const newAchievement = (): AchievementEntry => ({
+  id: newId(),
+  title: "",
+  issuer: "",
+  year: "",
+  description: "",
+});
+
 export const defaultResume = (): BioResume => ({
   enabled: false,
   bio: "",
   education: [],
   employment: [],
   skills: [],
+  achievements: [],
+});
+
+export const newGalleryItem = (): GalleryItem => ({
+  id: newId(),
+  type: "image",
+  src: "",
+  coverUrl: "",
+  title: "",
+  description: "",
+  enabled: true,
+});
+
+export const defaultGallery = (): BioGallery => ({
+  enabled: false,
+  items: [],
 });
 
 export const defaultModel = (): BioModel => ({
@@ -164,6 +217,7 @@ export const defaultModel = (): BioModel => ({
     },
   ],
   resume: defaultResume(),
+  gallery: defaultGallery(),
 });
 
 const asString = (v: unknown) => (typeof v === "string" ? v : "");
@@ -273,9 +327,40 @@ export const sanitizeModel = (input: unknown): BioModel => {
       .map((s: unknown) => asString(s).slice(0, 60))
       .filter(Boolean)
       .slice(0, 50),
+    achievements: (Array.isArray(resumeRaw.achievements) ? resumeRaw.achievements : [])
+      .map((a: any) => ({
+        id: asString(a?.id) || newId(),
+        title: asString(a?.title).slice(0, 120),
+        issuer: asString(a?.issuer).slice(0, 120),
+        year: asString(a?.year).slice(0, 10),
+        description: asString(a?.description).slice(0, 500),
+      }))
+      .filter((a: AchievementEntry) => !!a.id)
+      .slice(0, 30),
   };
 
-  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, links, socials, resume };
+  const galleryItemTypes: GalleryItemType[] = ["image", "video"];
+  const asGalleryItemType = (v: unknown): GalleryItemType =>
+    galleryItemTypes.includes(v as GalleryItemType) ? (v as GalleryItemType) : "image";
+
+  const galleryRaw = obj.gallery && typeof obj.gallery === "object" ? obj.gallery : {};
+  const gallery: BioGallery = {
+    enabled: typeof galleryRaw.enabled === "boolean" ? galleryRaw.enabled : false,
+    items: (Array.isArray(galleryRaw.items) ? galleryRaw.items : [])
+      .map((g: any) => ({
+        id: asString(g?.id) || newId(),
+        type: asGalleryItemType(g?.type),
+        src: asString(g?.src).slice(0, 500),
+        coverUrl: sanitizeUrl(g?.coverUrl),
+        title: asString(g?.title).slice(0, 120),
+        description: asString(g?.description).slice(0, 500),
+        enabled: typeof g?.enabled === "boolean" ? g.enabled : true,
+      }))
+      .filter((g: GalleryItem) => !!g.id)
+      .slice(0, 100),
+  };
+
+  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, links, socials, resume, gallery };
 };
 
 export const stableStringify = (model: BioModel) => JSON.stringify(model, null, 2);

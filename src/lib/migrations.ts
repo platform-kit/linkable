@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -75,6 +75,35 @@ const migrations: Migration[] = [
         };
       }
       data.schemaVersion = 2;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 3,
+    migrate: (data) => {
+      // v2 → v3: add gallery section with sensible defaults
+      if (!data.gallery || typeof data.gallery !== "object") {
+        data.gallery = {
+          enabled: false,
+          items: [],
+        };
+      }
+      data.schemaVersion = 3;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 4,
+    migrate: (data) => {
+      // v3 → v4: add achievements array to resume
+      if (data.resume && typeof data.resume === "object") {
+        if (!Array.isArray(data.resume.achievements)) {
+          data.resume.achievements = [];
+        }
+      }
+      data.schemaVersion = 4;
       return data;
     },
   },
