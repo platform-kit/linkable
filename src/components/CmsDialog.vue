@@ -50,7 +50,7 @@
               <span class="cms__tab-pill">{{ draft.socials.length }}</span>
             </button>
 
-            <button type="button" class="cms__tab cms__tab--github" @click="openGithub">
+            <button type="button" class="cms__tab" @click="openGithub">
               <span class="cms__tab-icon"><i class="pi pi-github" /></span>
               <span class="cms__tab-label">GitHub</span>
               <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">
@@ -492,17 +492,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-cms__row {
-  width: 100%;
-}
-
-cms__row-meta {
-  display: inline-flex;
-}
-
-cms__footer-right {
-  display: flex;
-}
 .cms {
   display: flex;
   flex-direction: column;
@@ -528,16 +517,17 @@ cms__footer-right {
 
 .cms__tabs {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
 .cms__tab {
   height: 48px;
   display: grid;
-  grid-template-columns: 32px 1fr 34px;
+  grid-template-columns: 32px 1fr 32px;
   align-items: center;
   gap: 10px;
+  width: 100%;
   padding: 0 12px;
   border-radius: 18px;
   border: 1px solid transparent;
@@ -547,24 +537,6 @@ cms__footer-right {
   letter-spacing: -0.01em;
   cursor: pointer;
   transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
-}
-
-.cms__tab--github {
-  background: rgba(15, 23, 42, 0.72);
-  color: rgba(255, 255, 255, 0.94);
-  border-color: rgba(15, 23, 42, 0.18);
-}
-
-.cms__tab--github .cms__tab-icon {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: rgba(255, 255, 255, 0.32);
-  color: rgba(255, 255, 255, 0.92);
-}
-
-.cms__tab--github .cms__tab-pill {
-  border-color: transparent;
-  background: rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.92);
 }
 
 .cms__tab:hover {
@@ -652,10 +624,6 @@ cms__footer-right {
   box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.14);
 }
 
-cms__row {
-  width: 100%;
-}
-
 .cms__content {
   flex: 1;
   border-radius: 22px;
@@ -693,20 +661,12 @@ cms__row {
   font-weight: 700;
 }
 
-cms__row {
-  width: 100%;
-}
-
 .cms__card {
   border-radius: 22px;
   border: 1px solid rgba(11, 18, 32, 0.08);
   background: rgba(255, 255, 255, 0.55);
   overflow: hidden;
   padding: 12px;
-}
-
-cms__row-meta {
-  display: inline-flex;
 }
 
 .cms__form {
@@ -725,14 +685,6 @@ cms__row-meta {
   color: rgba(11, 18, 32, 0.7);
 }
 
-cms__row-meta {
-  display: inline-flex;
-}
-
-cms__footer-right {
-  display: flex;
-}
-
 .cms__help {
   font-size: 12px;
   color: rgba(11, 18, 32, 0.6);
@@ -748,14 +700,6 @@ cms__footer-right {
 .cms__list {
   display: grid;
   gap: 8px;
-}
-
-cms__row {
-  width: 100%;
-}
-
-cms__row-meta {
-  display: inline-flex;
 }
 
 .cms__socialList {
@@ -782,10 +726,6 @@ cms__row-meta {
   grid-template-columns: 44px 1fr auto;
 }
 
-cms__row-meta {
-  display: inline-flex;
-}
-
 .cms__row:hover {
   background: rgba(255, 255, 255, 0.76);
   border-color: rgba(11, 18, 32, 0.1);
@@ -808,10 +748,6 @@ cms__row-meta {
   border-radius: 16px;
 }
 
-cms__row-meta {
-  display: inline-flex;
-}
-
 .cms__row-thumb {
   height: 44px;
   width: 44px;
@@ -821,18 +757,6 @@ cms__row-meta {
   overflow: hidden;
   display: grid;
   place-items: center;
-}
-
-cms__row-meta {
-  display: inline-flex;
-}
-
-cms__row {
-  width: 100%;
-}
-
-cms__row-meta {
-  display: inline-flex;
 }
 
 .cms__row-text {
@@ -847,10 +771,6 @@ cms__row-meta {
   color: rgba(11, 18, 32, 0.92);
 }
 
-cms__row-meta {
-  display: inline-flex;
-}
-
 .cms__row-sub {
   display: block;
   margin-top: 2px;
@@ -860,10 +780,6 @@ cms__row-meta {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-cms__row-meta {
-  display: inline-flex;
 }
 
 .cms__row-meta {
@@ -876,10 +792,6 @@ cms__row-meta {
   color: #10b981;
 }
 
-cms__row-meta {
-  display: inline-flex;
-}
-
 .cms__empty {
   padding: 16px 12px;
   text-align: center;
@@ -890,39 +802,19 @@ cms__row-meta {
   letter-spacing: -0.02em;
 }
 
-cms__footer-right {
-  display: flex;
-}
-
-cms__row {
-  width: 100%;
-}
-
-cms__row-meta {
-  display: inline-flex;
-}
-
-cms__empty-sub {
+.cms__empty-sub {
   margin-top: 4px;
   font-size: 12px;
   color: rgba(11, 18, 32, 0.62);
   font-weight: 650;
 }
 
-cms__footer-right {
-  display: flex;
-}
-
-cms__footer {
+.cms__footer {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-}
-
-cms__footer-right {
-  display: flex;
 }
 
 .cms__footer-right {
@@ -942,7 +834,7 @@ cms__footer-right {
 
   .cms__tab {
     height: 44px;
-    grid-template-columns: 28px 1fr 26px;
+    grid-template-columns: 28px 1fr 24px;
     gap: 8px;
     padding: 0 10px;
   }
