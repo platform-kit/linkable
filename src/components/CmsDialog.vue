@@ -187,7 +187,7 @@
               <div class="cms__sub">Add socials that show under your name.</div>
             </div>
 
-          <Button rounded class="cms__primary" @click="createAndEditSocial">
+            <Button rounded class="cms__primary" @click="createAndEditSocial">
               <i class="pi pi-plus" />
               <span class="ml-2">Add social</span>
             </Button>
@@ -513,7 +513,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-/* existing styles remain unchanged */
 .cms {
   display: flex;
   flex-direction: column;
@@ -522,7 +521,6 @@ export default defineComponent({
   min-height: 520px;
 }
 
-/* ...rest of the original styles... */
 .cms__tabBar {
   padding: 12px;
   border-radius: 22px;
@@ -532,5 +530,374 @@ export default defineComponent({
   -webkit-backdrop-filter: blur(14px);
 }
 
-/* (keep the remainder of the previously provided styles here) */
+.cms__tabBarInner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cms__tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cms__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (min-width: 720px) {
+  .cms__tabBarInner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .cms__actions {
+    flex-shrink: 0;
+  }
+}
+
+.cms__tab {
+  height: 48px;
+  display: grid;
+  grid-template-columns: 32px 1fr 34px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border-radius: 18px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.62);
+  color: rgba(11, 18, 32, 0.88);
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.cms__tab:hover {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(11, 18, 32, 0.1);
+  transform: translateY(-1px);
+}
+
+.cms__tab.is-active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.32);
+  box-shadow: 0 18px 44px rgba(59, 130, 246, 0.18);
+  color: rgba(11, 18, 32, 0.96);
+}
+
+.cms__tab-icon {
+  height: 28px;
+  width: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px solid rgba(11, 18, 32, 0.08);
+  background: rgba(255, 255, 255, 0.76);
+  color: rgba(11, 18, 32, 0.55);
+}
+
+.cms__tab.is-active .cms__tab-icon {
+  background: rgba(59, 130, 246, 0.22);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: rgba(37, 99, 235, 0.96);
+}
+
+.cms__tab-label {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cms__tab-pill {
+  justify-self: end;
+  min-width: 28px;
+  height: 20px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(11, 18, 32, 0.08);
+  background: rgba(255, 255, 255, 0.68);
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(11, 18, 32, 0.62);
+}
+
+.cms__tab-pill--ghost {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cms__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(11, 18, 32, 0.1);
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(11, 18, 32, 0.7);
+  margin-right: 0.25rem;
+}
+
+.cms__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14);
+}
+
+.cms__status.is-dirty .cms__dot {
+  background: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.14);
+}
+
+.cms__content {
+  flex: 1;
+  border-radius: 22px;
+  border: 1px solid rgba(11, 18, 32, 0.08);
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 14px;
+  overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
+}
+
+.cms__panel-head {
+  margin-bottom: 12px;
+}
+
+.cms__panel-head--row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cms__title {
+  font-size: 16px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+  color: rgba(11, 18, 32, 0.96);
+}
+
+.cms__sub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: rgba(11, 18, 32, 0.62);
+  font-weight: 700;
+}
+
+.cms__card {
+  border-radius: 22px;
+  border: 1px solid rgba(11, 18, 32, 0.08);
+  background: rgba(255, 255, 255, 0.55);
+  overflow: hidden;
+  padding: 12px;
+}
+
+.cms__form {
+  display: grid;
+  gap: 12px;
+}
+
+.cms__field {
+  display: grid;
+  gap: 6px;
+}
+
+.cms__label {
+  font-size: 12px;
+  font-weight: 950;
+  color: rgba(11, 18, 32, 0.7);
+}
+
+.cms__help {
+  font-size: 12px;
+  color: rgba(11, 18, 32, 0.6);
+  font-weight: 650;
+}
+
+.cms__primary {
+  border: 0 !important;
+  background: var(--color-brand) !important;
+  box-shadow: 0 16px 44px rgba(37, 99, 235, 0.22) !important;
+}
+
+.cms__list {
+  display: grid;
+  gap: 8px;
+}
+
+.cms__socialList {
+  display: grid;
+  gap: 8px;
+}
+
+cms__row {
+  width: 100%;
+}
+
+.cms__row {
+  width: 100%;
+  text-align: left;
+  display: grid;
+  grid-template-columns: 34px 44px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(11, 18, 32, 0.06);
+  background: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.cms__socialList .cms__row {
+  grid-template-columns: 44px 1fr auto;
+}
+
+.cms__row:hover {
+  background: rgba(255, 255, 255, 0.76);
+  border-color: rgba(11, 18, 32, 0.1);
+}
+
+.cms__row-drag {
+  height: 34px;
+  width: 34px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.58);
+  display: grid;
+  place-items: center;
+  color: rgba(11, 18, 32, 0.55);
+}
+
+.cms__row-drag--muted {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+}
+
+.cms__row-thumb {
+  height: 44px;
+  width: 44px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.58);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.cms__row-text {
+  min-width: 0;
+}
+
+.cms__row-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+  color: rgba(11, 18, 32, 0.92);
+}
+
+.cms__row-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: rgba(11, 18, 32, 0.62);
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+cms__row-meta {
+  display: inline-flex;
+}
+
+.cms__row-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cms__ok {
+  color: #10b981;
+}
+
+.cms__empty {
+  padding: 16px 12px;
+  text-align: center;
+}
+
+.cms__empty-title {
+  font-weight: 950;
+  letter-spacing: -0.02em;
+}
+
+.cms__empty-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(11, 18, 32, 0.62);
+  font-weight: 650;
+}
+
+.cms__footer {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+cms__footer-right {
+  display: flex;
+}
+
+.cms__footer-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 820px) {
+  .cms {
+    height: min(82vh, 820px);
+  }
+
+  .cms__tabBar {
+    padding: 10px;
+  }
+
+  .cms__tab {
+    height: 44px;
+    grid-template-columns: 28px 1fr 26px;
+    gap: 8px;
+    padding: 0 10px;
+  }
+
+  .cms__tab-label {
+    font-size: 12px;
+  }
+
+  .cms__tab-pill {
+    min-width: 24px;
+    height: 18px;
+    font-size: 10px;
+  }
+}
 </style>

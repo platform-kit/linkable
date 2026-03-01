@@ -40,10 +40,10 @@
 
               <div class="flex items-center gap-2">
                 <Button
-                  v-if="canUseCms && cmsButtonVisible"
+                  v-if="canUseCms"
                   rounded
                   class="!border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 !text-sm shadow-[0_14px_38px_rgba(37,99,235,0.22)] hover:shadow-[0_18px_52px_rgba(37,99,235,0.26)]"
-                  @click="openCms"
+                  @click="cmsOpen = true"
                 >
                   <i class="pi pi-sliders-h" />
                   <span class="ml-2 hidden sm:inline">CMS</span>
@@ -147,7 +147,7 @@
             v-if="canUseCms"
             rounded
             class="mt-4 !border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 shadow-[0_14px_38px_rgba(37,99,235,0.22)]"
-            @click="openCms"
+            @click="cmsOpen = true"
           >
             Add links
           </Button>
@@ -254,7 +254,6 @@ export default defineComponent({
     const modelLoaded = ref(false);
     const suppressPersist = ref(true);
     const cmsOpen = ref(false);
-    const cmsButtonVisible = ref(false);
     const githubDialogOpen = ref(false);
     const previewMode = ref(true);
 
@@ -262,27 +261,12 @@ export default defineComponent({
     const githubSettings = ref<GithubSettings>(loadGithubSettings());
     const syncing = ref(false);
 
-    const canUseCms = computed(() => isDev || githubReady.value);
-
     const updateGithubStatus = () => {
       githubReady.value = canUseGithubSync();
       githubSettings.value = loadGithubSettings();
     };
 
-    const handleGlobalKeydown = (event: KeyboardEvent) => {
-      const key = event.key;
-      if (!canUseCms.value) return;
-      if ((key === "Escape" || key === "Esc") && !cmsOpen.value) {
-        cmsButtonVisible.value = true;
-      }
-    };
-
     onMounted(async () => {
-      if (typeof window !== "undefined") {
-        window.addEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
-        window.addEventListener("keydown", handleGlobalKeydown);
-      }
-
       const remoteModel = await fetchModel();
       model.value = remoteModel;
       modelLoaded.value = true;
@@ -292,20 +276,18 @@ export default defineComponent({
       }, 0);
 
       updateGithubStatus();
+      if (typeof window !== "undefined") {
+        window.addEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
+      }
     });
 
     onBeforeUnmount(() => {
       if (typeof window !== "undefined") {
         window.removeEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
-        window.removeEventListener("keydown", handleGlobalKeydown);
       }
     });
 
-    watch(cmsOpen, (open) => {
-      if (open) {
-        cmsButtonVisible.value = false;
-      }
-    });
+    const canUseCms = computed(() => isDev || githubReady.value);
 
     const enabledLinks = computed(() => model.value.links.filter((l) => l.enabled));
     const enabledSocials = computed(() =>
@@ -476,15 +458,10 @@ export default defineComponent({
       githubDialogOpen.value = true;
     };
 
-    const openCms = () => {
-      cmsOpen.value = true;
-    };
-
     return {
       isDev,
       model,
       cmsOpen,
-      cmsButtonVisible,
       previewMode,
       enabledLinks,
       enabledSocials,
@@ -503,7 +480,6 @@ export default defineComponent({
       syncIndicatorClass,
       togglePreviewMode,
       openGithubSettings,
-      openCms,
     };
   },
 });
