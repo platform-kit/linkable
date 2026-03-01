@@ -7,7 +7,7 @@
     :contentStyle="{ overflow: 'auto' }"
   >
     <div class="space-y-6">
-      <div class="rounded-2xl border border-white/70 bg-white/60 p-4 shadow-sm backdrop-blur-lg">
+      <div class="rounded-2xl border border-white/70 bg-white/60 p-4 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div class="text-sm font-extrabold text-[color:var(--color-ink)]">

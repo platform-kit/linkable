@@ -231,6 +231,79 @@ const commitBase64Content = async (
   }
 };
 
+// ---------------------------------------------------------------------------
+// pending uploads stored in localStorage (production only)
+
+export type PendingUpload = {
+  repoPath: string;
+  publicPath: string;
+  base64Content: string;
+  fileName: string;
+};
+
+const PENDING_UPLOADS_KEY = "pending-uploads";
+
+const loadPendingUploads = (): PendingUpload[] => {
+  try {
+    const raw = getStorage()?.getItem(PENDING_UPLOADS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as PendingUpload[];
+  } catch {
+    return [];
+  }
+};
+
+const savePendingUploads = (uploads: PendingUpload[]) => {
+  try {
+    getStorage()?.setItem(PENDING_UPLOADS_KEY, JSON.stringify(uploads));
+  } catch {
+    /* ignore */
+  }
+};
+
+export const addPendingUpload = async (file: File): Promise<string> => {
+  const { settings } = ensureGithubCredentials();
+  const uploadsDir = normalizeUploadsDir(settings.uploadsDir || "public/uploads");
+  const fileName = generateUploadFileName(file.name || "image.png");
+  const repoPath = uploadsDir ? `${uploadsDir}/${fileName}` : fileName;
+  const publicPath = toPublicPath(settings.uploadsDir || "public/uploads", fileName);
+
+  const buffer = await file.arrayBuffer();
+  const base64Content = arrayBufferToBase64(buffer);
+
+  const uploads = loadPendingUploads();
+  uploads.push({ repoPath, publicPath, base64Content, fileName: file.name });
+  savePendingUploads(uploads);
+
+  return publicPath;
+};
+
+export const clearPendingUploads = (): void => {
+  try {
+    getStorage()?.removeItem(PENDING_UPLOADS_KEY);
+  } catch {
+    /* ignore */
+  }
+};
+
+export const commitPendingUploads = async (
+  settings: GithubSettings,
+  token: string,
+  usedPublicPaths: string[],
+  message?: string,
+): Promise<void> => {
+  const pending = loadPendingUploads();
+  if (pending.length === 0) return;
+
+  const toCommit = pending.filter((u) => usedPublicPaths.includes(u.publicPath));
+  for (const u of toCommit) {
+    const msg = message ? `${message} (image ${u.fileName})` : `Upload image ${u.fileName}`;
+    await commitBase64Content(settings, token, u.repoPath, u.base64Content, msg);
+  }
+
+  clearPendingUploads();
+};
+
 const generateUploadFileName = (inputName: string): string => {
   const trimmed = (inputName || "").trim();
   const lastDot = trimmed.lastIndexOf(".");

@@ -5,6 +5,7 @@
     header="CMS"
     :style="{ width: 'min(980px, 96vw)' }"
     :contentStyle="{ overflow: 'hidden' }"
+    :showCloseIcon="true"
   >
     <template #icons>
       <div class="cms__status" :class="{ 'is-dirty': hasChanges }">
@@ -50,12 +51,15 @@
               <span class="cms__tab-pill">{{ draft.socials.length }}</span>
             </button>
 
-            <button type="button" class="cms__tab" @click="openGithub">
+            <button
+              type="button"
+              class="cms__tab"
+              :class="{ 'is-active': tab === 'github' }"
+              @click="tab = 'github'"
+            >
               <span class="cms__tab-icon"><i class="pi pi-github" /></span>
               <span class="cms__tab-label">GitHub</span>
-              <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">
-                <i class="pi pi-external-link" />
-              </span>
+              <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">{{ githubReady ? 0 : 0 }}</span>
             </button>
           </div>
         </div>
@@ -165,7 +169,7 @@
           </div>
         </section>
 
-        <section v-else class="cms__panel">
+        <section v-else-if="tab === 'socials'" class="cms__panel">
           <div class="cms__panel-head cms__panel-head--row">
             <div>
               <div class="cms__title">Social links</div>
@@ -213,16 +217,145 @@
             </div>
           </div>
         </section>
+
+        <section v-else-if="tab === 'github'" class="cms__panel">
+          <div class="cms__panel-head">
+            <div class="cms__title">GitHub Sync</div>
+            <div class="cms__sub">Connect your repository for automatic syncing.</div>
+          </div>
+
+          <div class="cms__card">
+            <div class="cms__form">
+              <div class="rounded-2xl border border-white/70 bg-white/60 p-4 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div class="text-sm font-extrabold text-[color:var(--color-ink)]">Repository connection</div>
+                    <div class="text-xs font-semibold text-[color:var(--color-ink-soft)]">
+                      Changes made in production will commit to this repository.
+                    </div>
+                  </div>
+                  <Tag
+                    :value="githubReady ? 'Connected' : 'Not configured'"
+                    :severity="githubReady ? 'success' : 'warning'"
+                    class="!rounded-full"
+                  />
+                </div>
+
+                <div class="mt-4 grid gap-3 md:grid-cols-2">
+                  <div class="grid gap-2">
+                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Owner</label>
+                    <InputText v-model="githubForm.owner" placeholder="e.g. your-github-username" />
+                  </div>
+
+                  <div class="grid gap-2">
+                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Repository</label>
+                    <InputText v-model="githubForm.repo" placeholder="e.g. link-in-bio" />
+                  </div>
+
+                  <div class="grid gap-2">
+                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Branch</label>
+                    <InputText v-model="githubForm.branch" placeholder="main" />
+                  </div>
+
+                  <div class="grid gap-2">
+                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Uploads directory</label>
+                    <InputText v-model="githubForm.uploadsDir" placeholder="public/uploads" />
+                    <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
+                      Image uploads will be stored in this path.
+                    </span>
+                  </div>
+
+                  <div class="grid gap-2">
+                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Data file path</label>
+                    <InputText v-model="githubForm.dataPath" placeholder="cms-data.json" />
+                  </div>
+
+                  <div class="grid gap-2">
+                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Static data path</label>
+                    <InputText v-model="githubForm.staticDataPath" placeholder="public/data.json" />
+                    <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
+                      Optional second file to keep your exported JSON in sync.
+                    </span>
+                  </div>
+
+                  <div class="grid gap-2">
+                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Committer name</label>
+                    <InputText v-model="githubForm.committerName" placeholder="Nova CMS" />
+                  </div>
+
+                  <div class="grid gap-2">
+                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Committer email</label>
+                    <InputText v-model="githubForm.committerEmail" placeholder="cms@nova.local" />
+                  </div>
+
+                  <div class="md:col-span-2 grid gap-2">
+                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Personal access token</label>
+                    <InputText
+                      v-model="githubForm.token"
+                      type="password"
+                      placeholder="ghp_..."
+                      autocomplete="off"
+                    />
+                    <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
+                      Store a token with <code>repo</code> scope. It's saved locally in your browser.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-dashed border-white/70 bg-white/40 p-4 text-[13px] font-semibold text-[color:var(--color-ink-soft)]"
+              >
+                <div>
+                  <div class="font-extrabold text-[color:var(--color-ink)]">Tips</div>
+                  <ul class="mt-1 space-y-1 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+                    <li>Use fine-grained PATs limited to this repository when possible.</li>
+                    <li>Commits run from your browser; no secrets leave your device.</li>
+                    <li>Keep static deployments fresh by running <code>npm run export</code> after syncing.</li>
+                  </ul>
+                </div>
+
+                <Button
+                  text
+                  severity="danger"
+                  class="!rounded-full"
+                  @click="clearGithubToken"
+                  :disabled="!githubForm.token"
+                >
+                  <i class="pi pi-times" />
+                  <span class="ml-2">Clear token</span>
+                </Button>
+              </div>
+            </div>
+
+            <div class="mt-4 flex gap-2 justify-end">
+              <Button
+                rounded
+                severity="secondary"
+                :loading="githubTesting"
+                @click="handleGithubTest"
+                class="!rounded-full"
+              >
+                <i class="pi pi-shield" />
+                <span class="ml-2">Test connection</span>
+              </Button>
+              <Button
+                rounded
+                severity="secondary"
+                :loading="githubSaving"
+                @click="handleGithubSave"
+              >
+                <i class="pi pi-check" />
+                <span class="ml-2">Save</span>
+              </Button>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
 
     <template #footer>
       <div class="cms__footer">
-        <Button rounded severity="secondary" @click="visible = false">
-          <i class="pi pi-times" />
-          <span class="ml-2">Close</span>
-        </Button>
-
         <div class="cms__footer-right">
           <Button rounded severity="secondary" :disabled="!hasChanges" @click="discard">
             <i class="pi pi-undo" />
@@ -253,7 +386,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, ref, watch } from "vue";
+import { computed, defineComponent, reactive, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
 import Button from "primevue/button";
@@ -276,6 +409,16 @@ import {
   sanitizeModel,
   stableStringify,
 } from "../lib/model";
+import {
+  loadGithubSettings,
+  saveGithubSettings,
+  getGithubToken,
+  saveGithubToken,
+  clearGithubToken,
+  canUseGithubSync,
+  testGithubConnection,
+  type GithubSettings,
+} from "../lib/github";
 
 export default defineComponent({
   name: "CmsDialog",
@@ -464,7 +607,113 @@ export default defineComponent({
 
     if (!draft.value) draft.value = defaultModel();
 
-    const openGithub = () => emit("open-github");
+    // GitHub Settings
+    type GithubFormState = GithubSettings & { token: string };
+    const defaultGithubForm = (): GithubFormState => ({
+      ...loadGithubSettings(),
+      token: getGithubToken(),
+    });
+
+    const githubForm = reactive<GithubFormState>(defaultGithubForm());
+    const githubSaving = ref(false);
+    const githubTesting = ref(false);
+    const githubReady = ref(canUseGithubSync());
+
+    const refreshGithubForm = () => {
+      const current = defaultGithubForm();
+      Object.assign(githubForm, current);
+      githubReady.value = canUseGithubSync();
+    };
+
+    const validateGithub = () => {
+      if (!githubForm.owner.trim()) {
+        throw new Error("Owner is required.");
+      }
+      if (!githubForm.repo.trim()) {
+        throw new Error("Repository is required.");
+      }
+      if (!githubForm.branch.trim()) {
+        throw new Error("Branch is required.");
+      }
+      if (!githubForm.token.trim()) {
+        throw new Error("Personal access token is required.");
+      }
+    };
+
+    const handleGithubSave = async () => {
+      try {
+        validateGithub();
+      } catch (error) {
+        toast.add({
+          severity: "warn",
+          summary: "Missing details",
+          detail: error instanceof Error ? error.message : "Fill out the required fields.",
+          life: 2400,
+        });
+        return;
+      }
+
+      githubSaving.value = true;
+      try {
+        const { token, ...settings } = githubForm;
+        saveGithubSettings(settings);
+        saveGithubToken(token);
+        githubReady.value = canUseGithubSync();
+        toast.add({
+          severity: "success",
+          summary: "Saved",
+          detail: "GitHub sync settings updated.",
+          life: 2200,
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unable to save GitHub settings.";
+        toast.add({
+          severity: "error",
+          summary: "Save failed",
+          detail: message,
+          life: 3000,
+        });
+      } finally {
+        githubSaving.value = false;
+      }
+    };
+
+    const handleGithubTest = async () => {
+      githubTesting.value = true;
+      try {
+        await testGithubConnection(githubForm, githubForm.token);
+        toast.add({
+          severity: "success",
+          summary: "Connection successful",
+          detail: "Repository and branch are reachable.",
+          life: 2200,
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unable to reach the repository.";
+        toast.add({
+          severity: "error",
+          summary: "Connection failed",
+          detail: message,
+          life: 3200,
+        });
+      } finally {
+        githubTesting.value = false;
+      }
+    };
+
+    const clearGithubToken = () => {
+      clearGithubToken();
+      githubForm.token = "";
+      githubReady.value = canUseGithubSync();
+      toast.add({
+        severity: "info",
+        summary: "Token cleared",
+        detail: "Add a new token to resume syncing.",
+        life: 2200,
+      });
+    };
 
     return {
       visible,
@@ -487,7 +736,13 @@ export default defineComponent({
       deleteActiveSocial,
       socialLabel,
       primeSocialIcon,
-      openGithub,
+      githubForm,
+      githubSaving,
+      githubTesting,
+      githubReady,
+      handleGithubSave,
+      handleGithubTest,
+      clearGithubToken,
     };
   },
 });

@@ -84,6 +84,7 @@ import {
   canUseGithubSync,
   loadGithubSettings,
   uploadImageToGithub,
+  addPendingUpload,
   GITHUB_SYNC_EVENT,
 } from "../lib/github";
 
@@ -256,7 +257,8 @@ const performUpload = async (file: File) => {
     throw new Error("Configure GitHub sync to enable uploads.");
   }
 
-  return uploadImageToGithub(file);
+  // in production, queue the upload and return its future public path
+  return addPendingUpload(file);
 };
 
 const processFile = async (file?: File) => {
@@ -286,7 +288,7 @@ const processFile = async (file?: File) => {
       summary: "Uploaded",
       detail: isDev
         ? "Image saved locally and ready to use."
-        : "Image committed to your GitHub repository.",
+        : "Image queued for commit; it will be pushed when you commit changes.",
       life: 2200,
     });
   } catch (error) {

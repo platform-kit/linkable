@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
@@ -124,6 +125,33 @@ const sanitizeCommitMessage = (input?: string) => {
   return normalized.slice(0, 140);
 };
 
+// reuse some helper logic from production upload naming
+const generateUploadFileName = (inputName: unknown): string => {
+  const extract = (val: unknown): string => {
+    if (!val) return "";
+    if (typeof val === "string") return val;
+    if (typeof val === "object") {
+      // common File-like objects
+      const anyv = val as any;
+      if (typeof anyv.name === "string") return anyv.name;
+      if (typeof anyv.filename === "string") return anyv.filename;
+    }
+    return String(val);
+  };
+
+  const raw = extract(inputName).trim() || "image.png";
+  const lastDot = raw.lastIndexOf(".");
+  const baseRaw = lastDot >= 0 ? raw.slice(0, lastDot) : raw;
+  const extensionRaw = lastDot >= 0 ? raw.slice(lastDot).toLowerCase() : "";
+
+  // sanitize base: keep letters, numbers, dash, underscore and dot; replace others with '-'
+  const safeBase = baseRaw.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 80) || "image";
+  const extension = extensionRaw || ".png";
+  const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 15);
+  const token = Math.random().toString(16).slice(2, 8);
+  return `${safeBase}-${timestamp}-${token}${extension}`;
+};
+
 const asResultPayload = (result?: GitCommandResult | null) =>
   result
     ? {
@@ -133,145 +161,97 @@ const asResultPayload = (result?: GitCommandResult | null) =>
       }
     : undefined;
 
-export default defineConfig(() => {
-  ensureSeedData();
+// Vite plugin that registers CMS dev endpoints as middleware. Using a plugin
+// ensures the hook runs on the dev server lifecycle in newer Vite versions.
+const cmsMiddlewarePlugin = () => ({
+  name: "cms-middleware",
+  configureServer: (server: any) => {
+    server.middlewares.use(async (req: any, res: any, next: any) => {
+      const url = (req.url ?? "").split("?")[0];
 
-  return {
-    server: {
-      host: "::",
-      port: 8080,
-    },
-    plugins: [vue()],
-    configureServer(server) {
-      server.middlewares.use(async (req, res, next) => {
-        const url = (req.url ?? "").split("?")[0];
-
-        if (url === "/cms-git") {
-          if (server.config.mode !== "development") {
-            res.statusCode = 403;
-            res.end("Forbidden");
-            return;
-          }
-
-          ensureSeedData();
-
-          if (req.method === "OPTIONS") {
-            res.statusCode = 204;
-            res.end();
-            return;
-          }
-
-          if (req.method !== "POST") {
-            res.statusCode = 405;
-            res.end("Method Not Allowed");
-            return;
-          }
-
-          try {
-            const body = await collectRequestBody(req);
-            let parsed: { message?: string } = {};
-            if (body) {
-              parsed = JSON.parse(body) as { message?: string };
-            }
-
-            const commitMessage = sanitizeCommitMessage(parsed.message);
-
-            const addResult = await runGitCommand(["add", "cms-data.json", "public/data.json"]);
-
-            let commitResult: GitCommandResult | null = null;
-            try {
-              commitResult = await runGitCommand(["commit", "-m", commitMessage]);
-            } catch (error) {
-              if (isGitCommandError(error) && nothingToCommit(error)) {
-                res.setHeader("Content-Type", "application/json");
-                res.end(
-                  JSON.stringify({
-                    status: "noop",
-                    message: "Nothing to commit.",
-                    commit: asResultPayload({
-                      code: error.code,
-                      stdout: error.stdout,
-                      stderr: error.stderr,
-                    }),
-                  }),
-                );
-                return;
-              }
-              throw error;
-            }
-
-            const pushResult = await runGitCommand(["push"]);
-            res.setHeader("Content-Type", "application/json");
-            res.end(
-              JSON.stringify({
-                status: "ok",
-                message: commitMessage,
-                add: asResultPayload(addResult),
-                commit: asResultPayload(commitResult),
-                push: asResultPayload(pushResult),
-              }),
-            );
-          } catch (error) {
-            res.statusCode = 500;
-            if (isGitCommandError(error)) {
-              res.setHeader("Content-Type", "application/json");
-              res.end(
-                JSON.stringify({
-                  status: "error",
-                  message: error.message,
-                  code: error.code,
-                  stdout: error.stdout,
-                  stderr: error.stderr,
-                }),
-              );
-              return;
-            }
-
-            const message = error instanceof Error ? error.message : "Unknown error.";
-            res.setHeader("Content-Type", "application/json");
-            res.end(
-              JSON.stringify({
-                status: "error",
-                message,
-              }),
-            );
-          }
-
+      if (url === "/cms-upload") {
+        if (server.config.mode !== "development") {
+          res.statusCode = 403;
+          res.end("Forbidden");
           return;
         }
 
-        if (url === "/cms-data") {
-          ensureSeedData();
-
-          if (req.method === "OPTIONS") {
-            res.statusCode = 204;
-            res.end();
-            return;
-          }
-
-          if (req.method === "GET") {
-            const payload = fs.readFileSync(dataFilePath, "utf8");
-            res.setHeader("Content-Type", "application/json");
-            res.end(payload);
-            return;
-          }
-
-          if (req.method === "POST") {
-            const body = await collectRequestBody(req);
-            const parsed = sanitizeModel(body ? JSON.parse(body) : {});
-            fs.writeFileSync(dataFilePath, stableStringify(parsed));
-            res.statusCode = 204;
-            res.end();
-            return;
-          }
-
+        if (req.method !== "POST") {
           res.statusCode = 405;
           res.end("Method Not Allowed");
           return;
         }
 
-        next();
-      });
-    },
-  };
+        const uploadsDir = path.resolve(__dirname, "public/uploads");
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+
+        const requireCJS = createRequire(import.meta.url);
+        const createBusboy = requireCJS("busboy");
+        const bb = createBusboy({ headers: req.headers });
+        let returnedUrl = "";
+
+        bb.on("file", (_fieldname: string, fileStream: NodeJS.ReadableStream, filename: string) => {
+          const safe = generateUploadFileName(filename || "image.png");
+          const outPath = path.join(uploadsDir, safe);
+          const write = fs.createWriteStream(outPath);
+          fileStream.pipe(write);
+          returnedUrl = `/uploads/${safe}`;
+        });
+
+        bb.on("finish", () => {
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ url: returnedUrl }));
+        });
+
+        req.pipe(bb);
+        return;
+      }
+
+      if (url === "/__cms-data") {
+        ensureSeedData();
+
+        if (req.method === "OPTIONS") {
+          res.statusCode = 204;
+          res.end();
+          return;
+        }
+
+        if (req.method === "GET") {
+          const payload = fs.readFileSync(dataFilePath, "utf8");
+          res.setHeader("Content-Type", "application/json");
+          res.end(payload);
+          return;
+        }
+
+        if (req.method === "POST") {
+          const body = await collectRequestBody(req);
+          const parsed = sanitizeModel(body ? JSON.parse(body) : {});
+          fs.writeFileSync(dataFilePath, stableStringify(parsed));
+          res.statusCode = 204;
+          res.end();
+          return;
+        }
+
+        res.statusCode = 405;
+        res.end("Method Not Allowed");
+        return;
+      }
+
+      // not a CMS request — continue to other middleware
+      next();
+    });
+  },
 });
+    export default defineConfig(() => {
+      ensureSeedData();
+
+      return {
+        server: {
+          host: "::",
+          port: 8080,
+        },
+        plugins: [cmsMiddlewarePlugin(), vue()],
+      };
+    });

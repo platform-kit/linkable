@@ -3,27 +3,21 @@
     v-model:visible="visible"
     position="right"
     :style="{ width: 'min(520px, 96vw)' }"
-    :showCloseIcon="false"
+    :showCloseIcon="true"
   >
     <template #header>
-      <div class="flex items-center justify-between gap-3">
-        <div class="min-w-0">
-          <div class="text-sm font-extrabold tracking-tight text-[color:var(--color-ink)]">
-            {{ title || "Edit link" }}
-          </div>
-          <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-            Update the link details, then close to continue.
-          </div>
+      <div>
+        <div class="text-sm font-extrabold tracking-tight text-[color:var(--color-ink)]">
+          {{ title || "Edit link" }}
         </div>
-        <Button rounded severity="secondary" class="!px-3 !py-2 !text-xs" @click="visible = false">
-          <i class="pi pi-times" />
-          <span class="ml-2">Close</span>
-        </Button>
+        <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+          Update the link details, then close to continue.
+        </div>
       </div>
     </template>
 
     <div class="space-y-4 p-2">
-      <div class="rounded-2xl border border-white/60 bg-white/55 p-3 shadow-sm backdrop-blur-md">
+      <div class="rounded-2xl border border-white/60 bg-white/55 p-3 shadow-sm">
         <div class="grid gap-3">
           <div class="grid gap-1.5">
             <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Title</label>

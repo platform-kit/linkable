@@ -22,8 +22,8 @@
           </div>
 
           <div class="min-w-0 flex-1">
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
+            <div class="flex items-start justify-between gap-3" @dblclick="toggleCmsButton">
+              <div class="min-w-0 cursor-pointer select-none">
                 <h1 class="truncate text-xl font-semibold tracking-tight sm:text-2xl">
                   {{ model.profile.displayName || "Your Name" }}
                 </h1>
@@ -67,7 +67,7 @@
           </div>
         </div>
 
-        <div class="mt-4 flex items-center justify-between gap-3">
+        <div v-if="canUseCms" class="mt-4 flex items-center justify-between gap-3">
           <div class="text-xs text-[color:var(--color-ink-soft)]">
             <span class="inline-flex items-center gap-2">
               <span class="h-2 w-2 rounded-full transition-all" :class="syncIndicatorClass"></span>
@@ -75,9 +75,9 @@
             </span>
           </div>
 
-          <div v-if="canUseCms" class="flex items-center gap-2">
+          <div class="flex items-center gap-2">
             <Button
-              v-if="isDev"
+              v-if="unsynced"
               rounded
               severity="secondary"
               class="!px-3 !py-2 !text-sm"
@@ -210,7 +210,7 @@
     </Dialog>
 
     <GithubSettingsDialog v-model:open="githubDialogOpen" />
-    <GitCommitDialog v-if="isDev" v-model:open="gitDialogOpen" />
+    <GitCommitDialog v-if="unsynced" v-model:open="gitDialogOpen" @commit="performCommit" />
 
     <Toast />
   </div>
@@ -245,6 +245,9 @@ import {
   GITHUB_SYNC_EVENT,
   canUseGithubSync,
   loadGithubSettings,
+  pushCmsDataToGithub,
+  commitPendingUploads,
+  getGithubToken,
   type GithubSettings,
 } from "./lib/github";
 
@@ -270,19 +273,52 @@ export default defineComponent({
     const githubDialogOpen = ref(false);
     const gitDialogOpen = ref(false);
     const previewMode = ref(true);
+    const cmsBtnVisible = ref(false);
 
     const githubReady = ref(false);
     const githubSettings = ref<GithubSettings>(loadGithubSettings());
     const syncing = ref(false);
+    const unsynced = ref(false);
 
     const updateGithubStatus = () => {
       githubReady.value = canUseGithubSync();
       githubSettings.value = loadGithubSettings();
     };
 
+    let keydownListener: ((e: KeyboardEvent) => void) | null = null;
+
     onMounted(async () => {
-      const remoteModel = await fetchModel();
-      model.value = remoteModel;
+      // initialize visibility, keyboard, and other window stuff first
+      if (typeof window !== "undefined") {
+        window.addEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
+
+        const storedCmsVisible = localStorage.getItem("cms-button-visible") === "true";
+        const urlParams = new URLSearchParams(window.location.search);
+        const cmsFromUrl = urlParams.has("cms");
+        cmsBtnVisible.value = storedCmsVisible || cmsFromUrl;
+        // kick off unsynced flag if there's pending JSON or uploads stored
+        if (localStorage.getItem("pending-cms") || localStorage.getItem("pending-uploads")) {
+          unsynced.value = true;
+        }
+
+        // Keyboard shortcut: Cmd/Ctrl + Shift + E
+        keydownListener = (e: KeyboardEvent) => {
+          if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "e") {
+            e.preventDefault();
+            cmsBtnVisible.value = !cmsBtnVisible.value;
+            localStorage.setItem("cms-button-visible", cmsBtnVisible.value ? "true" : "false");
+          }
+        };
+        window.addEventListener("keydown", keydownListener);
+      }
+
+      try {
+        const remoteModel = await fetchModel();
+        model.value = remoteModel;
+      } catch (err) {
+        console.warn("fetchModel failed", err);
+      }
+
       modelLoaded.value = true;
 
       setTimeout(() => {
@@ -290,18 +326,75 @@ export default defineComponent({
       }, 0);
 
       updateGithubStatus();
-      if (typeof window !== "undefined") {
-        window.addEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
-      }
     });
 
     onBeforeUnmount(() => {
       if (typeof window !== "undefined") {
         window.removeEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
+        if (keydownListener) {
+          window.removeEventListener("keydown", keydownListener);
+        }
       }
     });
 
-    const canUseCms = computed(() => isDev || githubReady.value);
+    const canUseCms = computed(() => cmsBtnVisible.value);
+
+    const toggleCmsButton = () => {
+      cmsBtnVisible.value = !cmsBtnVisible.value;
+      localStorage.setItem("cms-button-visible", cmsBtnVisible.value ? "true" : "false");
+    };
+
+    const performCommit = async (message: string) => {
+      if (!message.trim()) return;
+
+      if (isDev) {
+        // dev flow could integrate with git CLI; placeholder for now
+        toast.add({
+          severity: "info",
+          summary: "Dev commit",
+          detail: "Commit logic is handled externally in development.",
+          life: 2200,
+        });
+        // still clear unsynced flag
+        unsynced.value = false;
+        return;
+      }
+
+      // production: push pending CMS JSON to GitHub
+      syncing.value = true;
+      try {
+        let payload = localStorage.getItem("pending-cms");
+        if (!payload) {
+          payload = stableStringify(model.value);
+        }
+
+        // first commit any queued uploads that are still referenced
+        const settings = loadGithubSettings();
+        const token = getGithubToken();
+        // collect paths used by current model
+        const usedPaths = [model.value.profile.avatarUrl];
+        model.value.links.forEach((l) => {
+          if (l.imageUrl) usedPaths.push(l.imageUrl);
+        });
+        await commitPendingUploads(settings, token, usedPaths, message);
+
+        // then commit the CMS JSON
+        await pushCmsDataToGithub(payload, message);
+        unsynced.value = false;
+        localStorage.removeItem("pending-cms");
+        toast.add({
+          severity: "success",
+          summary: "Committed",
+          detail: "Changes pushed to GitHub.",
+          life: 2200,
+        });
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : "Unable to push to GitHub.";
+        toast.add({ severity: "error", summary: "Commit failed", detail: msg, life: 3200 });
+      } finally {
+        syncing.value = false;
+      }
+    };
 
     const enabledLinks = computed(() => model.value.links.filter((l) => l.enabled));
     const enabledSocials = computed(() =>
@@ -401,11 +494,15 @@ export default defineComponent({
         if (!modelLoaded.value || suppressPersist.value) {
           return;
         }
+        // mark unsynced immediately when model changes
+        unsynced.value = true;
 
         persistChain = persistChain.then(async () => {
           syncing.value = true;
           try {
             const result = await persistModel(model.value);
+            // clear unsynced only on success
+            unsynced.value = false;
             if (result === "github") {
               const now = Date.now();
               if (now - lastGithubToastAt > 1500) {
@@ -419,6 +516,7 @@ export default defineComponent({
               }
             }
           } catch (error) {
+            // keep unsynced true on failure
             const message =
               error instanceof Error ? error.message : "Unable to save changes.";
             toast.add({
@@ -442,6 +540,13 @@ export default defineComponent({
     });
 
     const syncStatusText = computed(() => {
+      // unsynced changes take precedence over normal status
+      if (unsynced.value && !syncing.value) {
+        if (isDev) {
+          return "Static site · Unsaved changes";
+        }
+        return `Unsynced changes · ${repoLabel.value}`;
+      }
       if (isDev) {
         return "Static site · Saved locally";
       }
@@ -458,10 +563,9 @@ export default defineComponent({
       if (syncing.value) {
         return "bg-[color:var(--color-brand)] shadow-[0_0_0_4px_rgba(59,130,246,0.18)] animate-pulse";
       }
-      if (isDev || githubReady.value) {
-        return "bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.14)]";
+      if (unsynced.value) {
+        return "bg-yellow-400 shadow-[0_0_0_4px_rgba(245,158,11,0.20)]";
       }
-      return "bg-amber-400 shadow-[0_0_0_4px_rgba(245,158,11,0.20)]";
     });
 
     const togglePreviewMode = () => {
@@ -476,6 +580,7 @@ export default defineComponent({
       isDev,
       model,
       cmsOpen,
+      cmsBtnVisible,
       previewMode,
       enabledLinks,
       enabledSocials,
@@ -489,12 +594,14 @@ export default defineComponent({
       applyImport,
       updateModel,
       canUseCms,
+      toggleCmsButton,
       githubDialogOpen,
       gitDialogOpen,
       syncStatusText,
       syncIndicatorClass,
       togglePreviewMode,
       openGithubSettings,
+      unsynced,
     };
   },
 });

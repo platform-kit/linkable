@@ -61,8 +61,7 @@ export const defaultModel = (): BioModel => ({
   profile: {
     displayName: "Nova Studio",
     tagline: "Design-forward links. Clean, fast, yours.",
-    avatarUrl:
-      "https://images.unsplash.com/photo-1520975747332-21bdb8e569ab?auto=format&fit=crop&w=256&q=80",
+    avatarUrl: "",
   },
   links: [
     {

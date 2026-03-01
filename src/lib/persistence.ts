@@ -2,7 +2,10 @@ import type { BioModel } from "./model";
 import { sanitizeModel, stableStringify } from "./model";
 import { canUseGithubSync, pushCmsDataToGithub } from "./github";
 
-const DEV_ENDPOINT = "/cms-data";
+// use a unique path that won't collide with Vite's internal module
+// handling for JSON files. `/cms-data` was being rewritten by the server, so
+// fetching it returned a JS module rather than raw JSON.
+const DEV_ENDPOINT = "/__cms-data";
 const PROD_ENDPOINT = "/data.json";
 
 export type PersistResult = "dev" | "github" | "skipped";
@@ -27,6 +30,7 @@ export const persistModel = async (input: BioModel): Promise<PersistResult> => {
   const serialized = stableStringify(sanitized);
 
   if (import.meta.env.DEV) {
+    // development writes to local server endpoint
     await fetch(DEV_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -35,10 +39,12 @@ export const persistModel = async (input: BioModel): Promise<PersistResult> => {
     return "dev";
   }
 
-  if (!canUseGithubSync()) {
-    throw new Error("Configure GitHub sync to save changes.");
+  // production: defer actual GitHub commit, store in localStorage until user triggers commit
+  try {
+    const storage = window.localStorage;
+    storage.setItem("pending-cms", serialized);
+  } catch {
+    // ignore if storage unavailable
   }
-
-  await pushCmsDataToGithub(serialized);
-  return "github";
+  return "dev"; // still treat as dev so UI doesn't think it's synced
 };
