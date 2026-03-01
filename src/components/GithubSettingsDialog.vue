@@ -27,17 +27,20 @@
         <div class="mt-4 grid gap-3 md:grid-cols-2">
           <div class="grid gap-2">
             <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Owner</label>
-            <InputText v-model="form.owner" placeholder="e.g. your-github-username" />
+            <InputText v-model="form.owner" placeholder="e.g. your-github-username" :disabled="!!envOwner" />
+            <span v-if="envOwner" class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">Set via environment variable</span>
           </div>
 
           <div class="grid gap-2">
             <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Repository</label>
-            <InputText v-model="form.repo" placeholder="e.g. linkable" />
+            <InputText v-model="form.repo" placeholder="e.g. linkable" :disabled="!!envRepo" />
+            <span v-if="envRepo" class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">Set via environment variable</span>
           </div>
 
           <div class="grid gap-2">
             <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Branch</label>
-            <InputText v-model="form.branch" placeholder="main" />
+            <InputText v-model="form.branch" placeholder="main" :disabled="!!envBranch" />
+            <span v-if="envBranch" class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">Set via environment variable</span>
           </div>
 
           <div class="grid gap-2">
@@ -162,10 +165,20 @@ import {
 
 type FormState = GithubSettings & { token: string };
 
-const defaultForm = (): FormState => ({
-  ...loadGithubSettings(),
-  token: getGithubToken(),
-});
+const envOwner = import.meta.env.VITE_GITHUB_OWNER || "";
+const envRepo = import.meta.env.VITE_GITHUB_REPO || "";
+const envBranch = import.meta.env.VITE_GITHUB_BRANCH || "";
+
+const defaultForm = (): FormState => {
+  const settings = loadGithubSettings();
+  return {
+    ...settings,
+    owner: envOwner || settings.owner,
+    repo: envRepo || settings.repo,
+    branch: envBranch || settings.branch,
+    token: getGithubToken(),
+  };
+};
 
 export default defineComponent({
   name: "GithubSettingsDialog",
@@ -307,6 +320,9 @@ export default defineComponent({
       handleSave,
       handleTest,
       clearToken,
+      envOwner,
+      envRepo,
+      envBranch,
     };
   },
 });

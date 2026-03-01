@@ -244,17 +244,20 @@
                 <div class="mt-4 grid gap-3 md:grid-cols-2">
                   <div class="grid gap-2">
                     <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Owner</label>
-                    <InputText v-model="githubForm.owner" placeholder="e.g. your-github-username" />
+                    <InputText v-model="githubForm.owner" placeholder="e.g. your-github-username" :disabled="!!envOwner" />
+                    <span v-if="envOwner" class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">Set via environment variable</span>
                   </div>
 
                   <div class="grid gap-2">
                     <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Repository</label>
-                    <InputText v-model="githubForm.repo" placeholder="e.g. linkable" />
+                    <InputText v-model="githubForm.repo" placeholder="e.g. linkable" :disabled="!!envRepo" />
+                    <span v-if="envRepo" class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">Set via environment variable</span>
                   </div>
 
                   <div class="grid gap-2">
                     <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Branch</label>
-                    <InputText v-model="githubForm.branch" placeholder="main" />
+                    <InputText v-model="githubForm.branch" placeholder="main" :disabled="!!envBranch" />
+                    <span v-if="envBranch" class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">Set via environment variable</span>
                   </div>
 
                   <div class="grid gap-2">
@@ -609,10 +612,20 @@ export default defineComponent({
 
     // GitHub Settings
     type GithubFormState = GithubSettings & { token: string };
-    const defaultGithubForm = (): GithubFormState => ({
-      ...loadGithubSettings(),
-      token: getGithubToken(),
-    });
+    const envOwner = import.meta.env.VITE_GITHUB_OWNER || "";
+    const envRepo = import.meta.env.VITE_GITHUB_REPO || "";
+    const envBranch = import.meta.env.VITE_GITHUB_BRANCH || "";
+
+    const defaultGithubForm = (): GithubFormState => {
+      const settings = loadGithubSettings();
+      return {
+        ...settings,
+        owner: envOwner || settings.owner,
+        repo: envRepo || settings.repo,
+        branch: envBranch || settings.branch,
+        token: getGithubToken(),
+      };
+    };
 
     const githubForm = reactive<GithubFormState>(defaultGithubForm());
     const githubSaving = ref(false);
@@ -743,6 +756,9 @@ export default defineComponent({
       handleGithubSave,
       handleGithubTest,
       clearGithubToken,
+      envOwner,
+      envRepo,
+      envBranch,
     };
   },
 });

@@ -269,5 +269,10 @@ const cmsMiddlewarePlugin = () => ({
           port: 8080,
         },
         plugins: [cmsMiddlewarePlugin(), vue()],
+        define: {
+          "import.meta.env.VITE_GITHUB_OWNER": JSON.stringify(process.env.GITHUB_OWNER || ""),
+          "import.meta.env.VITE_GITHUB_REPO": JSON.stringify(process.env.GITHUB_REPO || ""),
+          "import.meta.env.VITE_GITHUB_BRANCH": JSON.stringify(process.env.GITHUB_BRANCH || ""),
+        },
       };
     });
