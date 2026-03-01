@@ -621,13 +621,13 @@ export default defineComponent({
 
     const save = () => {
       emit("update:model", sanitizeModel(draft.value));
-      visible.value = false;
       toast.add({
         severity: "success",
         summary: "Saved",
         detail: "Your content was updated.",
         life: 1800,
       });
+      visible.value = false;
     };
 
     if (!draft.value) draft.value = defaultModel();

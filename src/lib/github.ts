@@ -286,6 +286,32 @@ export const clearPendingUploads = (): void => {
   }
 };
 
+/**
+ * If the given URL matches a pending (uncommitted) upload, return a
+ * data-URI so the image can be previewed before committing.
+ * Otherwise returns the original URL unchanged.
+ */
+export const resolveUploadUrl = (url: string): string => {
+  if (!url) return url;
+  const pending = loadPendingUploads();
+  const match = pending.find((u) => u.publicPath === url);
+  if (!match) return url;
+
+  // Infer MIME from file extension
+  const ext = (match.fileName || "").split(".").pop()?.toLowerCase() || "png";
+  const mimeMap: Record<string, string> = {
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    gif: "image/gif",
+    webp: "image/webp",
+    svg: "image/svg+xml",
+    avif: "image/avif",
+  };
+  const mime = mimeMap[ext] || "image/png";
+  return `data:${mime};base64,${match.base64Content}`;
+};
+
 export const commitPendingUploads = async (
   settings: GithubSettings,
   token: string,

@@ -1,6 +1,5 @@
 import type { BioModel } from "./model";
 import { sanitizeModel, stableStringify } from "./model";
-import { canUseGithubSync, pushCmsDataToGithub } from "./github";
 
 // use a unique path that won't collide with Vite's internal module
 // handling for JSON files. `/cms-data` was being rewritten by the server, so
@@ -8,9 +7,28 @@ import { canUseGithubSync, pushCmsDataToGithub } from "./github";
 const DEV_ENDPOINT = "/__cms-data";
 const PROD_ENDPOINT = "/data.json";
 
-export type PersistResult = "dev" | "github" | "skipped";
+const PENDING_CMS_KEY = "pending-cms";
 
+export type PersistResult = "dev" | "staged" | "skipped";
+
+/**
+ * In production, check localStorage for staged (uncommitted) edits.
+ * If found, use those instead of the remote data.json so the user
+ * sees their in-progress work.
+ */
 export const fetchModel = async (): Promise<BioModel> => {
+  // In production, prefer staged data from localStorage
+  if (!import.meta.env.DEV) {
+    try {
+      const staged = window.localStorage.getItem(PENDING_CMS_KEY);
+      if (staged) {
+        return sanitizeModel(JSON.parse(staged));
+      }
+    } catch {
+      // fall through to remote fetch
+    }
+  }
+
   const endpoint = import.meta.env.DEV ? DEV_ENDPOINT : PROD_ENDPOINT;
   const response = await fetch(endpoint, {
     headers: { Accept: "application/json" },
@@ -39,12 +57,38 @@ export const persistModel = async (input: BioModel): Promise<PersistResult> => {
     return "dev";
   }
 
-  // production: defer actual GitHub commit, store in localStorage until user triggers commit
+  // production: stage changes in localStorage until user commits
   try {
-    const storage = window.localStorage;
-    storage.setItem("pending-cms", serialized);
+    window.localStorage.setItem(PENDING_CMS_KEY, serialized);
   } catch {
     // ignore if storage unavailable
   }
-  return "dev"; // still treat as dev so UI doesn't think it's synced
+  return "staged";
+};
+
+/** Check if there are uncommitted staged changes in localStorage. */
+export const hasStagedChanges = (): boolean => {
+  try {
+    return !!window.localStorage.getItem(PENDING_CMS_KEY);
+  } catch {
+    return false;
+  }
+};
+
+/** Get the staged JSON string (for committing to GitHub). */
+export const getStagedData = (): string | null => {
+  try {
+    return window.localStorage.getItem(PENDING_CMS_KEY);
+  } catch {
+    return null;
+  }
+};
+
+/** Clear staged data after a successful commit. */
+export const clearStagedData = (): void => {
+  try {
+    window.localStorage.removeItem(PENDING_CMS_KEY);
+  } catch {
+    // ignore
+  }
 };

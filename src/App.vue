@@ -87,7 +87,7 @@
               >
                 <img
                   v-if="link.imageUrl"
-                  :src="link.imageUrl"
+                  :src="resolveUploadUrl(link.imageUrl)"
                   alt=""
                   class="h-full w-full object-cover"
                   loading="lazy"
@@ -256,7 +256,7 @@ import {
   sanitizeModel,
   stableStringify,
 } from "./lib/model";
-import { fetchModel, persistModel } from "./lib/persistence";
+import { fetchModel, persistModel, getStagedData, clearStagedData } from "./lib/persistence";
 import {
   GITHUB_SYNC_EVENT,
   canUseGithubSync,
@@ -264,6 +264,7 @@ import {
   pushCmsDataToGithub,
   commitPendingUploads,
   getGithubToken,
+  resolveUploadUrl,
   type GithubSettings,
 } from "./lib/github";
 
@@ -364,40 +365,36 @@ export default defineComponent({
       if (!message.trim()) return;
 
       if (isDev) {
-        // dev flow could integrate with git CLI; placeholder for now
         toast.add({
           severity: "info",
           summary: "Dev commit",
           detail: "Commit logic is handled externally in development.",
           life: 2200,
         });
-        // still clear unsynced flag
         unsynced.value = false;
         return;
       }
 
-      // production: push pending CMS JSON to GitHub
+      // production: push staged CMS JSON + queued uploads to GitHub
       syncing.value = true;
       try {
-        let payload = localStorage.getItem("pending-cms");
-        if (!payload) {
-          payload = stableStringify(model.value);
-        }
+        const payload = getStagedData() || stableStringify(model.value);
 
         // first commit any queued uploads that are still referenced
         const settings = loadGithubSettings();
         const token = getGithubToken();
-        // collect paths used by current model
-        const usedPaths = [model.value.profile.avatarUrl];
+        const usedPaths = [model.value.profile.avatarUrl, model.value.profile.bannerUrl];
         model.value.links.forEach((l) => {
           if (l.imageUrl) usedPaths.push(l.imageUrl);
         });
-        await commitPendingUploads(settings, token, usedPaths, message);
+        await commitPendingUploads(settings, token, usedPaths.filter(Boolean), message);
 
         // then commit the CMS JSON
         await pushCmsDataToGithub(payload, message);
+
+        // clear staged data on success
+        clearStagedData();
         unsynced.value = false;
-        localStorage.removeItem("pending-cms");
         toast.add({
           severity: "success",
           summary: "Committed",
@@ -429,7 +426,7 @@ export default defineComponent({
       const u = (model.value.profile.avatarUrl || "").trim();
       if (!u) return "";
       if (avatarErrored.value) return "";
-      return u;
+      return resolveUploadUrl(u);
     });
 
     watch(
@@ -448,7 +445,7 @@ export default defineComponent({
       const u = (model.value.profile.bannerUrl || "").trim();
       if (!u) return "";
       if (bannerErrored.value) return "";
-      return u;
+      return resolveUploadUrl(u);
     });
 
     watch(
@@ -535,7 +532,7 @@ export default defineComponent({
     };
 
     let persistChain: Promise<void> = Promise.resolve();
-    let lastGithubToastAt = 0;
+    let persistDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
     watch(
       model,
@@ -546,38 +543,33 @@ export default defineComponent({
         // mark unsynced immediately when model changes
         unsynced.value = true;
 
-        persistChain = persistChain.then(async () => {
-          syncing.value = true;
-          try {
-            const result = await persistModel(model.value);
-            // clear unsynced only on success
-            unsynced.value = false;
-            if (result === "github") {
-              const now = Date.now();
-              if (now - lastGithubToastAt > 1500) {
-                toast.add({
-                  severity: "success",
-                  summary: "Synced",
-                  detail: "Changes pushed to GitHub.",
-                  life: 2200,
-                });
-                lastGithubToastAt = now;
+        // debounce to batch rapid changes (e.g. drag reorder)
+        if (persistDebounceTimer) clearTimeout(persistDebounceTimer);
+        persistDebounceTimer = setTimeout(() => {
+          persistChain = persistChain.then(async () => {
+            syncing.value = true;
+            try {
+              const result = await persistModel(model.value);
+              if (result === "dev") {
+                // dev: written to local file, clear unsynced
+                unsynced.value = false;
               }
+              // "staged": keep unsynced=true so the user knows
+              // there are uncommitted changes to push
+            } catch (error) {
+              const message =
+                error instanceof Error ? error.message : "Unable to save changes.";
+              toast.add({
+                severity: "error",
+                summary: "Save failed",
+                detail: message,
+                life: 3200,
+              });
+            } finally {
+              syncing.value = false;
             }
-          } catch (error) {
-            // keep unsynced true on failure
-            const message =
-              error instanceof Error ? error.message : "Unable to save changes.";
-            toast.add({
-              severity: "error",
-              summary: "Save failed",
-              detail: message,
-              life: 3200,
-            });
-          } finally {
-            syncing.value = false;
-          }
-        });
+          });
+        }, isDev ? 100 : 300);
       },
       { deep: true },
     );
@@ -589,12 +581,11 @@ export default defineComponent({
     });
 
     const syncStatusText = computed(() => {
-      // unsynced changes take precedence over normal status
       if (unsynced.value && !syncing.value) {
         if (isDev) {
           return "Static site · Unsaved changes";
         }
-        return `Unsynced changes · ${repoLabel.value}`;
+        return `Uncommitted changes · ${repoLabel.value}`;
       }
       if (isDev) {
         return "Static site · Saved locally";
@@ -653,6 +644,7 @@ export default defineComponent({
       togglePreviewMode,
       openGithubSettings,
       unsynced,
+      resolveUploadUrl,
     };
   },
 });
