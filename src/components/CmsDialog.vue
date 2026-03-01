@@ -54,6 +54,17 @@
             <button
               type="button"
               class="cms__tab"
+              :class="{ 'is-active': tab === 'resume' }"
+              @click="tab = 'resume'"
+            >
+              <span class="cms__tab-icon"><i class="pi pi-file" /></span>
+              <span class="cms__tab-label">Resume</span>
+              <span class="cms__tab-pill" :class="{ 'cms__tab-pill--ghost': !draft.resume.enabled }">{{ draft.resume.enabled ? '✓' : '0' }}</span>
+            </button>
+
+            <button
+              type="button"
+              class="cms__tab"
               :class="{ 'is-active': tab === 'github' }"
               @click="tab = 'github'"
             >
@@ -240,6 +251,138 @@
           </div>
         </section>
 
+        <section v-else-if="tab === 'resume'" class="cms__panel">
+          <div class="cms__panel-head cms__panel-head--row">
+            <div>
+              <div class="cms__title">Resume</div>
+              <div class="cms__sub">Add your bio, education, experience, and skills.</div>
+            </div>
+          </div>
+
+          <div class="cms__card">
+            <div class="cms__form">
+              <!-- Enable / disable resume -->
+              <div class="flex items-center justify-between gap-3 rounded-xl border border-white/60 bg-white/45 p-3">
+                <div>
+                  <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable resume</div>
+                  <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+                    When disabled, the resume tab will not appear on the public page.
+                  </div>
+                </div>
+                <ToggleSwitch v-model="draft.resume.enabled" />
+              </div>
+
+              <!-- Bio -->
+              <div class="cms__field">
+                <label class="cms__label">Bio</label>
+                <Textarea v-model="draft.resume.bio" autoResize rows="4" class="w-full" placeholder="A brief professional summary…" />
+              </div>
+
+              <!-- Education -->
+              <div class="cms__field">
+                <div class="flex items-center justify-between mb-2">
+                  <label class="cms__label">Education</label>
+                  <Button rounded size="small" class="cms__primary !py-1 !px-3 !text-xs" @click="addEducation">
+                    <i class="pi pi-plus mr-1" />
+                    Add
+                  </Button>
+                </div>
+
+                <div v-if="draft.resume.education.length === 0" class="cms__empty">
+                  <div class="cms__empty-sub">No education entries yet.</div>
+                </div>
+                <div v-else class="grid gap-2">
+                  <button
+                    v-for="edu in draft.resume.education"
+                    :key="edu.id"
+                    type="button"
+                    class="cms__row"
+                    style="grid-template-columns: 44px 1fr auto;"
+                    @click="openEducationEditor(edu.id)"
+                  >
+                    <span class="cms__row-drag cms__row-drag--muted">
+                      <i class="pi pi-graduation-cap" />
+                    </span>
+                    <span class="cms__row-text">
+                      <span class="cms__row-title">{{ edu.institution || 'Untitled' }}</span>
+                      <span class="cms__row-sub">{{ [edu.degree, edu.field].filter(Boolean).join(' · ') || '(no details)' }}</span>
+                    </span>
+                    <span class="cms__row-meta">
+                      <span v-if="edu.startYear || edu.endYear" class="text-xs text-[color:var(--color-ink-soft)]">{{ edu.startYear }}–{{ edu.endYear }}</span>
+                      <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Employment -->
+              <div class="cms__field">
+                <div class="flex items-center justify-between mb-2">
+                  <label class="cms__label">Employment</label>
+                  <Button rounded size="small" class="cms__primary !py-1 !px-3 !text-xs" @click="addEmployment">
+                    <i class="pi pi-plus mr-1" />
+                    Add
+                  </Button>
+                </div>
+
+                <div v-if="draft.resume.employment.length === 0" class="cms__empty">
+                  <div class="cms__empty-sub">No employment entries yet.</div>
+                </div>
+                <div v-else class="grid gap-2">
+                  <button
+                    v-for="job in draft.resume.employment"
+                    :key="job.id"
+                    type="button"
+                    class="cms__row"
+                    style="grid-template-columns: 44px 1fr auto;"
+                    @click="openEmploymentEditor(job.id)"
+                  >
+                    <span class="cms__row-drag cms__row-drag--muted">
+                      <i class="pi pi-briefcase" />
+                    </span>
+                    <span class="cms__row-text">
+                      <span class="cms__row-title">{{ job.company || 'Untitled' }}</span>
+                      <span class="cms__row-sub">{{ job.role || '(no role)' }}</span>
+                    </span>
+                    <span class="cms__row-meta">
+                      <span v-if="job.startYear || job.endYear" class="text-xs text-[color:var(--color-ink-soft)]">{{ job.startYear }}–{{ job.endYear }}</span>
+                      <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Skills -->
+              <div class="cms__field">
+                <label class="cms__label">Skills</label>
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    v-for="(skill, i) in draft.resume.skills"
+                    :key="i"
+                    class="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/55 px-3 py-1 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm"
+                  >
+                    {{ skill }}
+                    <button type="button" class="hover:text-red-500 transition" @click="removeSkill(i)">
+                      <i class="pi pi-times text-[10px]" />
+                    </button>
+                  </span>
+                </div>
+                <div class="flex gap-2 mt-1">
+                  <InputText
+                    v-model="newSkillText"
+                    class="w-full"
+                    placeholder="Type a skill and press Add…"
+                    @keydown.enter.prevent="addSkill"
+                  />
+                  <Button rounded size="small" severity="secondary" @click="addSkill" :disabled="!newSkillText.trim()">
+                    Add
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section v-else-if="tab === 'github'" class="cms__panel">
           <div class="cms__panel-head">
             <div class="cms__title">GitHub Sync</div>
@@ -407,6 +550,16 @@
       v-model="activeSocialProxy"
       @delete="deleteActiveSocial"
     />
+    <ResumeEditorDrawer
+      v-if="activeEducation || activeEmployment"
+      v-model:open="resumeEditorOpen"
+      :editMode="resumeEditMode"
+      :education="activeEducation"
+      :employment="activeEmployment"
+      @update:education="updateEducation"
+      @update:employment="updateEmployment"
+      @delete="deleteResumeEntry"
+    />
   </Dialog>
 </template>
 
@@ -419,18 +572,25 @@ import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
 import Tag from "primevue/tag";
 import Textarea from "primevue/textarea";
+import ToggleSwitch from "primevue/toggleswitch";
 import { useToast } from "primevue/usetoast";
 
 import ImageUploadField from "./ImageUploadField.vue";
 import LinkEditorDrawer from "./LinkEditorDrawer.vue";
 import SocialEditorDrawer from "./SocialEditorDrawer.vue";
+import ResumeEditorDrawer from "./ResumeEditorDrawer.vue";
 import {
   type BioLink,
   type BioModel,
   type SocialLink,
+  type EducationEntry,
+  type EmploymentEntry,
   defaultModel,
+  defaultResume,
   newLink,
   newSocial,
+  newEducation,
+  newEmployment,
   sanitizeModel,
   stableStringify,
 } from "../lib/model";
@@ -457,6 +617,8 @@ export default defineComponent({
     LinkEditorDrawer,
     SocialEditorDrawer,
     ImageUploadField,
+    ResumeEditorDrawer,
+    ToggleSwitch,
   },
   props: {
     open: { type: Boolean, required: true },
@@ -473,7 +635,7 @@ export default defineComponent({
     );
     watch(visible, (v) => emit("update:open", v));
 
-    const tab = ref<"profile" | "links" | "socials">("links");
+    const tab = ref<"profile" | "links" | "socials" | "resume" | "github">("links");
 
     const draft = ref<BioModel>(sanitizeModel(props.model));
     watch(
@@ -631,6 +793,100 @@ export default defineComponent({
     };
 
     if (!draft.value) draft.value = defaultModel();
+    // ensure resume section exists on draft
+    if (!draft.value.resume) {
+      draft.value.resume = defaultResume();
+    }
+
+    // Resume editor state
+    const resumeEditorOpen = ref(false);
+    const resumeEditMode = ref<"education" | "employment">("education");
+    const activeEducationId = ref("");
+    const activeEmploymentId = ref("");
+    const newSkillText = ref("");
+
+    const activeEducation = computed<EducationEntry | null>(() => {
+      const id = activeEducationId.value;
+      if (!id) return null;
+      return draft.value.resume.education.find((e) => e.id === id) ?? null;
+    });
+
+    const activeEmployment = computed<EmploymentEntry | null>(() => {
+      const id = activeEmploymentId.value;
+      if (!id) return null;
+      return draft.value.resume.employment.find((e) => e.id === id) ?? null;
+    });
+
+    const openEducationEditor = (id: string) => {
+      activeEducationId.value = id;
+      resumeEditMode.value = "education";
+      resumeEditorOpen.value = true;
+    };
+
+    const openEmploymentEditor = (id: string) => {
+      activeEmploymentId.value = id;
+      resumeEditMode.value = "employment";
+      resumeEditorOpen.value = true;
+    };
+
+    const addEducation = () => {
+      const e = newEducation();
+      draft.value.resume.education.push(e);
+      openEducationEditor(e.id);
+      toast.add({ severity: "success", summary: "Added", detail: "Education entry created.", life: 1600 });
+    };
+
+    const addEmployment = () => {
+      const e = newEmployment();
+      draft.value.resume.employment.push(e);
+      openEmploymentEditor(e.id);
+      toast.add({ severity: "success", summary: "Added", detail: "Employment entry created.", life: 1600 });
+    };
+
+    const updateEducation = (updated: EducationEntry) => {
+      const idx = draft.value.resume.education.findIndex((e) => e.id === updated.id);
+      if (idx >= 0) draft.value.resume.education[idx] = { ...updated };
+    };
+
+    const updateEmployment = (updated: EmploymentEntry) => {
+      const idx = draft.value.resume.employment.findIndex((e) => e.id === updated.id);
+      if (idx >= 0) draft.value.resume.employment[idx] = { ...updated };
+    };
+
+    const deleteResumeEntry = () => {
+      if (resumeEditMode.value === "education" && activeEducationId.value) {
+        draft.value.resume.education = draft.value.resume.education.filter(
+          (e) => e.id !== activeEducationId.value
+        );
+        activeEducationId.value = "";
+      } else if (resumeEditMode.value === "employment" && activeEmploymentId.value) {
+        draft.value.resume.employment = draft.value.resume.employment.filter(
+          (e) => e.id !== activeEmploymentId.value
+        );
+        activeEmploymentId.value = "";
+      }
+      resumeEditorOpen.value = false;
+      toast.add({ severity: "warn", summary: "Deleted", detail: "Entry removed.", life: 1600 });
+    };
+
+    const addSkill = () => {
+      const skill = newSkillText.value.trim();
+      if (!skill) return;
+      if (draft.value.resume.skills.includes(skill)) return;
+      draft.value.resume.skills.push(skill);
+      newSkillText.value = "";
+    };
+
+    const removeSkill = (index: number) => {
+      draft.value.resume.skills.splice(index, 1);
+    };
+
+    watch(resumeEditorOpen, (open) => {
+      if (!open) {
+        activeEducationId.value = "";
+        activeEmploymentId.value = "";
+      }
+    });
 
     // GitHub Settings
     type GithubFormState = GithubSettings & { token: string };
@@ -781,6 +1037,20 @@ export default defineComponent({
       envOwner,
       envRepo,
       envBranch,
+      resumeEditorOpen,
+      resumeEditMode,
+      activeEducation,
+      activeEmployment,
+      openEducationEditor,
+      openEmploymentEditor,
+      addEducation,
+      addEmployment,
+      updateEducation,
+      updateEmployment,
+      deleteResumeEntry,
+      newSkillText,
+      addSkill,
+      removeSkill,
     };
   },
 });
@@ -821,7 +1091,7 @@ cms__tabBar {
 
 .cms__tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
 }
 

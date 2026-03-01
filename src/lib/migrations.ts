@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -61,15 +61,23 @@ const migrations: Migration[] = [
   },
 
   // ── future migrations go here ──────────────────────────────────────
-  // {
-  //   toVersion: 2,
-  //   migrate: (data) => {
-  //     // example: add a new "theme" field to profile
-  //     // data.profile.theme = "default";
-  //     data.schemaVersion = 2;
-  //     return data;
-  //   },
-  // },
+  {
+    toVersion: 2,
+    migrate: (data) => {
+      // v1 → v2: add resume section with sensible defaults
+      if (!data.resume || typeof data.resume !== "object") {
+        data.resume = {
+          enabled: false,
+          bio: "",
+          education: [],
+          employment: [],
+          skills: [],
+        };
+      }
+      data.schemaVersion = 2;
+      return data;
+    },
+  },
 ];
 
 // ── public API ───────────────────────────────────────────────────────

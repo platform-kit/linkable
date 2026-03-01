@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -47,5 +47,12 @@
       "url": "https://github.com",
       "enabled": false
     }
-  ]
+  ],
+  "resume": {
+    "enabled": false,
+    "bio": "",
+    "education": [],
+    "employment": [],
+    "skills": []
+  }
 }

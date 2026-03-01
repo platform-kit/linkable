@@ -31,11 +31,38 @@ export type BioProfile = {
   bannerUrl: string;
 };
 
+export type EducationEntry = {
+  id: string;
+  institution: string;
+  degree: string;
+  field: string;
+  startYear: string;
+  endYear: string;
+};
+
+export type EmploymentEntry = {
+  id: string;
+  company: string;
+  role: string;
+  description: string;
+  startYear: string;
+  endYear: string;
+};
+
+export type BioResume = {
+  enabled: boolean;
+  bio: string;
+  education: EducationEntry[];
+  employment: EmploymentEntry[];
+  skills: string[];
+};
+
 export type BioModel = {
   schemaVersion: number;
   profile: BioProfile;
   links: BioLink[];
   socials: SocialLink[];
+  resume: BioResume;
 };
 
 export const newId = () =>
@@ -58,6 +85,32 @@ export const newSocial = (): SocialLink => ({
   label: "",
   url: "",
   enabled: false,
+});
+
+export const newEducation = (): EducationEntry => ({
+  id: newId(),
+  institution: "",
+  degree: "",
+  field: "",
+  startYear: "",
+  endYear: "",
+});
+
+export const newEmployment = (): EmploymentEntry => ({
+  id: newId(),
+  company: "",
+  role: "",
+  description: "",
+  startYear: "",
+  endYear: "",
+});
+
+export const defaultResume = (): BioResume => ({
+  enabled: false,
+  bio: "",
+  education: [],
+  employment: [],
+  skills: [],
 });
 
 export const defaultModel = (): BioModel => ({
@@ -110,6 +163,7 @@ export const defaultModel = (): BioModel => ({
       enabled: false,
     },
   ],
+  resume: defaultResume(),
 });
 
 const asString = (v: unknown) => (typeof v === "string" ? v : "");
@@ -189,7 +243,39 @@ export const sanitizeModel = (input: unknown): BioModel => {
     .filter((s: SocialLink) => !!s.id)
     .slice(0, 24);
 
-  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, links, socials };
+  const resumeRaw = obj.resume && typeof obj.resume === "object" ? obj.resume : {};
+  const resume: BioResume = {
+    enabled: typeof resumeRaw.enabled === "boolean" ? resumeRaw.enabled : false,
+    bio: asString(resumeRaw.bio).slice(0, 2000),
+    education: (Array.isArray(resumeRaw.education) ? resumeRaw.education : [])
+      .map((e: any) => ({
+        id: asString(e?.id) || newId(),
+        institution: asString(e?.institution).slice(0, 120),
+        degree: asString(e?.degree).slice(0, 120),
+        field: asString(e?.field).slice(0, 120),
+        startYear: asString(e?.startYear).slice(0, 10),
+        endYear: asString(e?.endYear).slice(0, 10),
+      }))
+      .filter((e: EducationEntry) => !!e.id)
+      .slice(0, 30),
+    employment: (Array.isArray(resumeRaw.employment) ? resumeRaw.employment : [])
+      .map((e: any) => ({
+        id: asString(e?.id) || newId(),
+        company: asString(e?.company).slice(0, 120),
+        role: asString(e?.role).slice(0, 120),
+        description: asString(e?.description).slice(0, 500),
+        startYear: asString(e?.startYear).slice(0, 10),
+        endYear: asString(e?.endYear).slice(0, 10),
+      }))
+      .filter((e: EmploymentEntry) => !!e.id)
+      .slice(0, 30),
+    skills: (Array.isArray(resumeRaw.skills) ? resumeRaw.skills : [])
+      .map((s: unknown) => asString(s).slice(0, 60))
+      .filter(Boolean)
+      .slice(0, 50),
+  };
+
+  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, links, socials, resume };
 };
 
 export const stableStringify = (model: BioModel) => JSON.stringify(model, null, 2);

@@ -1,18 +1,18 @@
 <template>
-  <div class="min-h-dvh">
-    <header class="mx-auto w-full max-w-[740px] px-4 pt-6 sm:pt-10">
+  <div class="min-h-dvh overflow-x-hidden">
+    <header class="mx-auto w-full max-w-[740px] px-3 pt-4 sm:px-4 sm:pt-10">
       <div class="glass overflow-hidden rounded-[var(--radius-xl)]">
         <!-- Banner image -->
         <img
           v-if="bannerSrc"
           :src="bannerSrc"
           alt="Banner"
-          class="h-40 w-full object-cover sm:h-52"
+          class="h-28 w-full object-cover sm:h-52"
           @error="onBannerError"
         />
 
-        <div class="p-4 sm:p-6">
-        <div class="flex items-start gap-4">
+        <div class="p-3 sm:p-6">
+        <div class="flex items-start gap-3 sm:gap-4">
           <div
             class="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-white/60 bg-white/45 shadow-sm backdrop-blur-md"
           >
@@ -34,7 +34,7 @@
           <div class="min-w-0 flex-1">
             <div class="flex items-start justify-between gap-3" @dblclick="toggleCmsButton">
               <div class="min-w-0 cursor-pointer select-none">
-                <h1 class="truncate text-xl font-semibold tracking-tight sm:text-2xl">
+                <h1 class="truncate text-lg font-semibold tracking-tight sm:text-2xl">
                   {{ model.profile.displayName || "Your Name" }}
                 </h1>
                 <p
@@ -50,17 +50,17 @@
 
             </div>
 
-            <div class="mt-3 flex flex-wrap items-center gap-2">
+            <div class="mt-2 flex flex-wrap items-center gap-1.5 sm:mt-3 sm:gap-2">
               <a
                 v-for="s in enabledSocials"
                 :key="s.id"
-                class="inline-flex items-center gap-2 rounded-full border border-white/65 bg-white/50 px-3 py-1.5 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm backdrop-blur-md transition hover:bg-white/65"
+                class="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/50 px-2.5 py-1 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm backdrop-blur-md transition hover:bg-white/65 sm:gap-2 sm:px-3 sm:py-1.5"
                 :href="s.type === 'email' && s.url && !s.url.startsWith('mailto:') ? 'mailto:' + s.url : s.url"
                 :target="s.type === 'email' ? undefined : '_blank'"
                 rel="noreferrer"
               >
-                <i class="pi" :class="socialIcon(s.type)" />
-                <span class="max-w-[16rem] truncate">{{ s.label }}</span>
+                <i class="pi shrink-0" :class="socialIcon(s.type)" />
+                <span class="truncate">{{ s.label }}</span>
               </a>
             </div>
           </div>
@@ -70,18 +70,43 @@
       </div>
     </header>
 
-    <main class="mx-auto w-full max-w-[740px] px-4 pb-10 pt-5 sm:pt-6">
-      <section class="glass rounded-[var(--radius-xl)] p-3 sm:p-4">
+    <main class="mx-auto w-full max-w-[740px] px-3 pb-24 pt-4 sm:px-4 sm:pb-10 sm:pt-6">
+      <!-- Tabbed navigation: show when user has both links and an enabled resume -->
+      <div v-if="showTabs" class="mb-3 flex gap-2">
+        <button
+          class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition"
+          :class="activeTab === 'links'
+            ? 'border-[color:var(--color-brand)]/30 bg-[color:var(--color-brand)]/10 text-[color:var(--color-brand)] shadow-sm'
+            : 'border-white/65 bg-white/50 text-[color:var(--color-ink-soft)] hover:bg-white/65'"
+          @click="activeTab = 'links'"
+        >
+          <i class="pi pi-link" />
+          Links
+        </button>
+        <button
+          class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition"
+          :class="activeTab === 'resume'
+            ? 'border-[color:var(--color-brand)]/30 bg-[color:var(--color-brand)]/10 text-[color:var(--color-brand)] shadow-sm'
+            : 'border-white/65 bg-white/50 text-[color:var(--color-ink-soft)] hover:bg-white/65'"
+          @click="activeTab = 'resume'"
+        >
+          <i class="pi pi-file" />
+          Resume
+        </button>
+      </div>
+
+      <!-- Links section -->
+      <section v-if="showLinksSection" class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-4">
         <div v-if="enabledLinks.length" class="grid gap-2">
           <a
             v-for="link in enabledLinks"
             :key="link.id"
-            class="group relative flex items-center justify-between gap-3 rounded-2xl border border-white/65 bg-white/55 px-4 py-3 shadow-sm backdrop-blur-md transition hover:bg-white/70 hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)]"
+            class="group relative flex min-w-0 items-center justify-between gap-2 rounded-2xl border border-white/65 bg-white/55 px-3 py-3 shadow-sm backdrop-blur-md transition hover:bg-white/70 hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)] sm:gap-3 sm:px-4"
             :href="link.url"
             target="_blank"
             rel="noreferrer"
           >
-            <div class="flex min-w-0 items-center gap-3">
+            <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
               <div
                 class="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-white/70 bg-white/60 shadow-sm backdrop-blur-md"
               >
@@ -103,7 +128,7 @@
               </div>
             </div>
 
-            <i class="pi pi-arrow-right text-[color:var(--color-ink-soft)] transition group-hover:translate-x-0.5" />
+            <i class="pi pi-arrow-right shrink-0 text-[color:var(--color-ink-soft)] transition group-hover:translate-x-0.5" />
           </a>
         </div>
 
@@ -120,6 +145,79 @@
           >
             Add links
           </Button>
+        </div>
+      </section>
+
+      <!-- Resume section -->
+      <section
+        v-if="showResumeSection"
+        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6"
+      >
+        <!-- Bio -->
+        <div v-if="model.resume.bio" class="mb-4 sm:mb-5">
+          <h2 class="mb-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-2 sm:text-xs">About</h2>
+          <p class="text-[13px] leading-relaxed text-[color:var(--color-ink)] sm:text-sm" style="white-space: pre-line;">{{ model.resume.bio }}</p>
+        </div>
+
+        <!-- Employment -->
+        <div v-if="model.resume.employment.length" class="mb-4 sm:mb-5">
+          <h2 class="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-3 sm:text-xs">Experience</h2>
+          <div class="grid gap-2 sm:gap-3">
+            <div
+              v-for="job in model.resume.employment"
+              :key="job.id"
+              class="rounded-xl border border-white/65 bg-white/55 p-3 shadow-sm backdrop-blur-md sm:rounded-2xl sm:p-4"
+            >
+              <div class="flex items-start justify-between gap-2 sm:gap-3">
+                <div class="min-w-0 flex-1">
+                  <div class="text-[13px] font-semibold text-[color:var(--color-ink)] sm:text-sm">{{ job.role }}</div>
+                  <div class="text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs">{{ job.company }}</div>
+                </div>
+                <div v-if="job.startYear || job.endYear" class="shrink-0 text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs">
+                  {{ job.startYear }}–{{ job.endYear }}
+                </div>
+              </div>
+              <p v-if="job.description" class="mt-1.5 text-[11px] leading-relaxed text-[color:var(--color-ink-soft)] sm:mt-2 sm:text-xs" style="white-space: pre-line;">{{ job.description }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Education -->
+        <div v-if="model.resume.education.length" class="mb-4 sm:mb-5">
+          <h2 class="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-3 sm:text-xs">Education</h2>
+          <div class="grid gap-2 sm:gap-3">
+            <div
+              v-for="edu in model.resume.education"
+              :key="edu.id"
+              class="rounded-xl border border-white/65 bg-white/55 p-3 shadow-sm backdrop-blur-md sm:rounded-2xl sm:p-4"
+            >
+              <div class="flex items-start justify-between gap-2 sm:gap-3">
+                <div class="min-w-0 flex-1">
+                  <div class="text-[13px] font-semibold text-[color:var(--color-ink)] sm:text-sm">{{ edu.institution }}</div>
+                  <div class="text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs">
+                    {{ [edu.degree, edu.field].filter(Boolean).join(' · ') }}
+                  </div>
+                </div>
+                <div v-if="edu.startYear || edu.endYear" class="shrink-0 text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs">
+                  {{ edu.startYear }}–{{ edu.endYear }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skills -->
+        <div v-if="model.resume.skills.length">
+          <h2 class="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-3 sm:text-xs">Skills</h2>
+          <div class="flex flex-wrap gap-1.5 sm:gap-2">
+            <span
+              v-for="(skill, i) in model.resume.skills"
+              :key="i"
+              class="inline-flex items-center rounded-full border border-white/65 bg-white/55 px-2.5 py-1 text-[11px] font-semibold text-[color:var(--color-ink)] shadow-sm backdrop-blur-md sm:px-3 sm:py-1.5 sm:text-xs"
+            >
+              {{ skill }}
+            </span>
+          </div>
         </div>
       </section>
 
@@ -180,7 +278,7 @@
     <Button
       v-if="canUseCms"
       rounded
-      class="!fixed !bottom-6 !right-6 !z-50 !border-0 !bg-[color:var(--color-brand)] !px-5 !py-3 !text-sm !shadow-[0_14px_38px_rgba(37,99,235,0.28)] hover:!shadow-[0_18px_52px_rgba(37,99,235,0.32)]"
+      class="!fixed !bottom-4 !right-3 !z-50 !border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 !text-sm !shadow-[0_14px_38px_rgba(37,99,235,0.28)] sm:!bottom-6 sm:!right-6 sm:!px-5 sm:!py-3 hover:!shadow-[0_18px_52px_rgba(37,99,235,0.32)]"
       @click="cmsOpen = true"
     >
       <i class="pi pi-sliders-h" />
@@ -190,11 +288,11 @@
     <!-- Floating status bar -->
     <div
       v-if="canUseCms"
-      class="fixed bottom-6 left-6 z-50 flex items-center gap-3 rounded-full border border-white/65 bg-white/70 px-4 py-2 text-xs text-[color:var(--color-ink-soft)] shadow-sm backdrop-blur-md"
+      class="fixed bottom-4 left-3 z-50 flex max-w-[calc(100vw-5rem)] items-center gap-2 rounded-full border border-white/65 bg-white/70 px-3 py-1.5 text-[11px] text-[color:var(--color-ink-soft)] shadow-sm backdrop-blur-md sm:bottom-6 sm:left-6 sm:gap-3 sm:px-4 sm:py-2 sm:text-xs"
     >
-      <span class="inline-flex items-center gap-2">
-        <span class="h-2 w-2 rounded-full transition-all" :class="syncIndicatorClass"></span>
-        <span>{{ syncStatusText }}</span>
+      <span class="inline-flex items-center gap-1.5 sm:gap-2">
+        <span class="h-2 w-2 shrink-0 rounded-full transition-all" :class="syncIndicatorClass"></span>
+        <span class="truncate">{{ syncStatusText }}</span>
       </span>
 
       <div class="flex items-center gap-1.5">
@@ -431,6 +529,35 @@ export default defineComponent({
       model.value.socials.filter((s) => s.enabled && s.url),
     );
 
+    const activeTab = ref<"links" | "resume">("links");
+
+    const resumeHasContent = computed(() => {
+      const r = model.value.resume;
+      if (!r || !r.enabled) return false;
+      return !!(
+        r.bio.trim() ||
+        r.education.length ||
+        r.employment.length ||
+        r.skills.length
+      );
+    });
+
+    const showTabs = computed(() => enabledLinks.value.length > 0 && resumeHasContent.value);
+
+    const showLinksSection = computed(() => {
+      // Show links when: tab is 'links' (either tabbed or no tabs and no resume)
+      if (showTabs.value) return activeTab.value === "links";
+      // No tabs: show links section if there are links, OR if there's no resume (show empty state)
+      return enabledLinks.value.length > 0 || !resumeHasContent.value;
+    });
+
+    const showResumeSection = computed(() => {
+      if (!resumeHasContent.value) return false;
+      if (showTabs.value) return activeTab.value === "resume";
+      // No tabs + resume has content: always show (only resume, no links)
+      return true;
+    });
+
     const initials = computed(() => {
       const name = (model.value.profile.displayName || "").trim();
       if (!name) return "LB";
@@ -639,6 +766,11 @@ export default defineComponent({
       previewMode,
       enabledLinks,
       enabledSocials,
+      activeTab,
+      resumeHasContent,
+      showTabs,
+      showLinksSection,
+      showResumeSection,
       initials,
       avatarSrc,
       onAvatarError,
