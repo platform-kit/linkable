@@ -24,8 +24,8 @@
               :class="{ 'is-active': tab === 'profile' }"
               @click="tab = 'profile'"
             >
-              <span class="cms__tab-icon"><i class="pi pi-user" /></span>
-              <span class="cms__tab-label">Profile</span>
+              <span class="cms__tab-icon"><i class="pi pi-cog" /></span>
+              <span class="cms__tab-label">Site</span>
               <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">0</span>
             </button>
 
@@ -90,69 +90,193 @@
       <div class="cms__content">
         <section v-if="tab === 'profile'" class="cms__panel">
           <div class="cms__panel-head">
-            <div class="cms__title">Profile</div>
-            <div class="cms__sub">Edit your site name and description.</div>
+            <div class="cms__title">Site</div>
+            <div class="cms__sub">Configure your profile, images, and theme.</div>
           </div>
 
-          <div class="cms__card">
-            <div class="cms__form">
-              <div class="cms__field">
-                <label class="cms__label">Name</label>
-                <InputText v-model="draft.profile.displayName" class="w-full" />
-              </div>
-
-              <div class="cms__field">
-                <label class="cms__label">Description</label>
-                <Textarea v-model="draft.profile.tagline" autoResize rows="4" class="w-full" />
-              </div>
-
-              <div class="cms__field">
-                <ImageUploadField
-                  v-model="draft.profile.bannerUrl"
-                  label="Banner image (optional)"
-                  description="A wide image displayed full-width above your profile card."
-                  targetFilename="banner.jpg"
-                >
-                  <template #helper>
-                    <div class="cms__help">
-                      Recommended size: 1480 × 420 px. Uploads sync to public/uploads in dev and commit to GitHub in production.
-                    </div>
-                  </template>
-                </ImageUploadField>
-              </div>
-
-              <div class="cms__field">
-                <label class="cms__label">Banner URL (optional)</label>
-                <InputText v-model="draft.profile.bannerUrl" class="w-full" placeholder="https://..." />
-                <div class="cms__help">
-                  Paste a hosted URL if you prefer; leave blank for no banner.
+          <!-- Identity -->
+          <button type="button" class="cms__accordion-trigger" @click="siteSection.identity = !siteSection.identity">
+            <span class="cms__accordion-label"><i class="pi pi-user" /> Identity</span>
+            <i class="pi" :class="siteSection.identity ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="siteSection.identity" class="cms__accordion-body">
+              <div class="cms__form">
+                <div class="cms__field">
+                  <label class="cms__label">Name</label>
+                  <InputText v-model="draft.profile.displayName" class="w-full" />
                 </div>
-              </div>
-
-              <div class="cms__field">
-                <ImageUploadField
-                  v-model="draft.profile.avatarUrl"
-                  label="Avatar image (optional)"
-                  description="Use a crisp, square image to headline your profile."
-                  targetFilename="avatar.jpg"
-                >
-                  <template #helper>
-                    <div class="cms__help">
-                      Uploads sync to public/uploads in dev and commit to GitHub in production.
-                    </div>
-                  </template>
-                </ImageUploadField>
-              </div>
-
-              <div class="cms__field">
-                <label class="cms__label">Avatar URL (optional)</label>
-                <InputText v-model="draft.profile.avatarUrl" class="w-full" placeholder="https://..." />
-                <div class="cms__help">
-                  Paste a hosted URL if you prefer; if left blank, initials will render.
+                <div class="cms__field">
+                  <label class="cms__label">Description</label>
+                  <Textarea v-model="draft.profile.tagline" autoResize rows="3" class="w-full" />
                 </div>
               </div>
             </div>
-          </div>
+          </Transition>
+
+          <!-- Images -->
+          <button type="button" class="cms__accordion-trigger" @click="siteSection.images = !siteSection.images">
+            <span class="cms__accordion-label"><i class="pi pi-image" /> Images</span>
+            <i class="pi" :class="siteSection.images ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="siteSection.images" class="cms__accordion-body">
+              <div class="cms__form">
+                <div class="cms__field">
+                  <ImageUploadField
+                    v-model="draft.profile.bannerUrl"
+                    label="Banner image"
+                    description="A wide image displayed above your profile card."
+                    targetFilename="banner.jpg"
+                  >
+                    <template #helper>
+                      <div class="cms__help">Recommended: 1480 × 420 px.</div>
+                    </template>
+                  </ImageUploadField>
+                </div>
+                <div class="cms__field">
+                  <label class="cms__label">Banner URL (optional)</label>
+                  <InputText v-model="draft.profile.bannerUrl" class="w-full" placeholder="https://..." />
+                </div>
+                <div class="cms__field">
+                  <ImageUploadField
+                    v-model="draft.profile.avatarUrl"
+                    label="Avatar image"
+                    description="Square image for your profile."
+                    targetFilename="avatar.jpg"
+                  >
+                    <template #helper>
+                      <div class="cms__help">Crisp, square images work best.</div>
+                    </template>
+                  </ImageUploadField>
+                </div>
+                <div class="cms__field">
+                  <label class="cms__label">Avatar URL (optional)</label>
+                  <InputText v-model="draft.profile.avatarUrl" class="w-full" placeholder="https://..." />
+                </div>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- Theme -->
+          <button type="button" class="cms__accordion-trigger" @click="siteSection.theme = !siteSection.theme">
+            <span class="cms__accordion-label"><i class="pi pi-palette" /> Theme</span>
+            <i class="pi" :class="siteSection.theme ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="siteSection.theme" class="cms__accordion-body">
+              <div class="cms__form">
+                <div class="cms__color-section-label">Colours</div>
+                <div class="cms__color-grid">
+                  <div class="cms__color-field">
+                    <label class="cms__label">Brand</label>
+                    <div class="cms__color-input-wrap">
+                      <input type="color" v-model="draft.theme.colorBrand" class="cms__color-swatch" />
+                      <InputText v-model="draft.theme.colorBrand" class="cms__color-hex" />
+                    </div>
+                  </div>
+                  <div class="cms__color-field">
+                    <label class="cms__label">Brand Strong</label>
+                    <div class="cms__color-input-wrap">
+                      <input type="color" v-model="draft.theme.colorBrandStrong" class="cms__color-swatch" />
+                      <InputText v-model="draft.theme.colorBrandStrong" class="cms__color-hex" />
+                    </div>
+                  </div>
+                  <div class="cms__color-field">
+                    <label class="cms__label">Accent</label>
+                    <div class="cms__color-input-wrap">
+                      <input type="color" v-model="draft.theme.colorAccent" class="cms__color-swatch" />
+                      <InputText v-model="draft.theme.colorAccent" class="cms__color-hex" />
+                    </div>
+                  </div>
+                  <div class="cms__color-field">
+                    <label class="cms__label">Text</label>
+                    <div class="cms__color-input-wrap">
+                      <input type="color" v-model="draft.theme.colorInk" class="cms__color-swatch" />
+                      <InputText v-model="draft.theme.colorInk" class="cms__color-hex" />
+                    </div>
+                  </div>
+                  <div class="cms__color-field">
+                    <label class="cms__label">Text Soft</label>
+                    <div class="cms__color-input-wrap">
+                      <input type="color" v-model="draft.theme.colorInkSoft" class="cms__color-swatch" />
+                      <InputText v-model="draft.theme.colorInkSoft" class="cms__color-hex" />
+                    </div>
+                  </div>
+                  <div class="cms__color-field">
+                    <label class="cms__label">Background</label>
+                    <div class="cms__color-input-wrap">
+                      <input type="color" v-model="draft.theme.bg" class="cms__color-swatch" />
+                      <InputText v-model="draft.theme.bg" class="cms__color-hex" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="cms__color-section-label">Surfaces &amp; Borders</div>
+                <div class="cms__color-grid">
+                  <div class="cms__color-field">
+                    <label class="cms__label">Glass</label>
+                    <div class="cms__color-input-wrap">
+                      <input type="color" :value="toHex(draft.theme.glass)" @input="draft.theme.glass = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                      <InputText v-model="draft.theme.glass" class="cms__color-hex" placeholder="rgba(255,255,255,0.66)" />
+                    </div>
+                  </div>
+                  <div class="cms__color-field">
+                    <label class="cms__label">Glass 2</label>
+                    <div class="cms__color-input-wrap">
+                      <input type="color" :value="toHex(draft.theme.glass2)" @input="draft.theme.glass2 = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                      <InputText v-model="draft.theme.glass2" class="cms__color-hex" placeholder="rgba(255,255,255,0.52)" />
+                    </div>
+                  </div>
+                  <div class="cms__color-field">
+                    <label class="cms__label">Glass Strong</label>
+                    <div class="cms__color-input-wrap">
+                      <input type="color" :value="toHex(draft.theme.glassStrong)" @input="draft.theme.glassStrong = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                      <InputText v-model="draft.theme.glassStrong" class="cms__color-hex" placeholder="rgba(255,255,255,0.82)" />
+                    </div>
+                  </div>
+                  <div class="cms__color-field">
+                    <label class="cms__label">Border</label>
+                    <div class="cms__color-input-wrap">
+                      <input type="color" :value="toHex(draft.theme.colorBorder)" @input="draft.theme.colorBorder = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                      <InputText v-model="draft.theme.colorBorder" class="cms__color-hex" placeholder="rgba(255,255,255,0.62)" />
+                    </div>
+                  </div>
+                  <div class="cms__color-field">
+                    <label class="cms__label">Border 2</label>
+                    <div class="cms__color-input-wrap">
+                      <input type="color" :value="toHex(draft.theme.colorBorder2)" @input="draft.theme.colorBorder2 = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                      <InputText v-model="draft.theme.colorBorder2" class="cms__color-hex" placeholder="rgba(11,18,32,0.10)" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="cms__color-section-label">Radius</div>
+                <div class="cms__color-grid">
+                  <div class="cms__color-field">
+                    <label class="cms__label">Card Radius (XL)</label>
+                    <div class="cms__color-input-wrap">
+                      <InputText v-model="draft.theme.radiusXl" class="cms__color-hex cms__color-hex--full" placeholder="1.6rem" />
+                    </div>
+                  </div>
+                  <div class="cms__color-field">
+                    <label class="cms__label">Inner Radius (LG)</label>
+                    <div class="cms__color-input-wrap">
+                      <InputText v-model="draft.theme.radiusLg" class="cms__color-hex cms__color-hex--full" placeholder="1.2rem" />
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  class="cms__reset-theme"
+                  @click="resetTheme"
+                >
+                  <i class="pi pi-refresh" /> Reset to defaults
+                </button>
+              </div>
+            </div>
+          </Transition>
         </section>
 
         <section v-else-if="tab === 'links'" class="cms__panel">
@@ -730,6 +854,7 @@ import {
   defaultModel,
   defaultResume,
   defaultGallery,
+  defaultTheme,
   newLink,
   newSocial,
   newEducation,
@@ -782,6 +907,12 @@ export default defineComponent({
     watch(visible, (v) => emit("update:open", v));
 
     const tab = ref<"profile" | "links" | "socials" | "resume" | "gallery" | "github">("links");
+
+    const siteSection = reactive({
+      identity: false,
+      images: false,
+      theme: false,
+    });
 
     const draft = ref<BioModel>(sanitizeModel(props.model));
     watch(
@@ -936,6 +1067,29 @@ export default defineComponent({
         life: 1800,
       });
       visible.value = false;
+    };
+
+    const resetTheme = () => {
+      draft.value.theme = defaultTheme();
+      toast.add({ severity: "info", summary: "Theme reset", detail: "Colours restored to defaults.", life: 1600 });
+    };
+
+    /** Convert any CSS color string (hex, rgb, rgba) to #rrggbb for <input type="color"> */
+    const toHex = (color: string): string => {
+      if (!color) return "#000000";
+      // Already a hex value
+      if (/^#[0-9a-f]{6}$/i.test(color)) return color;
+      if (/^#[0-9a-f]{3}$/i.test(color)) {
+        const [, r, g, b] = color.match(/^#(.)(.)(.)$/)!;
+        return `#${r}${r}${g}${g}${b}${b}`;
+      }
+      // Parse rgb/rgba
+      const m = color.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/);
+      if (m) {
+        const hex = (n: number) => Math.round(n).toString(16).padStart(2, "0");
+        return `#${hex(+m[1])}${hex(+m[2])}${hex(+m[3])}`;
+      }
+      return "#000000";
     };
 
     if (!draft.value) draft.value = defaultModel();
@@ -1231,9 +1385,12 @@ export default defineComponent({
       visible,
       tab,
       draft,
+      siteSection,
       hasChanges,
       discard,
       save,
+      resetTheme,
+      toHex,
       linkEditorOpen,
       activeLink,
       activeLinkProxy,
@@ -1891,5 +2048,165 @@ cms__footer-right {
   .cms__primary--addon {
     min-width: auto;
   }
+}
+
+/* Accordion */
+.cms__accordion-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-top: 8px;
+  border-radius: 16px;
+  border: 1px solid rgba(11, 18, 32, 0.08);
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: rgba(11, 18, 32, 0.88);
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.cms__accordion-trigger:first-of-type {
+  margin-top: 0;
+}
+
+.cms__accordion-trigger:hover {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(11, 18, 32, 0.12);
+}
+
+.cms__accordion-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cms__accordion-body {
+  padding: 12px 2px 4px;
+  overflow: hidden;
+}
+
+/* Collapse transition */
+.cms-collapse-enter-active,
+.cms-collapse-leave-active {
+  transition: all 200ms ease;
+  max-height: 600px;
+  opacity: 1;
+}
+.cms-collapse-enter-from,
+.cms-collapse-leave-to {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+/* Color editor grid */
+.cms__color-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 16px;
+}
+
+@media (max-width: 720px) {
+  .cms__color-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .cms__color-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cms__color-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cms__color-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cms__color-swatch {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 12px;
+  border: 1px solid rgba(11, 18, 32, 0.12);
+  padding: 2px;
+  cursor: pointer;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.cms__color-swatch::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.cms__color-swatch::-webkit-color-swatch {
+  border: none;
+  border-radius: 8px;
+}
+
+.cms__color-swatch::-moz-color-swatch {
+  border: none;
+  border-radius: 8px;
+}
+
+.cms__color-hex {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 0;
+  font-size: 12px !important;
+  font-family: ui-monospace, monospace !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cms__color-hex--full {
+  flex: 1 1 100%;
+  width: 100%;
+}
+
+.cms__color-section-label {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(11, 18, 32, 0.45);
+  margin-top: 6px;
+}
+
+.cms__reset-theme {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(11, 18, 32, 0.1);
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(11, 18, 32, 0.65);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+  justify-self: start;
+}
+
+.cms__reset-theme:hover {
+  background: rgba(255, 255, 255, 0.82);
+  color: rgba(11, 18, 32, 0.85);
 }
 </style>

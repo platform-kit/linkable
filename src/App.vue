@@ -817,6 +817,26 @@ export default defineComponent({
       }
     });
 
+    // Apply theme CSS variables reactively
+    watchEffect(() => {
+      const t = model.value.theme;
+      if (!t) return;
+      const root = document.documentElement.style;
+      if (t.colorBrand) root.setProperty("--color-brand", t.colorBrand);
+      if (t.colorBrandStrong) root.setProperty("--color-brand-strong", t.colorBrandStrong);
+      if (t.colorAccent) root.setProperty("--color-accent", t.colorAccent);
+      if (t.colorInk) root.setProperty("--color-ink", t.colorInk);
+      if (t.colorInkSoft) root.setProperty("--color-ink-soft", t.colorInkSoft);
+      if (t.bg) root.setProperty("--bg", t.bg);
+      if (t.glass) root.setProperty("--glass", t.glass);
+      if (t.glass2) root.setProperty("--glass-2", t.glass2);
+      if (t.glassStrong) root.setProperty("--glass-strong", t.glassStrong);
+      if (t.colorBorder) root.setProperty("--color-border", t.colorBorder);
+      if (t.colorBorder2) root.setProperty("--color-border-2", t.colorBorder2);
+      if (t.radiusXl) root.setProperty("--radius-xl", t.radiusXl);
+      if (t.radiusLg) root.setProperty("--radius-lg", t.radiusLg);
+    });
+
     const canUseCms = computed(() => cmsBtnVisible.value);
 
     const toggleCmsButton = () => {

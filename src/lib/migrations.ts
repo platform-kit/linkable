@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 6;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -104,6 +104,43 @@ const migrations: Migration[] = [
         }
       }
       data.schemaVersion = 4;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 5,
+    migrate: (data) => {
+      // v4 → v5: add theme object with default CSS variable values
+      if (!data.theme || typeof data.theme !== "object") {
+        data.theme = {
+          colorBrand: "#3b82f6",
+          colorBrandStrong: "#2563eb",
+          colorAccent: "#ff5a7a",
+          colorInk: "#0b1220",
+          colorInkSoft: "rgba(11, 18, 32, 0.62)",
+          bg: "#f5f7fb",
+        };
+      }
+      data.schemaVersion = 5;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 6,
+    migrate: (data) => {
+      // v5 → v6: add glass, border, and radius fields to theme
+      if (data.theme && typeof data.theme === "object") {
+        data.theme.glass ??= "rgba(255, 255, 255, 0.66)";
+        data.theme.glass2 ??= "rgba(255, 255, 255, 0.52)";
+        data.theme.glassStrong ??= "rgba(255, 255, 255, 0.82)";
+        data.theme.colorBorder ??= "rgba(255, 255, 255, 0.62)";
+        data.theme.colorBorder2 ??= "rgba(11, 18, 32, 0.10)";
+        data.theme.radiusXl ??= "1.6rem";
+        data.theme.radiusLg ??= "1.2rem";
+      }
+      data.schemaVersion = 6;
       return data;
     },
   },

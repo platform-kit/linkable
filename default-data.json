@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 6,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -59,5 +59,20 @@
   "gallery": {
     "enabled": false,
     "items": []
+  },
+  "theme": {
+    "colorBrand": "#3b82f6",
+    "colorBrandStrong": "#2563eb",
+    "colorAccent": "#ff5a7a",
+    "colorInk": "#0b1220",
+    "colorInkSoft": "rgba(11, 18, 32, 0.62)",
+    "bg": "#f5f7fb",
+    "glass": "rgba(255, 255, 255, 0.66)",
+    "glass2": "rgba(255, 255, 255, 0.52)",
+    "glassStrong": "rgba(255, 255, 255, 0.82)",
+    "colorBorder": "rgba(255, 255, 255, 0.62)",
+    "colorBorder2": "rgba(11, 18, 32, 0.10)",
+    "radiusXl": "1.6rem",
+    "radiusLg": "1.2rem"
   }
 }

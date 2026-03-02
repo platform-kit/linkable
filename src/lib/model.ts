@@ -85,6 +85,22 @@ export type BioGallery = {
   items: GalleryItem[];
 };
 
+export type BioTheme = {
+  colorBrand: string;
+  colorBrandStrong: string;
+  colorAccent: string;
+  colorInk: string;
+  colorInkSoft: string;
+  bg: string;
+  glass: string;
+  glass2: string;
+  glassStrong: string;
+  colorBorder: string;
+  colorBorder2: string;
+  radiusXl: string;
+  radiusLg: string;
+};
+
 export type BioModel = {
   schemaVersion: number;
   profile: BioProfile;
@@ -92,6 +108,7 @@ export type BioModel = {
   socials: SocialLink[];
   resume: BioResume;
   gallery: BioGallery;
+  theme: BioTheme;
 };
 
 export const newId = () =>
@@ -166,6 +183,22 @@ export const defaultGallery = (): BioGallery => ({
   items: [],
 });
 
+export const defaultTheme = (): BioTheme => ({
+  colorBrand: "#3b82f6",
+  colorBrandStrong: "#2563eb",
+  colorAccent: "#ff5a7a",
+  colorInk: "#0b1220",
+  colorInkSoft: "rgba(11, 18, 32, 0.62)",
+  bg: "#f5f7fb",
+  glass: "rgba(255, 255, 255, 0.66)",
+  glass2: "rgba(255, 255, 255, 0.52)",
+  glassStrong: "rgba(255, 255, 255, 0.82)",
+  colorBorder: "rgba(255, 255, 255, 0.62)",
+  colorBorder2: "rgba(11, 18, 32, 0.10)",
+  radiusXl: "1.6rem",
+  radiusLg: "1.2rem",
+});
+
 export const defaultModel = (): BioModel => ({
   schemaVersion: 1,
   profile: {
@@ -218,6 +251,7 @@ export const defaultModel = (): BioModel => ({
   ],
   resume: defaultResume(),
   gallery: defaultGallery(),
+  theme: defaultTheme(),
 });
 
 const asString = (v: unknown) => (typeof v === "string" ? v : "");
@@ -360,7 +394,25 @@ export const sanitizeModel = (input: unknown): BioModel => {
       .slice(0, 100),
   };
 
-  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, links, socials, resume, gallery };
+  const themeRaw = obj.theme && typeof obj.theme === "object" ? obj.theme : {};
+  const defaults = defaultTheme();
+  const theme: BioTheme = {
+    colorBrand: asString(themeRaw.colorBrand).slice(0, 40) || defaults.colorBrand,
+    colorBrandStrong: asString(themeRaw.colorBrandStrong).slice(0, 40) || defaults.colorBrandStrong,
+    colorAccent: asString(themeRaw.colorAccent).slice(0, 40) || defaults.colorAccent,
+    colorInk: asString(themeRaw.colorInk).slice(0, 40) || defaults.colorInk,
+    colorInkSoft: asString(themeRaw.colorInkSoft).slice(0, 60) || defaults.colorInkSoft,
+    bg: asString(themeRaw.bg).slice(0, 40) || defaults.bg,
+    glass: asString(themeRaw.glass).slice(0, 60) || defaults.glass,
+    glass2: asString(themeRaw.glass2).slice(0, 60) || defaults.glass2,
+    glassStrong: asString(themeRaw.glassStrong).slice(0, 60) || defaults.glassStrong,
+    colorBorder: asString(themeRaw.colorBorder).slice(0, 60) || defaults.colorBorder,
+    colorBorder2: asString(themeRaw.colorBorder2).slice(0, 60) || defaults.colorBorder2,
+    radiusXl: asString(themeRaw.radiusXl).slice(0, 20) || defaults.radiusXl,
+    radiusLg: asString(themeRaw.radiusLg).slice(0, 20) || defaults.radiusLg,
+  };
+
+  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, links, socials, resume, gallery, theme };
 };
 
 export const stableStringify = (model: BioModel) => JSON.stringify(model, null, 2);
