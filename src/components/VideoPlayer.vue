@@ -107,14 +107,67 @@ export default defineComponent({
 }
 
 /*
- * Hide Vidstack's play/pause gesture indicator overlay.
- * For YouTube embeds it's redundant (YouTube has its own controls)
- * and it lingers awkwardly after playback starts.
+ * Gesture elements must stay in-layout (so getBoundingClientRect works
+ * for Vidstack's hit-testing), but we suppress any visual indicators.
  */
-.vidstack-wrapper [data-media-gesture],
 .vidstack-wrapper .vds-gesture,
-.vidstack-wrapper .vds-buffering-indicator,
-.vidstack-wrapper media-gesture {
+.vidstack-wrapper media-gesture,
+.vidstack-wrapper [data-media-gesture] {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/*
+ * Force the toggle:paused gesture to show (display:block) on ALL devices,
+ * including mobile (pointer:coarse) where Vidstack hides it by default.
+ * This makes click/tap anywhere on the video toggle play/pause.
+ */
+.vidstack-wrapper .vds-gesture[action='toggle:paused'],
+.vidstack-wrapper media-gesture[action='toggle:paused'],
+.vidstack-wrapper [data-media-gesture][action='toggle:paused'] {
+  display: block !important;
+}
+
+/*
+ * Disable the toggle:controls gesture on ALL devices so it doesn't
+ * compete with toggle:paused. We want tap = play/pause, not show/hide controls.
+ */
+.vidstack-wrapper .vds-gesture[action='toggle:controls'],
+.vidstack-wrapper media-gesture[action='toggle:controls'],
+.vidstack-wrapper [data-media-gesture][action='toggle:controls'] {
   display: none !important;
+}
+
+/*
+ * Before the video has started playing, hide the big center play/pause
+ * button (which confusingly shows a pause icon after play() is called)
+ * and show a loading spinner instead.
+ */
+.vidstack-wrapper media-player:not([data-started]) .vds-play-button {
+  display: none !important;
+}
+
+/* Show a CSS spinner in the center before playback starts */
+.vidstack-wrapper media-player:not([data-started])::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: vp-spin 0.7s linear infinite;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* Once started, the spinner disappears (::after no longer matches) and
+   the play/pause button shows normally for subsequent pause/resume. */
+
+@keyframes vp-spin {
+  to { transform: rotate(360deg); }
 }
 </style>
