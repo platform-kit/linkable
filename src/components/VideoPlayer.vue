@@ -142,45 +142,100 @@ export default defineComponent({
 }
 
 /*
- * Before the video has started playing, hide the big center play/pause
- * button (which confusingly shows a pause icon after play() is called)
- * and show a loading spinner instead.
+ * Hide ALL Vidstack built-in play/pause buttons and buffering indicators.
+ * We render our own custom overlays, so these are redundant and cause
+ * double-ups (especially the centered play button in data-sm layout).
  */
-.vidstack-wrapper media-player:not([data-started]) .vds-play-button {
+.vidstack-wrapper .vds-play-button,
+.vidstack-wrapper .vds-load-container,
+.vidstack-wrapper .vds-buffering-indicator {
   display: none !important;
 }
 
-/* Show a CSS spinner in the center before playback starts */
-.vidstack-wrapper media-player:not([data-started])::after {
+/*
+ * Show a centered play icon overlay when the video is paused AFTER it
+ * has started (i.e. user paused mid-playback). Uses a CSS triangle as
+ * the play icon inside a translucent circle.
+ * Safe for YouTube: Vidstack passes controls=0 to YouTube's iframe,
+ * so YouTube's native indicator is fully disabled.
+ */
+.vidstack-wrapper media-player[data-started][data-paused]::after {
   content: '';
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 40px;
-  height: 40px;
-  margin: -20px 0 0 -20px;
-  border: 3px solid rgba(255, 255, 255, 0.25);
-  border-top-color: #fff;
+  width: 64px;
+  height: 64px;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.55);
   border-radius: 50%;
-  animation: vp-spin 0.7s linear infinite;
   z-index: 100;
   pointer-events: none;
 }
 
-/* Hide the initial spinner for YouTube videos on mobile (touch) devices */
-@media (pointer: coarse) {
-  .vidstack-wrapper[data-youtube] media-player:not([data-started])::after {
-    display: none !important;
-  }
-  .vidstack-wrapper[data-youtube] media-player:not([data-started]) .vds-play-button {
-    display: none !important;
-  }
+/* Play triangle inside the circle */
+.vidstack-wrapper media-player[data-started][data-paused]::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  /* Triangle: 20px wide, 24px tall, offset slightly right for optical center */
+  border-style: solid;
+  border-width: 12px 0 12px 20px;
+  border-color: transparent transparent transparent #fff;
+  transform: translate(calc(-50% + 3px), -50%);
+  z-index: 101;
+  pointer-events: none;
 }
 
-/* Once started, the spinner disappears (::after no longer matches) and
-   the play/pause button shows normally for subsequent pause/resume. */
+/*
+ * Desktop only: show a pause overlay (two vertical bars in a circle)
+ * when hovering over a playing video. Uses wrapper's ::after for the
+ * circle and ::before for the pause bars (via box-shadow trick).
+ */
+@media (hover: hover) and (pointer: fine) {
+  /* Circle background */
+  .vidstack-wrapper:has(media-player[data-started]:not([data-paused]))::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 64px;
+    height: 64px;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 50%;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .vidstack-wrapper:hover:has(media-player[data-started]:not([data-paused]))::after {
+    opacity: 1;
+  }
 
-@keyframes vp-spin {
-  to { transform: rotate(360deg); }
+  /* Pause icon: two vertical bars using box-shadow on a small element */
+  .vidstack-wrapper:has(media-player[data-started]:not([data-paused]))::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 20px;
+    /* Left bar is the element itself, right bar is the box-shadow */
+    background: #fff;
+    box-shadow: 9px 0 0 0 #fff;
+    transform: translate(calc(-50% - 4px), -50%);
+    border-radius: 1px;
+    z-index: 101;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .vidstack-wrapper:hover:has(media-player[data-started]:not([data-paused]))::before {
+    opacity: 1;
+  }
 }
 </style>
