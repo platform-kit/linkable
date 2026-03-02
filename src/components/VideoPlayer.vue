@@ -2,6 +2,7 @@
   <div
     class="vidstack-wrapper relative w-full overflow-hidden rounded-xl border border-white/15 shadow-[0_24px_80px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.15),0_2px_40px_rgba(255,255,255,0.12),0_4px_80px_rgba(120,160,255,0.10)]"
     style="aspect-ratio: 16/9; max-height: 80vh; max-height: 80dvh;"
+    :data-youtube="isYouTube || undefined"
   >
     <media-player
       ref="playerEl"
@@ -47,6 +48,8 @@ export default defineComponent({
   setup(props, { expose }) {
     const playerEl = ref<HTMLElement | null>(null);
 
+    const isYouTube = computed(() => isYouTubeUrl(props.src || ""));
+
     const playerSrc = computed(() => {
       const s = props.src || "";
       if (isYouTubeUrl(s)) return s;
@@ -83,7 +86,7 @@ export default defineComponent({
 
     expose({ play, pause });
 
-    return { playerEl, playerSrc };
+    return { playerEl, playerSrc, isYouTube };
   },
 });
 </script>
@@ -162,6 +165,16 @@ export default defineComponent({
   animation: vp-spin 0.7s linear infinite;
   z-index: 100;
   pointer-events: none;
+}
+
+/* Hide the initial spinner for YouTube videos on mobile (touch) devices */
+@media (pointer: coarse) {
+  .vidstack-wrapper[data-youtube] media-player:not([data-started])::after {
+    display: none !important;
+  }
+  .vidstack-wrapper[data-youtube] media-player:not([data-started]) .vds-play-button {
+    display: none !important;
+  }
 }
 
 /* Once started, the spinner disappears (::after no longer matches) and
