@@ -17,6 +17,26 @@
       </media-provider>
       <media-video-layout />
     </media-player>
+
+    <!-- Tap-to-play fallback overlay (mobile only, shown when autoplay hangs) -->
+    <Transition name="fade-tap">
+      <button
+        v-if="showTapToPlay"
+        type="button"
+        class="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black/50 backdrop-blur-[2px] transition"
+        @click="handleTapToPlay"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          class="h-14 w-14 text-white drop-shadow-lg"
+        >
+          <path d="M8 5v14l11-7z" />
+        </svg>
+        <span class="text-sm font-medium text-white/90 drop-shadow">Tap to play</span>
+      </button>
+    </Transition>
   </div>
 </template>
 
@@ -58,6 +78,7 @@ export default defineComponent({
   },
   setup(props) {
     const playerEl = ref<HTMLElement | null>(null);
+    const showTapToPlay = ref(false);
 
     const isEmbedSrc = computed(() => isYouTubeUrl(props.src || ""));
 
@@ -68,43 +89,48 @@ export default defineComponent({
       return s;
     });
 
-    // ── Mobile recovery ──────────────────────────────────────────────
-    // Two problems on mobile YouTube embeds:
+    // ── Mobile single-tap strategy ───────────────────────────────────
     //
-    // 1) The IFrame API handshake: Vidstack sends { event: "listening" }
-    //    once, 100 ms after the iframe loads. On slow mobile CPUs that
-    //    can be too early — we retry every second until can-play is set.
+    // Mobile browsers block *unmuted* autoplay but universally allow
+    // *muted* autoplay. Strategy:
     //
-    // 2) Autoplay hang: Vidstack's YouTube provider awaits a playVideo
-    //    deferred promise that never resolves if YouTube silently ignores
-    //    the command (no user-gesture on the iframe). The player stays in
-    //    a "loading/buffering" state forever.
+    //   1. On mobile + YouTube, force the <media-player> muted before
+    //      Vidstack builds the YouTube iframe params (mute=1 in URL).
+    //   2. Vidstack's autoPlay sends `playVideo` → YouTube plays muted.
+    //   3. Once the `playing` event fires we unmute via the YouTube
+    //      iframe API (`unMute` postMessage). Changing volume/mute of
+    //      an already-playing video does NOT require a new user gesture.
+    //   4. Result: single tap → video plays with sound.
     //
-    //    Fix: after a timeout we force-pause the <media-player> element
-    //    to abort the stuck autoplay attempt. This surfaces Vidstack's
-    //    big play button so the user can tap once to play.
-    //    On modern browsers where autoplay succeeds, none of this fires.
+    // Fallback: if the handshake or autoplay still fails after 4 s
+    // we force-pause so Vidstack's play button appears immediately.
 
-    let retryTimer: ReturnType<typeof setInterval> | undefined;
-    let autoplayTimeout: ReturnType<typeof setTimeout> | undefined;
+    let cleanups: (() => void)[] = [];
 
-    const startRecovery = () => {
-      stopRecovery();
-      if (!isMobile || !isEmbedSrc.value) return;
+    const setupMobileRecovery = () => {
+      teardown();
 
-      // ── Handshake retry ──
+      const el = playerEl.value as (HTMLElement & { muted?: boolean; pause?: () => void }) | null;
+      if (!el || !isMobile || !isEmbedSrc.value) return;
+
+      // ── Step 1: force muted so YouTube autoplay succeeds ──
+      if (props.autoplay) {
+        try {
+          el.muted = true;
+          // Belt-and-suspenders: also set the attribute so Vidstack's
+          // prop observer picks it up before building iframe params.
+          el.setAttribute("muted", "");
+        } catch {
+          // swallow
+        }
+      }
+
+      // ── Step 2: handshake retry ──
       let attempts = 0;
       const MAX_RETRIES = 15;
-      retryTimer = setInterval(() => {
-        const el = playerEl.value;
-        if (!el || attempts >= MAX_RETRIES) {
+      const retryTimer = setInterval(() => {
+        if (!el || attempts >= MAX_RETRIES || el.hasAttribute("can-play")) {
           clearInterval(retryTimer);
-          retryTimer = undefined;
-          return;
-        }
-        if (el.hasAttribute("can-play")) {
-          clearInterval(retryTimer);
-          retryTimer = undefined;
           return;
         }
         attempts++;
@@ -116,46 +142,65 @@ export default defineComponent({
               "*",
             );
           } catch {
-            // cross-origin – ignore
+            // ignore
           }
         }
       }, 1000);
+      cleanups.push(() => clearInterval(retryTimer));
 
-      // ── Autoplay hang recovery ──
+      // ── Step 3: unmute once playback starts ──
       if (props.autoplay) {
-        autoplayTimeout = setTimeout(() => {
-          const el = playerEl.value as any;
-          if (!el) return;
-          // If the video hasn't started yet, autoplay is stuck.
-          // Calling pause() rejects the pending playVideo promise and
-          // resets the player UI to show the play button.
+        const onPlaying = () => {
+          // Short delay lets YouTube stabilise before unmuting
+          const t = setTimeout(() => {
+            try {
+              el.muted = false;
+              el.removeAttribute("muted");
+            } catch {
+              // swallow
+            }
+          }, 400);
+          cleanups.push(() => clearTimeout(t));
+        };
+        el.addEventListener("playing", onPlaying, { once: true });
+        cleanups.push(() => el.removeEventListener("playing", onPlaying));
+
+        // ── Step 4: fallback if autoplay still fails ──
+        const fallback = setTimeout(() => {
           if (!el.hasAttribute("started")) {
             try {
+              el.muted = false;
+              el.removeAttribute("muted");
               el.pause?.();
             } catch {
               // swallow
             }
+            showTapToPlay.value = true;
           }
-        }, 5000);
+        }, 4000);
+        cleanups.push(() => clearTimeout(fallback));
       }
     };
 
-    const stopRecovery = () => {
-      if (retryTimer !== undefined) {
-        clearInterval(retryTimer);
-        retryTimer = undefined;
-      }
-      if (autoplayTimeout !== undefined) {
-        clearTimeout(autoplayTimeout);
-        autoplayTimeout = undefined;
+    const handleTapToPlay = () => {
+      showTapToPlay.value = false;
+      const el = playerEl.value as any;
+      if (el?.play) {
+        try { el.play(); } catch { /* swallow */ }
       }
     };
 
-    onMounted(() => startRecovery());
-    onUnmounted(() => stopRecovery());
-    watch(() => props.src, () => startRecovery());
+    const teardown = () => {
+      cleanups.forEach((fn) => fn());
+      cleanups = [];
+      showTapToPlay.value = false;
+    };
 
-    return { playerEl, playerSrc };
+    onMounted(() => setupMobileRecovery());
+    onUnmounted(() => teardown());
+    watch(() => props.src, () => setupMobileRecovery());
+
+    return { playerEl, playerSrc, showTapToPlay, handleTapToPlay };
   },
 });
 </script>
@@ -193,5 +238,15 @@ export default defineComponent({
     position: relative;
     z-index: 1;
   }
+}
+
+/* Tap-to-play overlay transition */
+.fade-tap-enter-active,
+.fade-tap-leave-active {
+  transition: opacity 0.25s ease;
+}
+.fade-tap-enter-from,
+.fade-tap-leave-to {
+  opacity: 0;
 }
 </style>
