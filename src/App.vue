@@ -507,6 +507,7 @@
           </button>
           <div class="relative w-full max-w-4xl" style="max-height: 85vh; max-height: 85dvh;">
             <VideoPlayer
+              :key="videoPlayerItem.src"
               :src="resolveUploadUrl(videoPlayerItem.src)"
               :poster="
                 videoPlayerItem.coverUrl
