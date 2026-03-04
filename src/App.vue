@@ -1293,7 +1293,7 @@ export default defineComponent({
       }
       if (tags.length > 0) {
         source = source.filter(
-          (l) => l.tags && tags.every((t) => l.tags.includes(t)),
+          (l) => l.tags && tags.some((t) => l.tags.includes(t)),
         );
       }
       return source;
@@ -1370,7 +1370,7 @@ export default defineComponent({
       }
       if (tags.length > 0) {
         source = source.filter(
-          (item) => item.tags && tags.every((t) => item.tags.includes(t)),
+          (item) => item.tags && tags.some((t) => item.tags.includes(t)),
         );
       }
       return source.map((item) => ({
@@ -1425,7 +1425,7 @@ export default defineComponent({
       }
       if (tags.length > 0) {
         source = source.filter(
-          (p) => p.tags && tags.every((t) => p.tags!.includes(t)),
+          (p) => p.tags && tags.some((t) => p.tags!.includes(t)),
         );
       }
       return source;
