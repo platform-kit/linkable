@@ -39,9 +39,30 @@
 
           <div class="grid gap-1.5">
             <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Icon</label>
-            <InputText v-model="draft.icon" class="w-full" placeholder="Code" />
+            <AutoComplete
+              v-model="draft.icon"
+              :suggestions="filteredIcons"
+              @complete="searchIcons"
+              placeholder="Search icons… e.g. Calendar"
+              class="w-full"
+              :inputClass="'w-full'"
+              forceSelection
+            >
+              <template #option="{ option }">
+                <div class="flex items-center gap-2.5 py-0.5">
+                  <component :is="getIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                  <span class="text-sm font-medium">{{ option }}</span>
+                </div>
+              </template>
+              <template #value="{ value }">
+                <div v-if="value" class="flex items-center gap-2">
+                  <component :is="getIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                  <span>{{ value }}</span>
+                </div>
+              </template>
+            </AutoComplete>
             <div class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
-              Lucide icon name (e.g. Calendar, Video, Code, Globe).
+              Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Type to search.
             </div>
           </div>
 
@@ -114,11 +135,38 @@ import { computed, defineComponent, ref, watch } from "vue";
 
 import Button from "primevue/button";
 import Drawer from "primevue/drawer";
+import AutoComplete from "primevue/autocomplete";
 import InputText from "primevue/inputtext";
 import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
+import { icons } from "lucide-vue-next";
 
 import type { EmbedItem } from "../lib/model";
+
+const FEATURED_ICONS = [
+  "Code",
+  "Calendar",
+  "Video",
+  "Globe",
+  "Phone",
+  "ExternalLink",
+  "MessageCircle",
+  "FileText",
+  "ShoppingBag",
+  "Ticket",
+  "Map",
+  "Music",
+  "Play",
+  "BookOpen",
+  "Presentation",
+  "Users",
+  "Headphones",
+  "Podcast",
+  "Store",
+  "Heart",
+];
+
+const ALL_ICON_NAMES: string[] = Object.keys(icons);
 
 /** Detect if input is a bare URL (not HTML) and wrap in an iframe. */
 function resolveEmbedHtml(input: string): string {
@@ -142,7 +190,7 @@ export { resolveEmbedHtml };
 
 export default defineComponent({
   name: "EmbedEditorDrawer",
-  components: { Drawer, Button, InputText, Textarea, ToggleSwitch },
+  components: { Drawer, Button, AutoComplete, InputText, Textarea, ToggleSwitch },
   props: {
     open: { type: Boolean, required: true },
     modelValue: { type: Object as () => EmbedItem, required: true },
@@ -161,6 +209,25 @@ export default defineComponent({
     watch(visible, (v) => emit("update:open", v));
 
     const draft = ref<EmbedItem>({ ...props.modelValue });
+
+    // ── Icon autocomplete ──
+    const filteredIcons = ref<string[]>(FEATURED_ICONS);
+
+    const searchIcons = (event: { query: string }) => {
+      const q = (event.query || "").trim().toLowerCase();
+      if (!q) {
+        filteredIcons.value = FEATURED_ICONS;
+        return;
+      }
+      filteredIcons.value = ALL_ICON_NAMES
+        .filter((name) => name.toLowerCase().includes(q))
+        .slice(0, 40);
+    };
+
+    const getIconComponent = (name: string) => {
+      const table = icons as Record<string, any>;
+      return table[name] ?? table["Globe"];
+    };
 
     const resolvedHtml = computed(() => resolveEmbedHtml(draft.value.html));
     const isAutoIframe = computed(() => {
@@ -188,6 +255,9 @@ export default defineComponent({
       visible,
       expanded,
       draft,
+      filteredIcons,
+      searchIcons,
+      getIconComponent,
       resolvedHtml,
       isAutoIframe,
       save,
