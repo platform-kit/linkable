@@ -1564,11 +1564,13 @@ export default defineComponent({
       activeVideoIdx.value = idx >= 0 ? idx : null;
       videoPlayerOpen.value = true;
 
-      // Call play() synchronously — we're still in the user-gesture context
+      // Call play() — now async-safe; waits for provider readiness
       if (idx >= 0) {
         const playerComp = videoPlayerRefs.value[idx];
         if (playerComp?.play) {
-          playerComp.play();
+          playerComp.play().catch(() => {
+            // swallow — user can tap the built-in play button as fallback
+          });
         }
       }
     };

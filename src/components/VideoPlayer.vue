@@ -3,6 +3,7 @@
     class="vidstack-wrapper relative w-full overflow-hidden rounded-xl border border-white/15 shadow-[0_24px_80px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.15),0_2px_40px_rgba(255,255,255,0.12),0_4px_80px_rgba(120,160,255,0.10)]"
     style="aspect-ratio: 16/9; max-height: 80vh; max-height: 80dvh;"
     :data-youtube="isYouTube || undefined"
+    :data-vimeo="isVimeo || undefined"
   >
     <media-player
       ref="playerEl"
@@ -22,7 +23,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, ref } from "vue";
+import { computed, defineComponent, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 // Import vidstack custom elements + UI elements + default layout
 import "vidstack/player";
@@ -39,6 +40,29 @@ const isYouTubeUrl = (url: string) =>
     url,
   );
 
+const isVimeoUrl = (url: string) =>
+  /vimeo\.com/.test(url) && extractVimeoId(url) !== null;
+
+/**
+ * Extract the Vimeo video ID from various URL formats:
+ *  - https://vimeo.com/640499893
+ *  - https://player.vimeo.com/video/640499893
+ *  - https://vimeo.com/showcase/123?video=640499893
+ *  - vimeo/640499893
+ */
+const extractVimeoId = (url: string): string | null => {
+  // Showcase URL: ?video=ID
+  const showcaseMatch = url.match(/vimeo\.com\/showcase\/\d+.*[?&]video=(\d+)/);
+  if (showcaseMatch) return showcaseMatch[1];
+  // Standard: vimeo.com/ID or player.vimeo.com/video/ID
+  const stdMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (stdMatch) return stdMatch[1];
+  // Short form: vimeo/ID
+  const shortMatch = url.match(/^vimeo\/(\d+)/);
+  if (shortMatch) return shortMatch[1];
+  return null;
+};
+
 export default defineComponent({
   name: "VideoPlayer",
   props: {
@@ -49,24 +73,88 @@ export default defineComponent({
     const playerEl = ref<HTMLElement | null>(null);
 
     const isYouTube = computed(() => isYouTubeUrl(props.src || ""));
+    const isVimeo = computed(() => isVimeoUrl(props.src || ""));
 
     const playerSrc = computed(() => {
       const s = props.src || "";
       if (isYouTubeUrl(s)) return s;
-      if (s.match(/vimeo\.com\/(?:video\/)?\d+/)) return s;
+      // Normalize any Vimeo URL to https://vimeo.com/{id}
+      const vimeoId = extractVimeoId(s);
+      if (vimeoId) return `https://vimeo.com/${vimeoId}`;
       return s;
+    });
+
+    /** True once the <media-player> has fired its can-play event. */
+    const canPlayReady = ref(false);
+    /** Resolve this when canPlay fires — used to await readiness. */
+    let canPlayResolve: (() => void) | null = null;
+    let canPlayPromise: Promise<void> | null = null;
+
+    const resetCanPlay = () => {
+      canPlayReady.value = false;
+      canPlayPromise = new Promise<void>((resolve) => {
+        canPlayResolve = resolve;
+      });
+    };
+    resetCanPlay();
+
+    const markReady = () => {
+      if (canPlayReady.value) return;
+      canPlayReady.value = true;
+      if (canPlayResolve) {
+        canPlayResolve();
+        canPlayResolve = null;
+      }
+    };
+
+    /**
+     * Attach a native DOM event listener to the <media-player> element.
+     * Vue's @can-play does not reliably fire for Lit-based custom elements,
+     * so we listen directly on the DOM node.
+     */
+    const attachCanPlayListener = () => {
+      const el = playerEl.value;
+      if (!el) return;
+      el.addEventListener("can-play", markReady, { once: true });
+      // Also check if the element is already ready (e.g. cached / fast load)
+      if ((el as any).state?.canPlay || el.hasAttribute("data-can-play")) {
+        markReady();
+      }
+    };
+
+    onMounted(() => {
+      attachCanPlayListener();
+    });
+
+    // Re-attach if the ref changes (shouldn't normally, but defensive)
+    watch(playerEl, () => {
+      attachCanPlayListener();
     });
 
     /**
      * Call play() on the underlying <media-player> element.
-     * Should be called within a user-gesture context (click/tap handler)
-     * so mobile browsers allow playback.
+     * Waits up to 10 s for the player to become ready (needed for
+     * Vimeo / YouTube where the provider is lazy-loaded).
      */
-    const play = () => {
+    const play = async () => {
       const el = playerEl.value as any;
-      if (el?.play) {
+      if (!el) return;
+
+      // If the player is not ready yet, wait for can-play (with timeout)
+      if (!canPlayReady.value && canPlayPromise) {
+        const timeout = new Promise<void>((resolve) => setTimeout(resolve, 10000));
+        await Promise.race([canPlayPromise, timeout]);
+      }
+
+      // Double-check readiness before calling play
+      if (!canPlayReady.value) {
+        // Still not ready after timeout — don't throw, let user tap play button
+        return;
+      }
+
+      if (el.play) {
         try {
-          el.play();
+          await el.play();
         } catch {
           // swallow — Vidstack will show its play button as fallback
         }
@@ -84,9 +172,22 @@ export default defineComponent({
       }
     };
 
+    onBeforeUnmount(() => {
+      // Clean up listener
+      const el = playerEl.value;
+      if (el) {
+        el.removeEventListener("can-play", markReady);
+      }
+      // Resolve any pending promise so nothing leaks
+      if (canPlayResolve) {
+        canPlayResolve();
+        canPlayResolve = null;
+      }
+    });
+
     expose({ play, pause });
 
-    return { playerEl, playerSrc, isYouTube };
+    return { playerEl, playerSrc, isYouTube, isVimeo };
   },
 });
 </script>
