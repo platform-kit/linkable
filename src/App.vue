@@ -94,7 +94,7 @@
               ? 'bg-blue-500/10 shadow-lg border-blue-500/30   text-[color:var(--color-brand)] '
               : 'border-[var(--color-border)] bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
-          @click="activeTab = 'links'"
+          @click="switchTab('links')"
         >
           <i class="pi pi-link" />
           {{ model.profile.linksLabel || 'Links' }}
@@ -107,7 +107,7 @@
               ? 'bg-blue-500/10 shadow-lg   border-blue-500/30    text-[color:var(--color-brand)] '
               : 'border-[var(--color-border)] bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
-          @click="activeTab = 'resume'"
+          @click="switchTab('resume')"
         >
           <i class="pi pi-file" />
           {{ model.profile.resumeLabel || 'Resume' }}
@@ -120,7 +120,7 @@
               ? 'bg-blue-500/10 shadow-lg  border-blue-500/30    text-[color:var(--color-brand)]'
               : 'border-[var(--color-border)] bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
-          @click="activeTab = 'gallery'"
+          @click="switchTab('gallery')"
         >
           <i class="pi pi-images" />
           {{ model.profile.galleryLabel || 'Gallery' }}
@@ -133,7 +133,7 @@
               ? 'bg-blue-500/10 shadow-lg  border-blue-500/30    text-[color:var(--color-brand)]'
               : 'border-[var(--color-border)] bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
-          @click="activeTab = 'blog'; goBackFromBlogPost()"
+          @click="switchTab('blog'); goBackFromBlogPost()"
         >
           <i class="pi pi-pencil" />
           {{ model.profile.blogLabel || 'Blog' }}
@@ -1315,6 +1315,13 @@ export default defineComponent({
 
     const activeTab = ref<"links" | "resume" | "gallery" | "blog">("links");
 
+    const switchTab = (tab: "links" | "resume" | "gallery" | "blog") => {
+      activeTab.value = tab;
+      if (typeof window !== "undefined") {
+        history.replaceState(null, "", `#${tab}`);
+      }
+    };
+
     const resumeHasContent = computed(() => {
       const r = model.value.resume;
       if (!r || !r.enabled) return false;
@@ -1859,6 +1866,7 @@ export default defineComponent({
       galleryTagFilterOpen,
       blogTagFilterOpen,
       filteredLinks,
+      switchTab,
     };
   },
 });
