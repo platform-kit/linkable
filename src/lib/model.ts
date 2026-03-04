@@ -112,6 +112,14 @@ export type BioBlog = {
   enabled: boolean;
 };
 
+export type EmbedItem = {
+  id: string;
+  label: string;
+  html: string;
+  icon: string;
+  enabled: boolean;
+};
+
 export type BioScripts = {
   headScript: string;
   bodyEndScript: string;
@@ -125,6 +133,7 @@ export type BioModel = {
   resume: BioResume;
   gallery: BioGallery;
   blog: BioBlog;
+  embeds: EmbedItem[];
   theme: BioTheme;
   scripts: BioScripts;
 };
@@ -252,6 +261,14 @@ export const THEME_PRESETS: Record<string, () => BioTheme> = {
   dark: darkTheme,
 };
 
+export const newEmbed = (): EmbedItem => ({
+  id: newId(),
+  label: "New Embed",
+  html: "",
+  icon: "Code",
+  enabled: true,
+});
+
 export const defaultScripts = (): BioScripts => ({
   headScript: "",
   bodyEndScript: "",
@@ -321,6 +338,7 @@ export const defaultModel = (): BioModel => ({
   resume: defaultResume(),
   gallery: defaultGallery(),
   blog: defaultBlog(),
+  embeds: [],
   theme: defaultTheme(),
   scripts: defaultScripts(),
 });
@@ -499,13 +517,25 @@ export const sanitizeModel = (input: unknown): BioModel => {
     enabled: typeof blogRaw.enabled === "boolean" ? blogRaw.enabled : false,
   };
 
+  const embedsRaw = Array.isArray(obj.embeds) ? obj.embeds : [];
+  const embeds: EmbedItem[] = embedsRaw
+    .map((e: any) => ({
+      id: asString(e?.id) || newId(),
+      label: asString(e?.label).slice(0, 60) || "Embed",
+      html: asString(e?.html).slice(0, 50000),
+      icon: asString(e?.icon).slice(0, 60) || "Code",
+      enabled: typeof e?.enabled === "boolean" ? e.enabled : true,
+    }))
+    .filter((e: EmbedItem) => !!e.id)
+    .slice(0, 20);
+
   const scriptsRaw = obj.scripts && typeof obj.scripts === "object" ? obj.scripts : {};
   const scripts: BioScripts = {
     headScript: asString(scriptsRaw.headScript).slice(0, 10000),
     bodyEndScript: asString(scriptsRaw.bodyEndScript).slice(0, 10000),
   };
 
-  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, links, socials, resume, gallery, blog, theme, scripts };
+  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, links, socials, resume, gallery, blog, embeds, theme, scripts };
 };
 
 export const stableStringify = (model: BioModel) => JSON.stringify(model, null, 2);

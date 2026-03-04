@@ -503,6 +503,65 @@
             </div>
           </Transition>
 
+          <!-- Embeds -->
+          <button type="button" class="cms__accordion-trigger" @click="siteSection.embeds = !siteSection.embeds">
+            <span class="cms__accordion-label"><i class="pi pi-code" /> Embeds</span>
+            <i class="pi" :class="siteSection.embeds ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="siteSection.embeds" class="cms__accordion-body">
+              <div class="cms__form">
+                <div class="cms__help" style="margin-bottom: 8px">
+                  Add HTML embeds (Cal.com, Zoom, YouTube, etc.) that appear as separate tabs in your navigation.
+                </div>
+
+                <div class="flex justify-end" style="margin-bottom: 8px">
+                  <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditEmbed">
+                    <i class="pi pi-plus" />
+                    <span class="cms__btn-label">Add embed</span>
+                  </Button>
+                </div>
+
+                <div v-if="draft.embeds.length === 0" class="cms__empty">
+                  <div class="cms__empty-title">No embeds yet</div>
+                  <div class="cms__empty-sub">Click "Add embed" to create your first embedded tab.</div>
+                </div>
+
+                <draggable
+                  v-else
+                  v-model="draft.embeds"
+                  item-key="id"
+                  handle=".drag"
+                  :animation="160"
+                  class="cms__list"
+                >
+                  <template #item="{ element }">
+                    <button type="button" class="cms__row" @click="openEmbedEditor(element.id)">
+                      <span class="cms__row-drag drag" aria-label="Drag">
+                        <i class="pi pi-bars" />
+                      </span>
+
+                      <span class="cms__row-thumb">
+                        <component :is="resolveLucideIcon(element.icon)" :size="18" class="text-[color:var(--color-ink-soft)]" />
+                      </span>
+
+                      <span class="cms__row-text">
+                        <span class="cms__row-title">{{ element.label || "Untitled" }}</span>
+                        <span class="cms__row-sub">{{ element.html ? 'Has embed code' : '(no embed code)' }}</span>
+                      </span>
+
+                      <span class="cms__row-meta">
+                        <Tag v-if="!element.enabled" severity="warning" value="Hidden" class="!rounded-full" />
+                        <i v-else class="pi pi-check-circle cms__ok" />
+                        <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
+                      </span>
+                    </button>
+                  </template>
+                </draggable>
+              </div>
+            </div>
+          </Transition>
+
           <!-- Scripts -->
           <button type="button" class="cms__accordion-trigger" @click="siteSection.scripts = !siteSection.scripts">
             <span class="cms__accordion-label"><i class="pi pi-code" /> Scripts</span>
@@ -1066,6 +1125,12 @@
       @saved="refreshBlogPosts"
       @deleted="refreshBlogPosts"
     />
+    <EmbedEditorDrawer
+      v-if="activeEmbed"
+      v-model:open="embedEditorOpen"
+      v-model="activeEmbedProxy"
+      @delete="deleteActiveEmbed"
+    />
   </Dialog>
 </template>
 
@@ -1088,16 +1153,10 @@ import SocialEditorDrawer from "./SocialEditorDrawer.vue";
 import ResumeEditorDrawer from "./ResumeEditorDrawer.vue";
 import GalleryEditorDrawer from "./GalleryEditorDrawer.vue";
 import BlogEditorDrawer from "./BlogEditorDrawer.vue";
+import EmbedEditorDrawer from "./EmbedEditorDrawer.vue";
 import { icons as lucideIcons } from "lucide-vue-next";
+import type { BioLink, BioModel, SocialLink, EducationEntry, EmploymentEntry, AchievementEntry, GalleryItem, ThemePreset, EmbedItem } from "../lib/model";
 import {
-  type BioLink,
-  type BioModel,
-  type SocialLink,
-  type EducationEntry,
-  type EmploymentEntry,
-  type AchievementEntry,
-  type GalleryItem,
-  type ThemePreset,
   defaultModel,
   defaultResume,
   defaultGallery,
@@ -1110,6 +1169,7 @@ import {
   newEmployment,
   newAchievement,
   newGalleryItem,
+  newEmbed,
   sanitizeModel,
   stableStringify,
 } from "../lib/model";
@@ -1146,6 +1206,7 @@ export default defineComponent({
     ResumeEditorDrawer,
     GalleryEditorDrawer,
     BlogEditorDrawer,
+    EmbedEditorDrawer,
     ToggleSwitch,
   },
   props: {
@@ -1184,6 +1245,7 @@ export default defineComponent({
       github: false,
       search: false,
       navigation: false,
+      embeds: false,
       scripts: false,
     });
 
@@ -1552,6 +1614,52 @@ export default defineComponent({
       if (!open) activeGalleryItemId.value = "";
     });
 
+    // ── Embed editor ─────────────────────────────────────────────────
+    const embedEditorOpen = ref(false);
+    const activeEmbedId = ref("");
+
+    const activeEmbed = computed<EmbedItem | null>(() => {
+      const id = activeEmbedId.value;
+      if (!id) return null;
+      return draft.value.embeds.find((e) => e.id === id) ?? null;
+    });
+
+    const activeEmbedProxy = computed<EmbedItem>({
+      get() {
+        return activeEmbed.value ?? newEmbed();
+      },
+      set(v) {
+        const idx = draft.value.embeds.findIndex((e) => e.id === v.id);
+        if (idx >= 0) draft.value.embeds[idx] = v;
+      },
+    });
+
+    const openEmbedEditor = (id: string) => {
+      activeEmbedId.value = id;
+      embedEditorOpen.value = true;
+    };
+
+    const createAndEditEmbed = () => {
+      const item = newEmbed();
+      draft.value.embeds.unshift(item);
+      activeEmbedId.value = item.id;
+      embedEditorOpen.value = true;
+      toast.add({ severity: "success", summary: "Added", detail: "Embed created.", life: 1600 });
+    };
+
+    const deleteActiveEmbed = () => {
+      const id = activeEmbedId.value;
+      if (!id) return;
+      draft.value.embeds = draft.value.embeds.filter((e) => e.id !== id);
+      embedEditorOpen.value = false;
+      activeEmbedId.value = "";
+      toast.add({ severity: "warn", summary: "Deleted", detail: "Embed removed.", life: 1600 });
+    };
+
+    watch(embedEditorOpen, (open) => {
+      if (!open) activeEmbedId.value = "";
+    });
+
     // GitHub Settings
     type GithubFormState = GithubSettings & { token: string };
     const envOwner = import.meta.env.VITE_GITHUB_OWNER || "";
@@ -1796,6 +1904,12 @@ export default defineComponent({
       createAndEditGalleryItem,
       updateGalleryItem,
       deleteActiveGalleryItem,
+      embedEditorOpen,
+      activeEmbed,
+      activeEmbedProxy,
+      openEmbedEditor,
+      createAndEditEmbed,
+      deleteActiveEmbed,
       blogPosts,
       blogPostCount,
       blogEditorOpen,

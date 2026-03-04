@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 16;
+export const CURRENT_SCHEMA_VERSION = 17;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -293,6 +293,18 @@ const migrations: Migration[] = [
         if (!data.profile.defaultTab) data.profile.defaultTab = "links";
       }
       data.schemaVersion = 16;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 17,
+    migrate: (data) => {
+      // v16 → v17: add embeds array for arbitrary HTML embed tabs.
+      if (!Array.isArray(data.embeds)) {
+        data.embeds = [];
+      }
+      data.schemaVersion = 17;
       return data;
     },
   },

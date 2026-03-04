@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 16,
+  "schemaVersion": 17,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -74,6 +74,7 @@
   "blog": {
     "enabled": false
   },
+  "embeds": [],
   "scripts": {
     "headScript": "",
     "bodyEndScript": ""

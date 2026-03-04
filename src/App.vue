@@ -138,6 +138,20 @@
           <i class="pi pi-pencil" />
           {{ model.profile.blogLabel || 'Blog' }}
         </button>
+        <button
+          v-for="embed in enabledEmbeds"
+          :key="embed.id"
+          class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition mx-1"
+          :class="
+            activeTab === 'embed-' + embed.id
+              ? 'bg-blue-500/10 shadow-lg border-blue-500/30 text-[color:var(--color-brand)]'
+              : 'border-[var(--color-border)] bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
+          "
+          @click="switchTab('embed-' + embed.id)"
+        >
+          <component :is="resolveSocialIcon(embed.icon)" :size="14" class="shrink-0" />
+          {{ embed.label }}
+        </button>
       </div>
 
       <!-- Links section -->
@@ -563,6 +577,19 @@
         </template>
       </section>
 
+      <!-- Embed sections -->
+      <section
+        v-if="activeEmbedItem"
+        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6"
+      >
+        <h2
+          class="mb-3 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-4 sm:text-xs"
+        >
+          {{ activeEmbedItem.label }}
+        </h2>
+        <div class="embed-container" v-html="activeEmbedHtml" />
+      </section>
+
       <!-- Lightbox overlay for images -->
       <Teleport to="body">
         <div
@@ -904,6 +931,7 @@ import VideoPlayer from "./components/VideoPlayer.vue";
 import MasonryGrid from "./components/MasonryGrid.vue";
 import BlogPostView from "./components/BlogPostView.vue";
 import SearchBar from "./components/SearchBar.vue";
+import { resolveEmbedHtml } from "./components/EmbedEditorDrawer.vue";
 import type { MasonryItem } from "./components/MasonryGrid.vue";
 import { icons as lucideIcons } from "lucide-vue-next";
 import {
@@ -990,6 +1018,10 @@ export default defineComponent({
           activeTab.value = "gallery";
         } else if (hash === "#blog" && blogHasContent.value) {
           activeTab.value = "blog";
+        } else if (hash.startsWith("#embed-")) {
+          const embedId = window.location.hash.slice(1); // preserve case for ID
+          const found = enabledEmbeds.value.find((e) => `embed-${e.id}` === embedId);
+          if (found) activeTab.value = embedId;
         } else if (hash === "#cms") {
           cmsBtnVisible.value = true;
           localStorage.setItem("cms-button-visible", "true");
@@ -1313,9 +1345,9 @@ export default defineComponent({
       else selectedLinkTags.value.push(tag);
     };
 
-    const activeTab = ref<"links" | "resume" | "gallery" | "blog">("links");
+    const activeTab = ref<string>("links");
 
-    const switchTab = (tab: "links" | "resume" | "gallery" | "blog") => {
+    const switchTab = (tab: string) => {
       activeTab.value = tab;
       if (typeof window !== "undefined") {
         history.replaceState(null, "", `#${tab}`);
@@ -1391,6 +1423,24 @@ export default defineComponent({
       const b = model.value.blog;
       if (!b || !b.enabled) return false;
       return blogPosts.value.filter((p) => p.published).length > 0;
+    });
+
+    // ── Embeds ───────────────────────────────────────────────────────
+    const enabledEmbeds = computed(() =>
+      (model.value.embeds || []).filter((e) => e.enabled && e.html.trim()),
+    );
+
+    const activeEmbedItem = computed(() => {
+      const tab = activeTab.value;
+      if (!tab.startsWith("embed-")) return null;
+      const id = tab.slice(6);
+      return enabledEmbeds.value.find((e) => e.id === id) ?? null;
+    });
+
+    const activeEmbedHtml = computed(() => {
+      const item = activeEmbedItem.value;
+      if (!item) return "";
+      return resolveEmbedHtml(item.html);
     });
 
     const publishedBlogPosts = computed(() =>
@@ -1476,12 +1526,14 @@ export default defineComponent({
       if (resumeHasContent.value) count++;
       if (galleryHasContent.value) count++;
       if (blogHasContent.value) count++;
+      count += enabledEmbeds.value.length;
       return count;
     });
 
     const showTabs = computed(() => contentSections.value >= 2);
 
     const showLinksSection = computed(() => {
+      if (activeEmbedItem.value) return false;
       if (showTabs.value) return activeTab.value === "links";
       return (
         enabledLinks.value.length > 0 ||
@@ -1491,18 +1543,21 @@ export default defineComponent({
 
     const showResumeSection = computed(() => {
       if (!resumeHasContent.value) return false;
+      if (activeEmbedItem.value) return false;
       if (showTabs.value) return activeTab.value === "resume";
       return true;
     });
 
     const showGallerySection = computed(() => {
       if (!galleryHasContent.value) return false;
+      if (activeEmbedItem.value) return false;
       if (showTabs.value) return activeTab.value === "gallery";
       return true;
     });
 
     const showBlogSection = computed(() => {
       if (!blogHasContent.value) return false;
+      if (activeEmbedItem.value) return false;
       if (showTabs.value) return activeTab.value === "blog";
       return true;
     });
@@ -1842,6 +1897,9 @@ export default defineComponent({
       unsynced,
       resolveUploadUrl,
       blogHasContent,
+      enabledEmbeds,
+      activeEmbedItem,
+      activeEmbedHtml,
       blogPosts,
       publishedBlogPosts,
       filteredBlogPosts,
