@@ -13,6 +13,7 @@
       load="eager"
       playsInline
       class="vds-video-player"
+      style="transform: scale(1.02);"
     >
       <media-provider>
         <media-poster class="vds-poster" />
@@ -34,6 +35,21 @@ import "vidstack/player/layouts/default";
 import "vidstack/player/styles/base.css";
 import "vidstack/player/styles/default/theme.css";
 import "vidstack/player/styles/default/layouts/video.css";
+
+/**
+ * Suppress "Setting the playback rate is not enabled for this video"
+ * errors thrown by Vimeo/YouTube embeds when vidstack internally
+ * tries to sync the playback rate on providers that don't support it.
+ * This is a known limitation of embedded players and is harmless.
+ */
+if (typeof window !== "undefined") {
+  window.addEventListener("unhandledrejection", (e) => {
+    const msg = e.reason?.message || String(e.reason || "");
+    if (msg.includes("playback rate")) {
+      e.preventDefault();
+    }
+  });
+}
 
 const isYouTubeUrl = (url: string) =>
   /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}/.test(
@@ -172,6 +188,26 @@ export default defineComponent({
       }
     };
 
+    /** Seek the player back to the beginning (0s). */
+    const seekToStart = () => {
+      const el = playerEl.value as any;
+      if (!el) return;
+      try {
+        // vidstack exposes currentTime as a settable property
+        if (typeof el.currentTime !== "undefined") {
+          el.currentTime = 0;
+        }
+      } catch {
+        // swallow — embedded players may reject
+      }
+    };
+
+    /** Reset to start and play. */
+    const restart = async () => {
+      seekToStart();
+      await play();
+    };
+
     onBeforeUnmount(() => {
       // Clean up listener
       const el = playerEl.value;
@@ -185,7 +221,7 @@ export default defineComponent({
       }
     });
 
-    expose({ play, pause });
+    expose({ play, pause, seekToStart, restart });
 
     return { playerEl, playerSrc, isYouTube, isVimeo };
   },

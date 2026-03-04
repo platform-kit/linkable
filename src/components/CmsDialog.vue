@@ -258,6 +258,31 @@
                   </div>
                 </div>
 
+                <div class="cms__color-section-label">Card Items</div>
+                <div class="cms__color-grid">
+                  <div class="cms__color-field">
+                    <label class="cms__label">Card Background</label>
+                    <div class="cms__color-input-wrap">
+                      <input type="color" :value="toHex(draft.theme.cardBg)" @input="draft.theme.cardBg = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                      <InputText v-model="draft.theme.cardBg" class="cms__color-hex" placeholder="rgba(255,255,255,0.66)" />
+                    </div>
+                  </div>
+                  <div class="cms__color-field">
+                    <label class="cms__label">Card Border</label>
+                    <div class="cms__color-input-wrap">
+                      <input type="color" :value="toHex(draft.theme.cardBorder)" @input="draft.theme.cardBorder = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                      <InputText v-model="draft.theme.cardBorder" class="cms__color-hex" placeholder="rgba(255,255,255,0.62)" />
+                    </div>
+                  </div>
+                  <div class="cms__color-field">
+                    <label class="cms__label">Card Text</label>
+                    <div class="cms__color-input-wrap">
+                      <input type="color" v-model="draft.theme.cardText" class="cms__color-swatch" />
+                      <InputText v-model="draft.theme.cardText" class="cms__color-hex" placeholder="#0b1220" />
+                    </div>
+                  </div>
+                </div>
+
                 <div class="cms__color-section-label">Radius</div>
                 <div class="cms__color-grid">
                   <div class="cms__color-field">
@@ -450,6 +475,29 @@
                 <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
                   <ToggleSwitch v-model="draft.profile.searchBlog" />
                   <label class="cms__label" style="margin: 0">Blog search</label>
+                </div>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- Navigation -->
+          <button type="button" class="cms__accordion-trigger" @click="siteSection.navigation = !siteSection.navigation">
+            <span class="cms__accordion-label"><i class="pi pi-compass" /> Navigation</span>
+            <i class="pi" :class="siteSection.navigation ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="siteSection.navigation" class="cms__accordion-body">
+              <div class="cms__form">
+                <div class="cms__field">
+                  <label class="cms__label">Default tab</label>
+                  <Select
+                    v-model="draft.profile.defaultTab"
+                    :options="defaultTabOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="w-full"
+                  />
+                  <div class="cms__help">The tab visitors see first when they land on your page.</div>
                 </div>
               </div>
             </div>
@@ -1114,8 +1162,16 @@ export default defineComponent({
       theme: false,
       github: false,
       search: false,
+      navigation: false,
       scripts: false,
     });
+
+    const defaultTabOptions = [
+      { label: "Links", value: "links" },
+      { label: "Resume", value: "resume" },
+      { label: "Gallery", value: "gallery" },
+      { label: "Blog", value: "blog" },
+    ];
 
     const draft = ref<BioModel>(sanitizeModel(props.model));
     watch(
@@ -1274,6 +1330,7 @@ export default defineComponent({
     const themeColorKeys = [
       "colorBrand", "colorBrandStrong", "colorAccent", "colorInk", "colorInkSoft",
       "bg", "glass", "glass2", "glassStrong", "colorBorder", "colorBorder2",
+      "cardBg", "cardBorder", "cardText",
       "radiusXl", "radiusLg",
     ] as const;
     watch(
@@ -1729,6 +1786,7 @@ export default defineComponent({
       allLinkTags,
       allGalleryTags,
       allBlogTags,
+      defaultTabOptions,
     };
   },
 });

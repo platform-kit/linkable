@@ -63,7 +63,7 @@
                 <a
                   v-for="s in enabledSocials"
                   :key="s.id"
-                  class="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--glass-2)] px-2.5 py-1 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm backdrop-blur-md transition hover:bg-[var(--glass)] sm:gap-2 sm:px-3 sm:py-1.5"
+                  class="card-item inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm transition sm:gap-2 sm:px-3 sm:py-1.5"
                   :href="socialHref(s)"
                   :target="isEmailUrl(s.url) ? undefined : '_blank'"
                   rel="noreferrer"
@@ -146,37 +146,21 @@
         class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-4"
       >
         <!-- Search bar for links -->
-        <div v-if="model.profile.searchLinks && enabledLinks.length > 0" class="mb-3">
-          <div :class="['flex items-center gap-2.5 rounded-xl border px-3 py-2 backdrop-blur-md transition-all duration-200', searchLinksQuery.trim() ? 'border-transparent bg-white shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]' : 'border-transparent bg-black/[0.04] shadow-none hover:bg-white hover:shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]', 'focus-within:border-[var(--color-brand)] focus-within:ring-1 focus-within:ring-[var(--color-brand)] focus-within:bg-white focus-within:shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]']">
-            <i v-if="model.profile.searchLinks" class="pi pi-search shrink-0 text-[13px] text-[color:var(--color-ink-soft)]" />
-            <input
-              v-if="model.profile.searchLinks"
-              v-model="searchLinksQuery"
-              type="text"
-              placeholder="Search links…"
-              class="min-w-0 flex-1 bg-transparent text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-ink-soft)] outline-none"
-            />
-            <span v-if="!model.profile.searchLinks" class="min-w-0 flex-1" />
-            <button
-              v-if="availableLinkTags.length > 0"
-              type="button"
-              class="relative shrink-0 rounded-lg p-1 text-[color:var(--color-ink-soft)] transition hover:text-[color:var(--color-brand)]"
-              @click.stop="linkTagFilterOpen = true"
-            >
-              <i class="pi pi-filter text-[13px]" />
-              <span
-                v-if="selectedLinkTags.length > 0"
-                class="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--color-brand)] px-1 text-[9px] font-bold text-white"
-              >{{ selectedLinkTags.length }}</span>
-            </button>
-          </div>
-        </div>
+        <SearchBar
+          v-if="model.profile.searchLinks && enabledLinks.length > 0"
+          v-model="searchLinksQuery"
+          placeholder="Search links…"
+          :show-search="model.profile.searchLinks"
+          :tag-count="availableLinkTags.length > 0 ? availableLinkTags.length : null"
+          :selected-tag-count="selectedLinkTags.length"
+          @filter-click="linkTagFilterOpen = true"
+        />
 
         <div v-if="filteredLinks.length" class="grid gap-2">
           <a
             v-for="link in filteredLinks"
             :key="link.id"
-            class="group relative flex min-w-0 items-center justify-between gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] px-3 py-3 shadow-sm backdrop-blur-md transition hover:bg-[var(--glass-strong)] hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)] sm:gap-3 sm:px-4"
+            class="card-item group relative flex min-w-0 items-center justify-between gap-2 rounded-2xl px-3 py-3 transition sm:gap-3 sm:px-4"
             :href="link.url"
             :target="link.url.startsWith('#') ? '_self' : '_blank'"
             :rel="link.url.startsWith('#') ? undefined : 'noreferrer'"
@@ -264,7 +248,7 @@
             <div
               v-for="job in model.resume.employment"
               :key="job.id"
-              class="rounded-xl border border-[var(--color-border)] bg-[var(--glass)] p-3 shadow-sm backdrop-blur-md sm:rounded-2xl sm:p-4"
+              class="card-item rounded-xl p-3 shadow-sm sm:rounded-2xl sm:p-4"
             >
               <div class="flex items-start justify-between gap-2 sm:gap-3">
                 <div class="min-w-0 flex-1">
@@ -308,7 +292,7 @@
             <div
               v-for="edu in model.resume.education"
               :key="edu.id"
-              class="rounded-xl border border-[var(--color-border)] bg-[var(--glass)] p-3 shadow-sm backdrop-blur-md sm:rounded-2xl sm:p-4"
+              class="card-item rounded-xl p-3 shadow-sm sm:rounded-2xl sm:p-4"
             >
               <div class="flex items-start justify-between gap-2 sm:gap-3">
                 <div class="min-w-0 flex-1">
@@ -345,7 +329,7 @@
             <span
               v-for="(skill, i) in model.resume.skills"
               :key="i"
-              class="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--glass)] px-2.5 py-1 text-[11px] font-semibold text-[color:var(--color-ink)] shadow-sm backdrop-blur-md sm:px-3 sm:py-1.5 sm:text-xs"
+              class="card-item inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-sm sm:px-3 sm:py-1.5 sm:text-xs"
             >
               {{ skill }}
             </span>
@@ -363,7 +347,7 @@
             <div
               v-for="ach in model.resume.achievements"
               :key="ach.id"
-              class="rounded-xl border border-[var(--color-border)] bg-[var(--glass)] p-3 shadow-sm backdrop-blur-md sm:rounded-2xl sm:p-4"
+              class="card-item rounded-xl p-3 shadow-sm sm:rounded-2xl sm:p-4"
             >
               <div class="flex items-start justify-between gap-2 sm:gap-3">
                 <div class="min-w-0 flex-1">
@@ -407,31 +391,15 @@
         class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6"
       >
         <!-- Search bar for gallery -->
-        <div v-if="model.profile.searchGallery || availableGalleryTags.length > 0" class="mb-3">
-          <div :class="['flex items-center gap-2.5 rounded-xl border px-3 py-2 backdrop-blur-md transition-all duration-200', searchGalleryQuery.trim() ? 'border-transparent bg-white shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]' : 'border-transparent bg-black/[0.04] shadow-none hover:bg-white hover:shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]', 'focus-within:border-[var(--color-brand)] focus-within:ring-1 focus-within:ring-[var(--color-brand)] focus-within:bg-white focus-within:shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]']">
-            <i v-if="model.profile.searchGallery" class="pi pi-search shrink-0 text-[13px] text-[color:var(--color-ink-soft)]" />
-            <input
-              v-if="model.profile.searchGallery"
-              v-model="searchGalleryQuery"
-              type="text"
-              placeholder="Search gallery…"
-              class="min-w-0 flex-1 bg-transparent text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-ink-soft)] outline-none"
-            />
-            <span v-if="!model.profile.searchGallery" class="min-w-0 flex-1" />
-            <button
-              v-if="availableGalleryTags.length > 0"
-              type="button"
-              class="relative shrink-0 rounded-lg p-1 text-[color:var(--color-ink-soft)] transition hover:text-[color:var(--color-brand)]"
-              @click.stop="galleryTagFilterOpen = true"
-            >
-              <i class="pi pi-filter text-[13px]" />
-              <span
-                v-if="selectedGalleryTags.length > 0"
-                class="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--color-brand)] px-1 text-[9px] font-bold text-white"
-              >{{ selectedGalleryTags.length }}</span>
-            </button>
-          </div>
-        </div>
+        <SearchBar
+          v-if="model.profile.searchGallery || availableGalleryTags.length > 0"
+          v-model="searchGalleryQuery"
+          placeholder="Search gallery…"
+          :show-search="!!model.profile.searchGallery"
+          :tag-count="availableGalleryTags.length > 0 ? availableGalleryTags.length : null"
+          :selected-tag-count="selectedGalleryTags.length"
+          @filter-click="galleryTagFilterOpen = true"
+        />
 
         <h2
           class="mb-3 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-4 sm:text-xs"
@@ -452,7 +420,7 @@
             <button
               v-if="item.type === 'image'"
               type="button"
-              class="group relative block h-full w-full overflow-hidden border border-[var(--color-border)] bg-[var(--glass)] shadow-sm backdrop-blur-md transition hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)]"
+              class="card-item group relative block h-full w-full overflow-hidden shadow-sm transition"
               @click="openLightbox(item)"
             >
               <img
@@ -475,7 +443,7 @@
             <button
               v-else-if="item.type === 'video'"
               type="button"
-              class="group relative block h-full w-full overflow-hidden border border-[var(--color-border)] bg-[var(--glass)] shadow-sm backdrop-blur-md transition hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)]"
+              class="card-item group relative block h-full w-full overflow-hidden shadow-sm transition"
               @click="openVideoPlayer(item)"
             >
               <img
@@ -525,31 +493,15 @@
         <!-- Blog listing -->
         <template v-else>
           <!-- Search bar for blog -->
-          <div v-if="(model.profile.searchBlog || availableBlogTags.length > 0) && publishedBlogPosts.length > 0" class="mb-3">
-            <div :class="['flex items-center gap-2.5 rounded-xl border px-3 py-2 backdrop-blur-md transition-all duration-200', searchBlogQuery.trim() ? 'border-transparent bg-white shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]' : 'border-transparent bg-black/[0.04] shadow-none hover:bg-white hover:shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]', 'focus-within:border-[var(--color-brand)] focus-within:ring-1 focus-within:ring-[var(--color-brand)] focus-within:bg-white focus-within:shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]']">
-              <i v-if="model.profile.searchBlog" class="pi pi-search shrink-0 text-[13px] text-[color:var(--color-ink-soft)]" />
-              <input
-                v-if="model.profile.searchBlog"
-                v-model="searchBlogQuery"
-                type="text"
-                placeholder="Search posts…"
-                class="min-w-0 flex-1 bg-transparent text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-ink-soft)] outline-none"
-              />
-              <span v-if="!model.profile.searchBlog" class="min-w-0 flex-1" />
-              <button
-                v-if="availableBlogTags.length > 0"
-                type="button"
-                class="relative shrink-0 rounded-lg p-1 text-[color:var(--color-ink-soft)] transition hover:text-[color:var(--color-brand)]"
-                @click.stop="blogTagFilterOpen = true"
-              >
-                <i class="pi pi-filter text-[13px]" />
-                <span
-                  v-if="selectedBlogTags.length > 0"
-                  class="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--color-brand)] px-1 text-[9px] font-bold text-white"
-                >{{ selectedBlogTags.length }}</span>
-              </button>
-            </div>
-          </div>
+          <SearchBar
+            v-if="(model.profile.searchBlog || availableBlogTags.length > 0) && publishedBlogPosts.length > 0"
+            v-model="searchBlogQuery"
+            placeholder="Search posts…"
+            :show-search="!!model.profile.searchBlog"
+            :tag-count="availableBlogTags.length > 0 ? availableBlogTags.length : null"
+            :selected-tag-count="selectedBlogTags.length"
+            @filter-click="blogTagFilterOpen = true"
+          />
 
           <h2
             class="mb-3 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-4 sm:text-xs"
@@ -566,7 +518,7 @@
               v-for="post in filteredBlogPosts"
               :key="post.slug"
               type="button"
-              class="group flex items-start gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] p-3 text-left shadow-sm backdrop-blur-md transition hover:bg-[var(--glass-strong)] hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)] sm:gap-4 sm:p-4"
+              class="card-item group flex items-start gap-3 rounded-2xl p-3 text-left shadow-sm transition sm:gap-4 sm:p-4"
               @click="loadBlogPost(post.slug)"
             >
               <img
@@ -667,7 +619,7 @@
           >
             <i class="pi pi-times text-lg" />
           </button>
-          <div class="relative w-full max-w-4xl" style="max-height: 85vh; max-height: 85dvh;">
+          <div class="relative w-full max-w-4xl" style="max-height: 85vh; max-height: 85dvh; max-width: min(56rem, calc((85dvh - 3rem) * 16 / 9));">
             <!-- One pre-loaded VideoPlayer per video, only the active one is visible -->
             <div
               v-for="(vItem, vIdx) in videoGalleryItems"
@@ -680,9 +632,19 @@
                 :poster="vItem.coverUrl ? resolveUploadUrl(vItem.coverUrl) : ''"
               />
             </div>
-            <div v-if="videoPlayerItem?.title" class="mt-3 text-center">
-              <div class="text-sm font-semibold text-white">
+            <div v-if="videoPlayerItem?.title || videoPlayerItem?.description" class="mt-3 max-w-lg mx-auto text-center">
+              <div
+                v-if="videoPlayerItem?.title"
+                class="text-sm font-semibold text-white"
+              >
                 {{ videoPlayerItem.title }}
+              </div>
+              <div
+                v-if="videoPlayerItem?.description"
+                class="mt-1 text-xs leading-relaxed text-white/70"
+                style="white-space: pre-line"
+              >
+                {{ videoPlayerItem.description }}
               </div>
             </div>
           </div>
@@ -941,6 +903,7 @@ import GithubSettingsDialog from "./components/GithubSettingsDialog.vue";
 import VideoPlayer from "./components/VideoPlayer.vue";
 import MasonryGrid from "./components/MasonryGrid.vue";
 import BlogPostView from "./components/BlogPostView.vue";
+import SearchBar from "./components/SearchBar.vue";
 import type { MasonryItem } from "./components/MasonryGrid.vue";
 import { icons as lucideIcons } from "lucide-vue-next";
 import {
@@ -985,6 +948,7 @@ export default defineComponent({
     VideoPlayer,
     MasonryGrid,
     BlogPostView,
+    SearchBar,
   },
   setup() {
     const isDev = import.meta.env.DEV;
@@ -1078,6 +1042,12 @@ export default defineComponent({
 
       modelLoaded.value = true;
 
+      // Set default tab from model settings
+      const dt = model.value.profile.defaultTab;
+      if (dt && ["links", "resume", "gallery", "blog"].includes(dt)) {
+        activeTab.value = dt;
+      }
+
       // Load blog posts
       await loadBlogPosts();
 
@@ -1136,8 +1106,18 @@ export default defineComponent({
       if (t.glassStrong) root.setProperty("--glass-strong", t.glassStrong);
       if (t.colorBorder) root.setProperty("--color-border", t.colorBorder);
       if (t.colorBorder2) root.setProperty("--color-border-2", t.colorBorder2);
+      if (t.cardBg) root.setProperty("--card-bg", t.cardBg);
+      if (t.cardBorder) root.setProperty("--card-border", t.cardBorder);
+      if (t.cardText) root.setProperty("--card-text", t.cardText);
       if (t.radiusXl) root.setProperty("--radius-xl", t.radiusXl);
       if (t.radiusLg) root.setProperty("--radius-lg", t.radiusLg);
+
+      // Toggle dark-mode attribute for CSS-driven glow effects
+      if (t.preset === "dark") {
+        document.documentElement.setAttribute("data-dark", "");
+      } else {
+        document.documentElement.removeAttribute("data-dark");
+      }
     });
 
     // Inject custom user scripts into <head> and before </body>
@@ -1564,13 +1544,15 @@ export default defineComponent({
       activeVideoIdx.value = idx >= 0 ? idx : null;
       videoPlayerOpen.value = true;
 
-      // Call play() — now async-safe; waits for provider readiness
+      // Seek to start and play — async-safe; waits for provider readiness
       if (idx >= 0) {
         const playerComp = videoPlayerRefs.value[idx];
-        if (playerComp?.play) {
-          playerComp.play().catch(() => {
+        if (playerComp?.restart) {
+          playerComp.restart().catch(() => {
             // swallow — user can tap the built-in play button as fallback
           });
+        } else if (playerComp?.play) {
+          playerComp.play().catch(() => {});
         }
       }
     };

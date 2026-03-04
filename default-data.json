@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 14,
+  "schemaVersion": 16,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -9,6 +9,7 @@
     "resumeLabel": "",
     "galleryLabel": "",
     "blogLabel": "",
+    "defaultTab": "links",
     "searchLinks": false,
     "searchGallery": false,
     "searchBlog": false
@@ -90,6 +91,9 @@
     "glassStrong": "rgba(255, 255, 255, 0.82)",
     "colorBorder": "rgba(255, 255, 255, 0.62)",
     "colorBorder2": "rgba(11, 18, 32, 0.10)",
+    "cardBg": "rgba(255, 255, 255, 0.66)",
+    "cardBorder": "rgba(255, 255, 255, 0.62)",
+    "cardText": "#0b1220",
     "radiusXl": "1.6rem",
     "radiusLg": "1.2rem"
   }

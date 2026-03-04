@@ -25,6 +25,7 @@ export type BioProfile = {
   resumeLabel: string;
   galleryLabel: string;
   blogLabel: string;
+  defaultTab: "links" | "resume" | "gallery" | "blog";
   searchLinks: boolean;
   searchGallery: boolean;
   searchBlog: boolean;
@@ -100,6 +101,9 @@ export type BioTheme = {
   glassStrong: string;
   colorBorder: string;
   colorBorder2: string;
+  cardBg: string;
+  cardBorder: string;
+  cardText: string;
   radiusXl: string;
   radiusLg: string;
 };
@@ -216,6 +220,9 @@ export const defaultTheme = (): BioTheme => ({
   glassStrong: "rgba(255, 255, 255, 0.82)",
   colorBorder: "rgba(255, 255, 255, 0.62)",
   colorBorder2: "rgba(11, 18, 32, 0.10)",
+  cardBg: "rgba(255, 255, 255, 0.66)",
+  cardBorder: "rgba(255, 255, 255, 0.62)",
+  cardText: "#0b1220",
   radiusXl: "1.6rem",
   radiusLg: "1.2rem",
 });
@@ -227,12 +234,15 @@ export const darkTheme = (): BioTheme => ({
   colorAccent: "#f472b6",
   colorInk: "#f1f5f9",
   colorInkSoft: "rgba(241, 245, 249, 0.55)",
-  bg: "#0f1629",
-  glass: "rgba(30, 41, 59, 0.72)",
-  glass2: "rgba(30, 41, 59, 0.55)",
-  glassStrong: "rgba(30, 41, 59, 0.88)",
-  colorBorder: "rgba(148, 163, 184, 0.18)",
-  colorBorder2: "rgba(148, 163, 184, 0.10)",
+  bg: "#000000",
+  glass: "rgba(40, 52, 72, 0.78)",
+  glass2: "rgba(40, 52, 72, 0.60)",
+  glassStrong: "rgba(50, 62, 82, 0.92)",
+  colorBorder: "rgba(148, 163, 184, 0.24)",
+  colorBorder2: "rgba(148, 163, 184, 0.12)",
+  cardBg: "rgba(40, 52, 72, 0.78)",
+  cardBorder: "rgba(148, 163, 184, 0.24)",
+  cardText: "#f1f5f9",
   radiusXl: "1.6rem",
   radiusLg: "1.2rem",
 });
@@ -258,6 +268,7 @@ export const defaultModel = (): BioModel => ({
     resumeLabel: "",
     galleryLabel: "",
     blogLabel: "",
+    defaultTab: "links",
     searchLinks: false,
     searchGallery: false,
     searchBlog: false,
@@ -360,6 +371,7 @@ export const sanitizeModel = (input: unknown): BioModel => {
     resumeLabel: asString(obj.profile?.resumeLabel).slice(0, 30),
     galleryLabel: asString(obj.profile?.galleryLabel).slice(0, 30),
     blogLabel: asString(obj.profile?.blogLabel).slice(0, 30),
+    defaultTab: (["links", "resume", "gallery", "blog"] as const).includes(obj.profile?.defaultTab) ? obj.profile.defaultTab : "links",
     searchLinks: typeof obj.profile?.searchLinks === 'boolean' ? obj.profile.searchLinks : false,
     searchGallery: typeof obj.profile?.searchGallery === 'boolean' ? obj.profile.searchGallery : false,
     searchBlog: typeof obj.profile?.searchBlog === 'boolean' ? obj.profile.searchBlog : false,
@@ -475,6 +487,9 @@ export const sanitizeModel = (input: unknown): BioModel => {
     glassStrong: asString(themeRaw.glassStrong).slice(0, 60) || defaults.glassStrong,
     colorBorder: asString(themeRaw.colorBorder).slice(0, 60) || defaults.colorBorder,
     colorBorder2: asString(themeRaw.colorBorder2).slice(0, 60) || defaults.colorBorder2,
+    cardBg: asString(themeRaw.cardBg).slice(0, 60) || defaults.cardBg,
+    cardBorder: asString(themeRaw.cardBorder).slice(0, 60) || defaults.cardBorder,
+    cardText: asString(themeRaw.cardText).slice(0, 40) || defaults.cardText,
     radiusXl: asString(themeRaw.radiusXl).slice(0, 20) || defaults.radiusXl,
     radiusLg: asString(themeRaw.radiusLg).slice(0, 20) || defaults.radiusLg,
   };

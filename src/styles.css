@@ -23,6 +23,11 @@
   --color-border: rgba(255, 255, 255, 0.62);
   --color-border-2: rgba(11, 18, 32, 0.10);
 
+  /* Card items (interactive cards, link buttons, etc.) */
+  --card-bg: rgba(255, 255, 255, 0.66);
+  --card-border: rgba(255, 255, 255, 0.62);
+  --card-text: #0b1220;
+
   /* Accent system (restrained) */
   --color-brand: #3b82f6; /* iOS-ish blue */
   --color-brand-strong: #2563eb;
@@ -50,7 +55,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  background-color: var(--bg);
+  background: var(--bg);
   background-image:
     radial-gradient(900px 700px at 18% 8%, color-mix(in srgb, var(--color-brand) 14%, transparent), transparent 60%),
     radial-gradient(820px 620px at 86% 18%, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 62%),
@@ -84,6 +89,42 @@ body::before {
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
+}
+
+/* Card item: interactive cards (links, social pills, resume items, gallery, blog) */
+.card-item {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--card-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.card-item:hover {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+}
+
+/* Dark-mode: subtle glow on card-items */
+[data-dark] .card-item {
+  box-shadow: 0 0 12px rgba(148, 163, 184, 0.06), 0 1px 3px rgba(148, 163, 184, 0.08);
+}
+
+[data-dark] .card-item:hover {
+  box-shadow: 0 0 20px rgba(148, 163, 184, 0.10), 0 4px 16px rgba(148, 163, 184, 0.08);
+}
+
+/* Dark-mode search bar — high-contrast against dark glass */
+[data-dark] .search-bar {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+[data-dark] .search-bar:hover,
+[data-dark] .search-bar.search-bar--active,
+[data-dark] .search-bar:focus-within {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: rgba(255, 255, 255, 0.20) !important;
 }
 
 /* -----------------------------

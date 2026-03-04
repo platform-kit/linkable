@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 14;
+export const CURRENT_SCHEMA_VERSION = 16;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -267,6 +267,32 @@ const migrations: Migration[] = [
         }
       }
       data.schemaVersion = 14;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 15,
+    migrate: (data) => {
+      // v14 → v15: add card-item CSS variable fields to theme.
+      if (data.theme && typeof data.theme === "object") {
+        if (!data.theme.cardBg) data.theme.cardBg = "";
+        if (!data.theme.cardBorder) data.theme.cardBorder = "";
+        if (!data.theme.cardText) data.theme.cardText = "";
+      }
+      data.schemaVersion = 15;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 16,
+    migrate: (data) => {
+      // v15 → v16: add defaultTab to profile.
+      if (data.profile && typeof data.profile === "object") {
+        if (!data.profile.defaultTab) data.profile.defaultTab = "links";
+      }
+      data.schemaVersion = 16;
       return data;
     },
   },
