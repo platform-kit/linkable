@@ -696,28 +696,35 @@
                 <div v-if="draft.resume.education.length === 0" class="cms__empty">
                   <div class="cms__empty-sub">No education entries yet.</div>
                 </div>
-                <div v-else class="grid gap-2">
-                  <button
-                    v-for="edu in draft.resume.education"
-                    :key="edu.id"
-                    type="button"
-                    class="cms__row"
-                    style="grid-template-columns: 44px 1fr auto;"
-                    @click="openEducationEditor(edu.id)"
-                  >
-                    <span class="cms__row-drag cms__row-drag--muted">
-                      <i class="pi pi-graduation-cap" />
-                    </span>
-                    <span class="cms__row-text">
-                      <span class="cms__row-title">{{ edu.institution || 'Untitled' }}</span>
-                      <span class="cms__row-sub">{{ [edu.degree, edu.field].filter(Boolean).join(' · ') || '(no details)' }}</span>
-                    </span>
-                    <span class="cms__row-meta">
-                      <span v-if="edu.startYear || edu.endYear" class="text-xs text-[color:var(--color-ink-soft)]">{{ edu.startYear }}–{{ edu.endYear }}</span>
-                      <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
-                    </span>
-                  </button>
-                </div>
+                <draggable
+                  v-else
+                  v-model="draft.resume.education"
+                  item-key="id"
+                  handle=".drag"
+                  :animation="160"
+                  class="grid gap-2"
+                >
+                  <template #item="{ element: edu }">
+                    <button
+                      type="button"
+                      class="cms__row"
+                      style="grid-template-columns: 44px 1fr auto;"
+                      @click="openEducationEditor(edu.id)"
+                    >
+                      <span class="cms__row-drag drag" aria-label="Drag">
+                        <i class="pi pi-bars" />
+                      </span>
+                      <span class="cms__row-text">
+                        <span class="cms__row-title">{{ edu.institution || 'Untitled' }}</span>
+                        <span class="cms__row-sub">{{ [edu.degree, edu.field].filter(Boolean).join(' · ') || '(no details)' }}</span>
+                      </span>
+                      <span class="cms__row-meta">
+                        <span v-if="edu.startYear || edu.endYear" class="text-xs text-[color:var(--color-ink-soft)]">{{ edu.startYear }}–{{ edu.endYear }}</span>
+                        <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
+                      </span>
+                    </button>
+                  </template>
+                </draggable>
               </div>
 
               <!-- Employment -->
@@ -733,28 +740,35 @@
                 <div v-if="draft.resume.employment.length === 0" class="cms__empty">
                   <div class="cms__empty-sub">No employment entries yet.</div>
                 </div>
-                <div v-else class="grid gap-2">
-                  <button
-                    v-for="job in draft.resume.employment"
-                    :key="job.id"
-                    type="button"
-                    class="cms__row"
-                    style="grid-template-columns: 44px 1fr auto;"
-                    @click="openEmploymentEditor(job.id)"
-                  >
-                    <span class="cms__row-drag cms__row-drag--muted">
-                      <i class="pi pi-briefcase" />
-                    </span>
-                    <span class="cms__row-text">
-                      <span class="cms__row-title">{{ job.company || 'Untitled' }}</span>
-                      <span class="cms__row-sub">{{ job.role || '(no role)' }}</span>
-                    </span>
-                    <span class="cms__row-meta">
-                      <span v-if="job.startYear || job.endYear" class="text-xs text-[color:var(--color-ink-soft)]">{{ job.startYear }}–{{ job.endYear }}</span>
-                      <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
-                    </span>
-                  </button>
-                </div>
+                <draggable
+                  v-else
+                  v-model="draft.resume.employment"
+                  item-key="id"
+                  handle=".drag"
+                  :animation="160"
+                  class="grid gap-2"
+                >
+                  <template #item="{ element: job }">
+                    <button
+                      type="button"
+                      class="cms__row"
+                      style="grid-template-columns: 44px 1fr auto;"
+                      @click="openEmploymentEditor(job.id)"
+                    >
+                      <span class="cms__row-drag drag" aria-label="Drag">
+                        <i class="pi pi-bars" />
+                      </span>
+                      <span class="cms__row-text">
+                        <span class="cms__row-title">{{ job.company || 'Untitled' }}</span>
+                        <span class="cms__row-sub">{{ job.role || '(no role)' }}</span>
+                      </span>
+                      <span class="cms__row-meta">
+                        <span v-if="job.startYear || job.endYear" class="text-xs text-[color:var(--color-ink-soft)]">{{ job.startYear }}–{{ job.endYear }}</span>
+                        <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
+                      </span>
+                    </button>
+                  </template>
+                </draggable>
               </div>
 
               <!-- Skills -->
@@ -798,28 +812,35 @@
                 <div v-if="draft.resume.achievements.length === 0" class="cms__empty">
                   <div class="cms__empty-sub">No achievements yet.</div>
                 </div>
-                <div v-else class="grid gap-2">
-                  <button
-                    v-for="ach in draft.resume.achievements"
-                    :key="ach.id"
-                    type="button"
-                    class="cms__row"
-                    style="grid-template-columns: 44px 1fr auto;"
-                    @click="openAchievementEditor(ach.id)"
-                  >
-                    <span class="cms__row-drag cms__row-drag--muted">
-                      <i class="pi pi-star" />
-                    </span>
-                    <span class="cms__row-text">
-                      <span class="cms__row-title">{{ ach.title || 'Untitled' }}</span>
-                      <span class="cms__row-sub">{{ ach.issuer || '(no issuer)' }}</span>
-                    </span>
-                    <span class="cms__row-meta">
-                      <span v-if="ach.year" class="text-xs text-[color:var(--color-ink-soft)]">{{ ach.year }}</span>
-                      <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
-                    </span>
-                  </button>
-                </div>
+                <draggable
+                  v-else
+                  v-model="draft.resume.achievements"
+                  item-key="id"
+                  handle=".drag"
+                  :animation="160"
+                  class="grid gap-2"
+                >
+                  <template #item="{ element: ach }">
+                    <button
+                      type="button"
+                      class="cms__row"
+                      style="grid-template-columns: 44px 1fr auto;"
+                      @click="openAchievementEditor(ach.id)"
+                    >
+                      <span class="cms__row-drag drag" aria-label="Drag">
+                        <i class="pi pi-bars" />
+                      </span>
+                      <span class="cms__row-text">
+                        <span class="cms__row-title">{{ ach.title || 'Untitled' }}</span>
+                        <span class="cms__row-sub">{{ ach.issuer || '(no issuer)' }}</span>
+                      </span>
+                      <span class="cms__row-meta">
+                        <span v-if="ach.year" class="text-xs text-[color:var(--color-ink-soft)]">{{ ach.year }}</span>
+                        <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
+                      </span>
+                    </button>
+                  </template>
+                </draggable>
               </div>
             </div>
           </div>
