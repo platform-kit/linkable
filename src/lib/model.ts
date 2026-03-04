@@ -21,6 +21,8 @@ export type BioProfile = {
   tagline: string;
   avatarUrl: string;
   bannerUrl: string;
+  faviconUrl: string;
+  ogImageUrl: string;
   linksLabel: string;
   resumeLabel: string;
   galleryLabel: string;
@@ -281,6 +283,8 @@ export const defaultModel = (): BioModel => ({
     tagline: "Design-forward links. Clean, fast, yours.",
     avatarUrl: "",
     bannerUrl: "",
+    faviconUrl: "",
+    ogImageUrl: "",
     linksLabel: "",
     resumeLabel: "",
     galleryLabel: "",
@@ -323,14 +327,14 @@ export const defaultModel = (): BioModel => ({
     {
       id: newId(),
       type: "instagram",
-      label: "@linkable",
+      label: "Instagram",
       url: "https://instagram.com",
       enabled: true,
     },
     {
       id: newId(),
       type: "github",
-      label: "github.com/linkable",
+      label: "Github",
       url: "https://github.com",
       enabled: false,
     },
@@ -385,6 +389,8 @@ export const sanitizeModel = (input: unknown): BioModel => {
     tagline: asString(obj.profile?.tagline).slice(0, 140),
     avatarUrl: sanitizeUrl(obj.profile?.avatarUrl),
     bannerUrl: sanitizeUrl(obj.profile?.bannerUrl),
+    faviconUrl: sanitizeUrl(obj.profile?.faviconUrl),
+    ogImageUrl: sanitizeUrl(obj.profile?.ogImageUrl),
     linksLabel: asString(obj.profile?.linksLabel).slice(0, 30),
     resumeLabel: asString(obj.profile?.resumeLabel).slice(0, 30),
     galleryLabel: asString(obj.profile?.galleryLabel).slice(0, 30),

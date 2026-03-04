@@ -1,10 +1,12 @@
 {
-  "schemaVersion": 17,
+  "schemaVersion": 18,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
     "avatarUrl": "",
     "bannerUrl": "",
+    "faviconUrl": "",
+    "ogImageUrl": "",
     "linksLabel": "",
     "resumeLabel": "",
     "galleryLabel": "",

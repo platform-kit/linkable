@@ -152,6 +152,42 @@
             </div>
           </Transition>
 
+          <!-- Favicon & Social Image -->
+          <button type="button" class="cms__accordion-trigger" @click="siteSection.favicon = !siteSection.favicon">
+            <span class="cms__accordion-label"><i class="pi pi-globe" /> Favicon &amp; Social Image</span>
+            <i class="pi" :class="siteSection.favicon ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="siteSection.favicon" class="cms__accordion-body">
+              <div class="cms__form">
+                <div class="cms__field">
+                  <ImageUploadField
+                    v-model="draft.profile.faviconUrl"
+                    label="Favicon"
+                    description="PNG or SVG — appears in browser tabs and bookmarks."
+                    targetFilename="favicon.png"
+                  >
+                    <template #helper>
+                      <div class="cms__help">Recommended: 512 × 512 px square PNG.</div>
+                    </template>
+                  </ImageUploadField>
+                </div>
+                <div class="cms__field">
+                  <ImageUploadField
+                    v-model="draft.profile.ogImageUrl"
+                    label="Social / PWA thumbnail"
+                    description="Shown when your site is shared on social media and used as the PWA icon."
+                    targetFilename="og-image.jpg"
+                  >
+                    <template #helper>
+                      <div class="cms__help">Recommended: 1200 × 630 px for social cards.</div>
+                    </template>
+                  </ImageUploadField>
+                </div>
+              </div>
+            </div>
+          </Transition>
+
           <!-- Theme -->
           <button type="button" class="cms__accordion-trigger" @click="siteSection.theme = !siteSection.theme">
             <span class="cms__accordion-label"><i class="pi pi-palette" /> Theme</span>
@@ -1241,6 +1277,7 @@ export default defineComponent({
     const siteSection = reactive({
       identity: false,
       images: false,
+      favicon: false,
       theme: false,
       github: false,
       search: false,

@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 17;
+export const CURRENT_SCHEMA_VERSION = 18;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -305,6 +305,19 @@ const migrations: Migration[] = [
         data.embeds = [];
       }
       data.schemaVersion = 17;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 18,
+    migrate: (data) => {
+      // v17 → v18: add faviconUrl and ogImageUrl to profile.
+      if (data.profile && typeof data.profile === "object") {
+        data.profile.faviconUrl ??= "";
+        data.profile.ogImageUrl ??= "";
+      }
+      data.schemaVersion = 18;
       return data;
     },
   },

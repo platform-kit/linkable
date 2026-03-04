@@ -23,7 +23,7 @@ A design-forward, open-source link-in-bio page with a built-in CMS. Built with V
 ### Option 1: Clone and develop
 
 ```bash
-git clone https://github.com/platform-kit-team/linkable.git
+git clone https://github.com/platform-kit/linkable.git
 cd linkable
 npm install
 npm run dev
@@ -36,7 +36,7 @@ Open `http://localhost:5173` and click the **CMS** button (bottom-right) to edit
 If you already have a content directory with `data.json` and an optional `uploads/` folder:
 
 ```bash
-npx github:platform-kit-team/linkable serve ./my-content
+npx github:platform-kit/linkable serve ./my-content
 ```
 
 ### Option 3: Build a static site with npx
@@ -44,19 +44,19 @@ npx github:platform-kit-team/linkable serve ./my-content
 Build a deployable `dist/` folder using your own content — no need to clone the Linkable repo:
 
 ```bash
-npx github:platform-kit-team/linkable build ./my-content
+npx github:platform-kit/linkable build ./my-content
 ```
 
 Output to a custom directory:
 
 ```bash
-npx github:platform-kit-team/linkable build ./my-content --out ./public
+npx github:platform-kit/linkable build ./my-content --out ./public
 ```
 
 This is ideal for deploying on Vercel, Netlify, or any static host. Create a content repo with your `data.json` and `uploads/`, then set the build command to:
 
 ```bash
-npx github:platform-kit-team/linkable build .
+npx github:platform-kit/linkable build .
 ```
 
 ### Deploying on Vercel with a personal content repo
@@ -82,7 +82,7 @@ my-linkable-site/
 
 | Setting              | Value                                           |
 | -------------------- | ----------------------------------------------- |
-| **Build Command**    | `npx github:platform-kit-team/linkable build .` |
+| **Build Command**    | `npx github:platform-kit/linkable build .` |
 | **Output Directory** | `dist`                                          |
 | **Install Command**  | _(leave blank)_                                 |
 

@@ -170,6 +170,39 @@ const asResultPayload = (result?: GitCommandResult | null) =>
 
 // Vite plugin that registers CMS dev endpoints as middleware. Using a plugin
 // ensures the hook runs on the dev server lifecycle in newer Vite versions.
+
+/** Build a PWA manifest object from CMS data. */
+const buildManifest = (siteModel: any) => {
+  const name = siteModel?.profile?.displayName || "Linkable";
+  const description = siteModel?.profile?.tagline || "";
+  const bg = siteModel?.theme?.bg || "#f5f7fb";
+  const brand = siteModel?.theme?.colorBrand || "#3b82f6";
+  const ogImage = siteModel?.profile?.ogImageUrl || "";
+  const favicon = siteModel?.profile?.faviconUrl || "";
+
+  const icons: { src: string; sizes: string; type: string; purpose?: string }[] = [];
+
+  // Prefer the OG/social image as the large PWA icon
+  if (ogImage) {
+    icons.push({ src: ogImage, sizes: "512x512", type: "image/jpeg", purpose: "any" });
+  }
+  // Use favicon as a smaller icon if available
+  if (favicon) {
+    icons.push({ src: favicon, sizes: "192x192", type: "image/png", purpose: "any maskable" });
+  }
+
+  return {
+    name,
+    short_name: name,
+    description,
+    start_url: "/",
+    display: "standalone",
+    background_color: bg,
+    theme_color: brand,
+    ...(icons.length > 0 ? { icons } : {}),
+  };
+};
+
 const cmsMiddlewarePlugin = () => ({
   name: "cms-middleware",
   configureServer: (server: any) => {
@@ -233,6 +266,16 @@ const cmsMiddlewarePlugin = () => ({
         });
 
         req.pipe(bb);
+        return;
+      }
+
+      // ── Manifest.json (dynamic, from CMS data) ──────────────────
+      if (url === "/manifest.json" && req.method === "GET") {
+        ensureSeedData();
+        const raw = fs.readFileSync(dataFilePath, "utf8");
+        const siteModel = sanitizeModel(JSON.parse(raw));
+        res.setHeader("Content-Type", "application/manifest+json");
+        res.end(JSON.stringify(buildManifest(siteModel), null, 2));
         return;
       }
 
@@ -533,6 +576,20 @@ const blogBuildPlugin = () => ({
   },
 });
 
+/** Build plugin: generate manifest.json at build time from CMS data. */
+const manifestBuildPlugin = () => ({
+  name: "manifest-build",
+  buildStart() {
+    const siteModel = fs.existsSync(dataFilePath)
+      ? sanitizeModel(JSON.parse(fs.readFileSync(dataFilePath, "utf8")))
+      : readDefaultModel();
+    const manifest = buildManifest(siteModel);
+    const outPath = path.resolve(__dirname, "public/manifest.json");
+    fs.writeFileSync(outPath, JSON.stringify(manifest, null, 2));
+    console.log("[manifest-build] Generated public/manifest.json");
+  },
+});
+
     export default defineConfig(() => {
       ensureSeedData();
 
@@ -544,6 +601,7 @@ const blogBuildPlugin = () => ({
         plugins: [
           cmsMiddlewarePlugin(),
           blogBuildPlugin(),
+          manifestBuildPlugin(),
           vue({
             template: {
               compilerOptions: {

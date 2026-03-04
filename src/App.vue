@@ -682,7 +682,7 @@
         class="mt-6 text-center text-xs text-[color:var(--color-ink-soft)]"
       >
         <a
-          href="https://github.com/platform-kit-team/linkable"
+          href="https://github.com/platform-kit/linkable"
           target="_blank"
           rel="noreferrer"
           class="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--glass-2)] px-3 py-1.5 shadow-sm backdrop-blur-md transition hover:bg-[var(--glass)]"
@@ -1149,6 +1149,115 @@ export default defineComponent({
         document.documentElement.setAttribute("data-dark", "");
       } else {
         document.documentElement.removeAttribute("data-dark");
+      }
+    });
+
+    // Dynamically inject favicon and OG/social meta tags
+    watchEffect(() => {
+      const p = model.value.profile;
+
+      // Favicon
+      let faviconLink = document.querySelector<HTMLLinkElement>("link#__linkable-favicon");
+      if (p.faviconUrl) {
+        if (!faviconLink) {
+          faviconLink = document.createElement("link");
+          faviconLink.id = "__linkable-favicon";
+          faviconLink.rel = "icon";
+          document.head.appendChild(faviconLink);
+        }
+        faviconLink.href = p.faviconUrl;
+      } else if (faviconLink) {
+        faviconLink.remove();
+      }
+
+      // Apple touch icon — use OG image if available, else favicon
+      const touchSrc = p.ogImageUrl || p.faviconUrl;
+      let touchLink = document.querySelector<HTMLLinkElement>("link#__linkable-apple-touch");
+      if (touchSrc) {
+        if (!touchLink) {
+          touchLink = document.createElement("link");
+          touchLink.id = "__linkable-apple-touch";
+          touchLink.rel = "apple-touch-icon";
+          document.head.appendChild(touchLink);
+        }
+        touchLink.href = touchSrc;
+      } else if (touchLink) {
+        touchLink.remove();
+      }
+
+      // OG image meta tag
+      let ogMeta = document.querySelector<HTMLMetaElement>("meta[property='og:image']");
+      if (p.ogImageUrl) {
+        if (!ogMeta) {
+          ogMeta = document.createElement("meta");
+          ogMeta.setAttribute("property", "og:image");
+          document.head.appendChild(ogMeta);
+        }
+        ogMeta.content = p.ogImageUrl;
+      } else if (ogMeta) {
+        ogMeta.remove();
+      }
+
+      // OG title
+      let ogTitle = document.querySelector<HTMLMetaElement>("meta[property='og:title']");
+      if (p.displayName) {
+        if (!ogTitle) {
+          ogTitle = document.createElement("meta");
+          ogTitle.setAttribute("property", "og:title");
+          document.head.appendChild(ogTitle);
+        }
+        ogTitle.content = p.displayName;
+      } else if (ogTitle) {
+        ogTitle.remove();
+      }
+
+      // OG description
+      let ogDesc = document.querySelector<HTMLMetaElement>("meta[property='og:description']");
+      if (p.tagline) {
+        if (!ogDesc) {
+          ogDesc = document.createElement("meta");
+          ogDesc.setAttribute("property", "og:description");
+          document.head.appendChild(ogDesc);
+        }
+        ogDesc.content = p.tagline;
+      } else if (ogDesc) {
+        ogDesc.remove();
+      }
+
+      // Twitter card tags
+      let twCard = document.querySelector<HTMLMetaElement>("meta[name='twitter:card']");
+      if (p.ogImageUrl) {
+        if (!twCard) {
+          twCard = document.createElement("meta");
+          twCard.name = "twitter:card";
+          document.head.appendChild(twCard);
+        }
+        twCard.content = "summary_large_image";
+      } else if (twCard) {
+        twCard.remove();
+      }
+
+      // Update page title
+      if (p.displayName) {
+        document.title = p.displayName;
+      }
+
+      // Update meta description
+      let descMeta = document.querySelector<HTMLMetaElement>("meta[name='description']");
+      if (p.tagline && descMeta) {
+        descMeta.content = p.tagline;
+      }
+
+      // Theme color meta (for mobile browser chrome)
+      let themeMeta = document.querySelector<HTMLMetaElement>("meta[name='theme-color']");
+      const themeColor = model.value.theme?.colorBrand;
+      if (themeColor) {
+        if (!themeMeta) {
+          themeMeta = document.createElement("meta");
+          themeMeta.name = "theme-color";
+          document.head.appendChild(themeMeta);
+        }
+        themeMeta.content = themeColor;
       }
     });
 
