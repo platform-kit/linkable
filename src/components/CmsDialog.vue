@@ -582,6 +582,32 @@
                 <InputText v-model="draft.profile.linksLabel" class="w-full" placeholder="Links" />
                 <div class="cms__help">Customise the tab name shown on the public page.</div>
               </div>
+              <div class="cms__field">
+                <label class="cms__label">Tab icon</label>
+                <AutoComplete
+                  v-model="draft.profile.linksIcon"
+                  :suggestions="filteredTabIcons"
+                  @complete="searchTabIcons"
+                  placeholder="Search icons… e.g. Link"
+                  class="w-full"
+                  :inputClass="'w-full'"
+                  forceSelection
+                >
+                  <template #option="{ option }">
+                    <div class="flex items-center gap-2.5 py-0.5">
+                      <component :is="getTabIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                      <span class="text-sm font-medium">{{ option }}</span>
+                    </div>
+                  </template>
+                  <template #value="{ value }">
+                    <div v-if="value" class="flex items-center gap-2">
+                      <component :is="getTabIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                      <span>{{ value }}</span>
+                    </div>
+                  </template>
+                </AutoComplete>
+                <div class="cms__help">Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Leave empty for default.</div>
+              </div>
             </div>
           </div>
 
@@ -699,6 +725,32 @@
                 <label class="cms__label">Tab label</label>
                 <InputText v-model="draft.profile.resumeLabel" class="w-full" placeholder="Resume" />
                 <div class="cms__help">Customise the tab name shown on the public page.</div>
+              </div>
+              <div class="cms__field">
+                <label class="cms__label">Tab icon</label>
+                <AutoComplete
+                  v-model="draft.profile.resumeIcon"
+                  :suggestions="filteredTabIcons"
+                  @complete="searchTabIcons"
+                  placeholder="Search icons… e.g. FileText"
+                  class="w-full"
+                  :inputClass="'w-full'"
+                  forceSelection
+                >
+                  <template #option="{ option }">
+                    <div class="flex items-center gap-2.5 py-0.5">
+                      <component :is="getTabIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                      <span class="text-sm font-medium">{{ option }}</span>
+                    </div>
+                  </template>
+                  <template #value="{ value }">
+                    <div v-if="value" class="flex items-center gap-2">
+                      <component :is="getTabIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                      <span>{{ value }}</span>
+                    </div>
+                  </template>
+                </AutoComplete>
+                <div class="cms__help">Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Leave empty for default.</div>
               </div>
             </div>
           </div>
@@ -906,6 +958,32 @@
                 <InputText v-model="draft.profile.galleryLabel" class="w-full" placeholder="Gallery" />
                 <div class="cms__help">Customise the tab name shown on the public page.</div>
               </div>
+              <div class="cms__field">
+                <label class="cms__label">Tab icon</label>
+                <AutoComplete
+                  v-model="draft.profile.galleryIcon"
+                  :suggestions="filteredTabIcons"
+                  @complete="searchTabIcons"
+                  placeholder="Search icons… e.g. Images"
+                  class="w-full"
+                  :inputClass="'w-full'"
+                  forceSelection
+                >
+                  <template #option="{ option }">
+                    <div class="flex items-center gap-2.5 py-0.5">
+                      <component :is="getTabIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                      <span class="text-sm font-medium">{{ option }}</span>
+                    </div>
+                  </template>
+                  <template #value="{ value }">
+                    <div v-if="value" class="flex items-center gap-2">
+                      <component :is="getTabIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                      <span>{{ value }}</span>
+                    </div>
+                  </template>
+                </AutoComplete>
+                <div class="cms__help">Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Leave empty for default.</div>
+              </div>
             </div>
           </div>
 
@@ -995,6 +1073,32 @@
                 <label class="cms__label">Tab label</label>
                 <InputText v-model="draft.profile.blogLabel" class="w-full" placeholder="Blog" />
                 <div class="cms__help">Customise the tab name shown on the public page.</div>
+              </div>
+              <div class="cms__field">
+                <label class="cms__label">Tab icon</label>
+                <AutoComplete
+                  v-model="draft.profile.blogIcon"
+                  :suggestions="filteredTabIcons"
+                  @complete="searchTabIcons"
+                  placeholder="Search icons… e.g. Pencil"
+                  class="w-full"
+                  :inputClass="'w-full'"
+                  forceSelection
+                >
+                  <template #option="{ option }">
+                    <div class="flex items-center gap-2.5 py-0.5">
+                      <component :is="getTabIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                      <span class="text-sm font-medium">{{ option }}</span>
+                    </div>
+                  </template>
+                  <template #value="{ value }">
+                    <div v-if="value" class="flex items-center gap-2">
+                      <component :is="getTabIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                      <span>{{ value }}</span>
+                    </div>
+                  </template>
+                </AutoComplete>
+                <div class="cms__help">Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Leave empty for default.</div>
               </div>
             </div>
           </div>
@@ -1121,6 +1225,7 @@ import draggable from "vuedraggable";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
+import AutoComplete from "primevue/autocomplete";
 import Select from "primevue/select";
 import Tag from "primevue/tag";
 import Textarea from "primevue/textarea";
@@ -1174,6 +1279,7 @@ export default defineComponent({
     Dialog,
     Button,
     InputText,
+    AutoComplete,
     Select,
     Textarea,
     Tag,
@@ -1249,6 +1355,32 @@ export default defineComponent({
       { label: "Gallery", value: "gallery" },
       { label: "Blog", value: "blog" },
     ];
+
+    // ── Icon autocomplete for tab icons ──
+    const FEATURED_TAB_ICONS = [
+      "Link", "FileText", "Images", "Pencil", "Globe", "Star", "Heart",
+      "Briefcase", "BookOpen", "Camera", "Music", "Video", "Code",
+      "Users", "MessageCircle", "Mail", "Phone", "Map", "Layers",
+      "Palette", "Newspaper", "GraduationCap", "Award", "Zap",
+    ];
+    const ALL_ICON_NAMES: string[] = Object.keys(lucideIcons);
+    const filteredTabIcons = ref<string[]>(FEATURED_TAB_ICONS);
+
+    const searchTabIcons = (event: { query: string }) => {
+      const q = (event.query || "").trim().toLowerCase();
+      if (!q) {
+        filteredTabIcons.value = FEATURED_TAB_ICONS;
+        return;
+      }
+      filteredTabIcons.value = ALL_ICON_NAMES
+        .filter((name) => name.toLowerCase().includes(q))
+        .slice(0, 40);
+    };
+
+    const getTabIconComponent = (name: string) => {
+      const table = lucideIcons as Record<string, any>;
+      return table[name] ?? table["Globe"];
+    };
 
     const draft = ref<BioModel>(sanitizeModel(props.model));
     // Cache the serialised saved-model so hasChanges doesn't re-stringify it on every access
@@ -1906,6 +2038,9 @@ export default defineComponent({
       allGalleryTags,
       allBlogTags,
       defaultTabOptions,
+      filteredTabIcons,
+      searchTabIcons,
+      getTabIconComponent,
     };
   },
 });

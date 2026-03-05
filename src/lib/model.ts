@@ -27,6 +27,10 @@ export type BioProfile = {
   resumeLabel: string;
   galleryLabel: string;
   blogLabel: string;
+  linksIcon: string;
+  resumeIcon: string;
+  galleryIcon: string;
+  blogIcon: string;
   defaultTab: "links" | "resume" | "gallery" | "blog";
   searchLinks: boolean;
   searchGallery: boolean;
@@ -289,6 +293,10 @@ export const defaultModel = (): BioModel => ({
     resumeLabel: "",
     galleryLabel: "",
     blogLabel: "",
+    linksIcon: "",
+    resumeIcon: "",
+    galleryIcon: "",
+    blogIcon: "",
     defaultTab: "links",
     searchLinks: false,
     searchGallery: false,
@@ -395,6 +403,10 @@ export const sanitizeModel = (input: unknown): BioModel => {
     resumeLabel: asString(obj.profile?.resumeLabel).slice(0, 30),
     galleryLabel: asString(obj.profile?.galleryLabel).slice(0, 30),
     blogLabel: asString(obj.profile?.blogLabel).slice(0, 30),
+    linksIcon: asString(obj.profile?.linksIcon).slice(0, 60),
+    resumeIcon: asString(obj.profile?.resumeIcon).slice(0, 60),
+    galleryIcon: asString(obj.profile?.galleryIcon).slice(0, 60),
+    blogIcon: asString(obj.profile?.blogIcon).slice(0, 60),
     defaultTab: (["links", "resume", "gallery", "blog"] as const).includes(obj.profile?.defaultTab) ? obj.profile.defaultTab : "links",
     searchLinks: typeof obj.profile?.searchLinks === 'boolean' ? obj.profile.searchLinks : false,
     searchGallery: typeof obj.profile?.searchGallery === 'boolean' ? obj.profile.searchGallery : false,

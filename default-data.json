@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 18,
+  "schemaVersion": 19,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -11,6 +11,10 @@
     "resumeLabel": "",
     "galleryLabel": "",
     "blogLabel": "",
+    "linksIcon": "",
+    "resumeIcon": "",
+    "galleryIcon": "",
+    "blogIcon": "",
     "defaultTab": "links",
     "searchLinks": false,
     "searchGallery": false,

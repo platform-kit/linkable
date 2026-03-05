@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 18;
+export const CURRENT_SCHEMA_VERSION = 19;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -318,6 +318,21 @@ const migrations: Migration[] = [
         data.profile.ogImageUrl ??= "";
       }
       data.schemaVersion = 18;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 19,
+    migrate: (data) => {
+      // v18 → v19: add per-tab icon fields to profile.
+      if (data.profile && typeof data.profile === "object") {
+        data.profile.linksIcon ??= "";
+        data.profile.resumeIcon ??= "";
+        data.profile.galleryIcon ??= "";
+        data.profile.blogIcon ??= "";
+      }
+      data.schemaVersion = 19;
       return data;
     },
   },

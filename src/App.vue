@@ -96,7 +96,7 @@
           "
           @click="switchTab('links')"
         >
-          <i class="pi pi-link" />
+          <component :is="resolveSocialIcon(model.profile.linksIcon || 'Link')" :size="14" class="shrink-0" />
           {{ model.profile.linksLabel || 'Links' }}
         </button>
         <button
@@ -109,7 +109,7 @@
           "
           @click="switchTab('resume')"
         >
-          <i class="pi pi-file" />
+          <component :is="resolveSocialIcon(model.profile.resumeIcon || 'FileText')" :size="14" class="shrink-0" />
           {{ model.profile.resumeLabel || 'Resume' }}
         </button>
         <button
@@ -122,7 +122,7 @@
           "
           @click="switchTab('gallery')"
         >
-          <i class="pi pi-images" />
+          <component :is="resolveSocialIcon(model.profile.galleryIcon || 'Images')" :size="14" class="shrink-0" />
           {{ model.profile.galleryLabel || 'Gallery' }}
         </button>
         <button
@@ -135,7 +135,7 @@
           "
           @click="switchTab('blog'); goBackFromBlogPost()"
         >
-          <i class="pi pi-pencil" />
+          <component :is="resolveSocialIcon(model.profile.blogIcon || 'Pencil')" :size="14" class="shrink-0" />
           {{ model.profile.blogLabel || 'Blog' }}
         </button>
         <button
