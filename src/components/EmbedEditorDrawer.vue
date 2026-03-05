@@ -80,6 +80,23 @@
             </div>
           </div>
 
+          <!-- Schedule -->
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Publish Date (optional)</label>
+            <DatePicker v-model="publishDateObj" dateFormat="yy-mm-dd" class="w-full" showIcon iconDisplay="input" showButtonBar />
+            <div class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
+              This embed tab won't appear before this date.
+            </div>
+          </div>
+
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Expiration Date (optional)</label>
+            <DatePicker v-model="expirationDateObj" dateFormat="yy-mm-dd" class="w-full" showIcon iconDisplay="input" showButtonBar />
+            <div class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
+              This embed tab will be hidden after this date.
+            </div>
+          </div>
+
           <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
             <div>
               <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enabled</div>
@@ -134,6 +151,7 @@
 import { computed, defineComponent, ref, watch } from "vue";
 
 import Button from "primevue/button";
+import DatePicker from "primevue/datepicker";
 import Drawer from "primevue/drawer";
 import AutoComplete from "primevue/autocomplete";
 import InputText from "primevue/inputtext";
@@ -190,7 +208,7 @@ export { resolveEmbedHtml };
 
 export default defineComponent({
   name: "EmbedEditorDrawer",
-  components: { Drawer, Button, AutoComplete, InputText, Textarea, ToggleSwitch },
+  components: { Drawer, Button, AutoComplete, DatePicker, InputText, Textarea, ToggleSwitch },
   props: {
     open: { type: Boolean, required: true },
     modelValue: { type: Object as () => EmbedItem, required: true },
@@ -209,6 +227,29 @@ export default defineComponent({
     watch(visible, (v) => emit("update:open", v));
 
     const draft = ref<EmbedItem>({ ...props.modelValue });
+
+    // ── Schedule date helpers ──────────────────────────────────────
+    const toDateObj = (iso: string) => {
+      if (!iso) return null;
+      const d = new Date(iso + "T00:00:00");
+      return isNaN(d.getTime()) ? null : d;
+    };
+    const fromDateObj = (d: Date | null) => {
+      if (!d) return "";
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    const publishDateObj = computed({
+      get: () => toDateObj(draft.value.publishDate),
+      set: (v: Date | null) => { draft.value.publishDate = fromDateObj(v); },
+    });
+    const expirationDateObj = computed({
+      get: () => toDateObj(draft.value.expirationDate),
+      set: (v: Date | null) => { draft.value.expirationDate = fromDateObj(v); },
+    });
 
     // ── Icon autocomplete ──
     const filteredIcons = ref<string[]>(FEATURED_ICONS);
@@ -255,6 +296,8 @@ export default defineComponent({
       visible,
       expanded,
       draft,
+      publishDateObj,
+      expirationDateObj,
       filteredIcons,
       searchIcons,
       getIconComponent,

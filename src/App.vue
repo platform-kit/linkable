@@ -1007,6 +1007,7 @@ import {
   resolveUploadUrl,
   type GithubSettings,
 } from "./lib/github";
+import { isScheduleVisible } from "./lib/scheduling";
 
 export default defineComponent({
   name: "App",
@@ -1475,7 +1476,7 @@ export default defineComponent({
     };
 
     const enabledLinks = computed(() =>
-      model.value.links.filter((l) => l.enabled),
+      model.value.links.filter((l) => l.enabled && isScheduleVisible(l)),
     );
     const enabledSocials = computed(() =>
       model.value.socials.filter((s) => s.enabled && s.url),
@@ -1558,7 +1559,7 @@ export default defineComponent({
     const enabledGalleryItems = computed(() => {
       const g = model.value.gallery;
       if (!g || !g.enabled) return [];
-      return g.items.filter((item) => item.enabled && item.src);
+      return g.items.filter((item) => item.enabled && item.src && isScheduleVisible(item));
     });
 
     const availableGalleryTags = computed(() => {
@@ -1616,7 +1617,7 @@ export default defineComponent({
 
     // ── Embeds ───────────────────────────────────────────────────────
     const enabledEmbeds = computed(() =>
-      (model.value.embeds || []).filter((e) => e.enabled && e.html.trim()),
+      (model.value.embeds || []).filter((e) => e.enabled && e.html.trim() && isScheduleVisible(e)),
     );
 
     const activeEmbedItem = computed(() => {
@@ -1633,7 +1634,7 @@ export default defineComponent({
     });
 
     const publishedBlogPosts = computed(() =>
-      blogPosts.value.filter((p) => p.published),
+      blogPosts.value.filter((p) => p.published && isScheduleVisible(p)),
     );
 
     const availableBlogTags = computed(() => {

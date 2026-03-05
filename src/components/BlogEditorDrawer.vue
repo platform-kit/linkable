@@ -78,10 +78,19 @@
             </div>
           </div>
 
-          <!-- Date -->
+          <!-- Publish Date -->
           <div class="grid gap-1.5">
-            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Date</label>
-            <DatePicker v-model="localDateObj" dateFormat="yy-mm-dd" class="w-full" showIcon iconDisplay="input" />
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Publish Date</label>
+            <DatePicker v-model="publishDateObj" dateFormat="yy-mm-dd" class="w-full" showIcon iconDisplay="input" />
+          </div>
+
+          <!-- Expiration Date -->
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Expiration Date (optional)</label>
+            <DatePicker v-model="expirationDateObj" dateFormat="yy-mm-dd" class="w-full" showIcon iconDisplay="input" showButtonBar />
+            <div class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
+              This post will be hidden from the public page after this date.
+            </div>
           </div>
 
           <!-- Cover Image -->
@@ -199,29 +208,39 @@ export default defineComponent({
     const localId = ref(props.post?.id || crypto.randomUUID());
     const localTitle = ref(props.post?.title ?? "");
     const localSlug = ref(props.post?.slug ?? "");
-    const localDate = ref(props.post?.date ?? new Date().toISOString().slice(0, 10));
     const localExcerpt = ref(props.post?.excerpt ?? "");
     const localCoverImage = ref(props.post?.coverImage ?? "");
     const localPublished = ref(props.post?.published ?? true);
     const localTagsList = ref<string[]>(props.post?.tags ? [...props.post.tags] : []);
     const localBody = ref(props.post?.content ?? "");
+    const localPublishDate = ref(props.post?.publishDate || props.post?.date || new Date().toISOString().slice(0, 10));
+    const localExpirationDate = ref(props.post?.expirationDate ?? "");
 
     const coverFilename = computed(() => {
       return `cover-${localId.value}.jpg`;
     });
 
-    const localDateObj = computed({
-      get: () => {
-        const d = new Date(localDate.value + "T00:00:00");
-        return isNaN(d.getTime()) ? new Date() : d;
-      },
-      set: (v: Date | null) => {
-        if (!v) return;
-        const y = v.getFullYear();
-        const m = String(v.getMonth() + 1).padStart(2, "0");
-        const d = String(v.getDate()).padStart(2, "0");
-        localDate.value = `${y}-${m}-${d}`;
-      },
+    // ── Date helpers ──────────────────────────────────────────────
+    const toDateObj = (iso: string) => {
+      if (!iso) return null;
+      const d = new Date(iso + "T00:00:00");
+      return isNaN(d.getTime()) ? null : d;
+    };
+    const fromDateObj = (d: Date | null) => {
+      if (!d) return "";
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    const publishDateObj = computed({
+      get: () => toDateObj(localPublishDate.value) ?? new Date(),
+      set: (v: Date | null) => { localPublishDate.value = fromDateObj(v) || new Date().toISOString().slice(0, 10); },
+    });
+    const expirationDateObj = computed({
+      get: () => toDateObj(localExpirationDate.value),
+      set: (v: Date | null) => { localExpirationDate.value = fromDateObj(v); },
     });
 
     const tagFilterValue = ref("");
@@ -250,12 +269,13 @@ export default defineComponent({
       localId.value = p?.id || crypto.randomUUID();
       localTitle.value = p?.title ?? "";
       localSlug.value = p?.slug ?? "";
-      localDate.value = p?.date ?? new Date().toISOString().slice(0, 10);
       localExcerpt.value = p?.excerpt ?? "";
       localCoverImage.value = p?.coverImage ?? "";
       localPublished.value = p?.published ?? true;
       localTagsList.value = p?.tags ? [...p.tags] : [];
       localBody.value = p?.content ?? "";
+      localPublishDate.value = p?.publishDate || p?.date || new Date().toISOString().slice(0, 10);
+      localExpirationDate.value = p?.expirationDate ?? "";
     });
 
     const savePost = async () => {
@@ -275,11 +295,13 @@ export default defineComponent({
           id: localId.value,
           title: localTitle.value.trim() || "Untitled",
           slug,
-          date: localDate.value.trim() || new Date().toISOString().slice(0, 10),
+          date: localPublishDate.value.trim() || new Date().toISOString().slice(0, 10),
           excerpt: localExcerpt.value.trim(),
           coverImage: localCoverImage.value.trim(),
           published: localPublished.value,
           tags: [...localTagsList.value],
+          publishDate: localPublishDate.value,
+          expirationDate: localExpirationDate.value,
         };
 
         await saveBlogPost(slug, frontmatter, localBody.value);
@@ -313,7 +335,6 @@ export default defineComponent({
       isNew,
       localTitle,
       localSlug,
-      localDate,
       localExcerpt,
       localCoverImage,
       localPublished,
@@ -321,7 +342,8 @@ export default defineComponent({
       localBody,
       saving,
       coverFilename,
-      localDateObj,
+      publishDateObj,
+      expirationDateObj,
       savePost,
       deletePost,
       allBlogTags,

@@ -166,6 +166,23 @@
             />
           </template>
 
+          <!-- Schedule -->
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Publish Date (optional)</label>
+            <DatePicker v-model="publishDateObj" dateFormat="yy-mm-dd" class="w-full" showIcon iconDisplay="input" showButtonBar />
+            <div class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
+              This item won't appear in the gallery before this date.
+            </div>
+          </div>
+
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Expiration Date (optional)</label>
+            <DatePicker v-model="expirationDateObj" dateFormat="yy-mm-dd" class="w-full" showIcon iconDisplay="input" showButtonBar />
+            <div class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
+              This item will be hidden from the gallery after this date.
+            </div>
+          </div>
+
           <!-- Enabled toggle -->
           <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
             <div>
@@ -199,6 +216,7 @@
 import { computed, defineComponent, reactive, ref, watch, nextTick } from "vue";
 
 import Button from "primevue/button";
+import DatePicker from "primevue/datepicker";
 import Drawer from "primevue/drawer";
 import InputText from "primevue/inputtext";
 import MultiSelect from "primevue/multiselect";
@@ -211,7 +229,7 @@ import type { GalleryItem, GalleryItemType } from "../lib/model";
 
 export default defineComponent({
   name: "GalleryEditorDrawer",
-  components: { Drawer, Button, InputText, MultiSelect, Textarea, ToggleSwitch, ImageUploadField },
+  components: { Drawer, Button, DatePicker, InputText, MultiSelect, Textarea, ToggleSwitch, ImageUploadField },
   props: {
     open: { type: Boolean, required: true },
     item: { type: Object as () => GalleryItem | null, default: null },
@@ -232,6 +250,29 @@ export default defineComponent({
     // ── Draft item with cycle-safe sync ───────────────────────────
     const draftItem = ref<GalleryItem | null>(null);
     let syncing = false; // guard to break watcher loop
+
+    // ── Schedule date helpers ──────────────────────────────────────
+    const toDateObj = (iso: string) => {
+      if (!iso) return null;
+      const d = new Date(iso + "T00:00:00");
+      return isNaN(d.getTime()) ? null : d;
+    };
+    const fromDateObj = (d: Date | null) => {
+      if (!d) return "";
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    const publishDateObj = computed({
+      get: () => toDateObj(draftItem.value?.publishDate ?? ""),
+      set: (v: Date | null) => { if (draftItem.value) draftItem.value = { ...draftItem.value, publishDate: fromDateObj(v) }; },
+    });
+    const expirationDateObj = computed({
+      get: () => toDateObj(draftItem.value?.expirationDate ?? ""),
+      set: (v: Date | null) => { if (draftItem.value) draftItem.value = { ...draftItem.value, expirationDate: fromDateObj(v) }; },
+    });
 
     watch(
       () => props.item,
@@ -353,6 +394,8 @@ export default defineComponent({
       visible,
       expanded,
       draftItem,
+      publishDateObj,
+      expirationDateObj,
       setType,
       videoFileInput,
       videoUploading,

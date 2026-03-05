@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 19,
+  "schemaVersion": 20,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -28,7 +28,9 @@
       "url": "https://example.com",
       "imageUrl": "",
       "enabled": true,
-      "tags": []
+      "tags": [],
+      "publishDate": "",
+      "expirationDate": ""
     },
     {
       "id": "link-book-call",
@@ -37,7 +39,9 @@
       "url": "https://example.com",
       "imageUrl": "",
       "enabled": true,
-      "tags": []
+      "tags": [],
+      "publishDate": "",
+      "expirationDate": ""
     },
     {
       "id": "link-shop-presets",
@@ -46,7 +50,9 @@
       "url": "https://example.com",
       "imageUrl": "",
       "enabled": true,
-      "tags": []
+      "tags": [],
+      "publishDate": "",
+      "expirationDate": ""
     }
   ],
   "socials": [

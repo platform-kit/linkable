@@ -22,6 +22,14 @@ const defaultDataFilePath = path.resolve(__dirname, "default-data.json");
 const publicDataFilePath = path.resolve(__dirname, "public/data.json");
 const blogContentDir = path.resolve(__dirname, "content/blog");
 
+/** Check if a schedulable item is currently visible based on its dates. */
+const isScheduleVisibleNow = (item: { publishDate?: string; expirationDate?: string }): boolean => {
+  const today = new Date().toISOString().slice(0, 10);
+  if (item.publishDate && today < item.publishDate) return false;
+  if (item.expirationDate && today > item.expirationDate) return false;
+  return true;
+};
+
 const readDefaultModel = () => {
   if (!fs.existsSync(defaultDataFilePath)) {
     return sanitizeModel({});
@@ -550,6 +558,9 @@ const blogBuildPlugin = () => ({
       fs.writeFileSync(path.join(publicBlogDir, `${slug}.json`), JSON.stringify(post, null, 2));
 
       if (postMeta.published) {
+        // When VITE_SCHEDULE_EXCLUDE_BUILD is set, exclude posts outside their schedule window
+        const excludeBySchedule = !!readEnvVar("VITE_SCHEDULE_EXCLUDE_BUILD");
+        if (excludeBySchedule && !isScheduleVisibleNow(postMeta)) continue;
         index.push(postMeta);
       }
     }
@@ -766,6 +777,43 @@ const manifestBuildPlugin = () => ({
 });
 
 /**
+ * Build plugin: when VITE_SCHEDULE_EXCLUDE_BUILD is set, strip links, gallery
+ * items, and embeds outside their schedule window from public/data.json so
+ * they never reach the client.
+ */
+const scheduleBuildPlugin = () => ({
+  name: "schedule-build",
+  buildStart() {
+    if (!readEnvVar("VITE_SCHEDULE_EXCLUDE_BUILD")) return;
+    if (!fs.existsSync(publicDataFilePath)) return;
+
+    const raw = JSON.parse(fs.readFileSync(publicDataFilePath, "utf8"));
+
+    let removed = 0;
+    if (Array.isArray(raw.links)) {
+      const before = raw.links.length;
+      raw.links = raw.links.filter((l: any) => isScheduleVisibleNow(l));
+      removed += before - raw.links.length;
+    }
+    if (raw.gallery && Array.isArray(raw.gallery.items)) {
+      const before = raw.gallery.items.length;
+      raw.gallery.items = raw.gallery.items.filter((g: any) => isScheduleVisibleNow(g));
+      removed += before - raw.gallery.items.length;
+    }
+    if (Array.isArray(raw.embeds)) {
+      const before = raw.embeds.length;
+      raw.embeds = raw.embeds.filter((e: any) => isScheduleVisibleNow(e));
+      removed += before - raw.embeds.length;
+    }
+
+    fs.writeFileSync(publicDataFilePath, JSON.stringify(raw, null, 2));
+    if (removed > 0) {
+      console.log(`[schedule-build] Excluded ${removed} scheduled item(s) from data.json`);
+    }
+  },
+});
+
+/**
  * Encrypt a GitHub token at build time using Node's crypto module.
  * Produces the same salt‖iv‖ciphertext+tag format that the browser-side
  * decryptToken() in token-crypto.ts expects.
@@ -808,6 +856,7 @@ const encryptTokenAtBuild = (token: string, password: string): string => {
         plugins: [
           cmsMiddlewarePlugin(),
           blogBuildPlugin(),
+          scheduleBuildPlugin(),
           manifestBuildPlugin(),
           ogMetaPlugin(),
           vue({
@@ -822,6 +871,7 @@ const encryptTokenAtBuild = (token: string, password: string): string => {
           "import.meta.env.VITE_GITHUB_OWNER": JSON.stringify(readEnvVar("GITHUB_OWNER")),
           "import.meta.env.VITE_GITHUB_REPO": JSON.stringify(readEnvVar("GITHUB_REPO")),
           "import.meta.env.VITE_GITHUB_BRANCH": JSON.stringify(readEnvVar("GITHUB_BRANCH")),
+          "import.meta.env.VITE_SCHEDULE_EXCLUDE_BUILD": JSON.stringify(readEnvVar("VITE_SCHEDULE_EXCLUDE_BUILD")),
           "__ENCRYPTED_GITHUB_TOKEN__": (() => {
             const token = readEnvVar("GITHUB_TOKEN");
             const secret = readEnvVar("TOKEN_SECRET");

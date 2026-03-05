@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 19;
+export const CURRENT_SCHEMA_VERSION = 20;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -333,6 +333,33 @@ const migrations: Migration[] = [
         data.profile.blogIcon ??= "";
       }
       data.schemaVersion = 19;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 20,
+    migrate: (data) => {
+      // v19 → v20: add publishDate and expirationDate to links, gallery items, and embeds.
+      if (Array.isArray(data.links)) {
+        for (const l of data.links) {
+          l.publishDate ??= "";
+          l.expirationDate ??= "";
+        }
+      }
+      if (data.gallery && Array.isArray(data.gallery.items)) {
+        for (const item of data.gallery.items) {
+          item.publishDate ??= "";
+          item.expirationDate ??= "";
+        }
+      }
+      if (Array.isArray(data.embeds)) {
+        for (const e of data.embeds) {
+          e.publishDate ??= "";
+          e.expirationDate ??= "";
+        }
+      }
+      data.schemaVersion = 20;
       return data;
     },
   },

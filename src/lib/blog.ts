@@ -107,6 +107,8 @@ export type BlogPostMeta = {
   coverImage: string;
   published: boolean;
   tags: string[];
+  publishDate: string; // ISO date — not visible before this date
+  expirationDate: string; // ISO date — not visible after this date
 };
 
 export type BlogPost = BlogPostMeta & {
@@ -225,6 +227,8 @@ export const metaFromRaw = (
   tags: Array.isArray(raw.tags)
     ? raw.tags.map(String).filter(Boolean)
     : [],
+  publishDate: asString(raw.publishDate),
+  expirationDate: asString(raw.expirationDate),
 });
 
 export const renderMarkdown = (md: string): string => {

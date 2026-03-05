@@ -7,14 +7,28 @@ A design-forward, open-source link-in-bio page with a built-in CMS. Built with V
 ## Features
 
 - **Glassmorphism design** — frosted-glass cards, soft shadows, smooth transitions
-- **Built-in CMS** — edit your profile, links, and socials
+- **Built-in CMS** — edit your profile, links, gallery, blog, resume, embeds, and theme
 - **Banner image** — full-width hero image displayed inside the profile card
-- **Social links** — Instagram, GitHub, Email, etc
+- **Social links** — Instagram, GitHub, Email, etc. with 400+ Lucide icons
 - **Image uploads** — drag-and-drop image uploads for avatar, banner, and link thumbnails
+- **Gallery** — masonry grid with images and video (YouTube, Vimeo, MP4), lightbox, and tags
+- **Blog** — Markdown editor with syntax highlighting, cover images, tags, RSS feed, and per-post OG meta
+- **Resume / CV** — employment, education, skills, and achievements sections
+- **Custom embeds** — arbitrary HTML/iframe injection as separate tabs (Spotify, donation widgets, etc.)
+- **Content scheduling** — publish dates and expiration dates on links, gallery items, embeds, and blog posts
+- **Theming** — 20+ CSS variables, light/dark/custom presets, glassmorphism, border-radius control
+- **Search & filtering** — per-section search bars with multi-select tag filters
+- **Tab navigation** — customizable labels and Lucide icons, default tab setting
 - **GitHub sync** — push/pull content to a private GitHub repo
+- **CMS password protection** — PBKDF2 + AES-256-GCM encrypted GitHub token
+- **PWA** — installable, standalone manifest generated from CMS data
+- **SEO** — OG meta tags, custom favicon, per-post OG for blog, robots.txt
+- **RSS feed** — auto-generated RSS 2.0 feed for blog posts
 - **CLI / npx support** — serve your site with one command, no cloning required
 - **Responsive** — works on mobile and desktop
 - **Static export** — builds to a static `dist/` folder, deployable anywhere
+- **Drag-and-drop reordering** — reorder links, embeds, socials, gallery items, and resume sections
+- **Schema migrations** — auto-upgrades data model across versions
 
 ***
 
@@ -114,28 +128,37 @@ Options:
 
 ## Project Structure
 
-````
+```
 ├── bin/cli.mjs             CLI entry point for npx
 ├── default-data.json       Template seed content (committed)
 ├── cms-data.json           Your personal CMS data (gitignored)
+├── content/
+│   └── blog/               Blog post .md files (gitignored)
 ├── public/
 │   ├── data.json           Production content (gitignored)
+│   ├── blog/               Static blog JSON (generated at build)
+│   ├── rss.xml             RSS feed (generated)
+│   ├── manifest.json       PWA manifest (generated)
+│   ├── robots.txt          Search engine crawl rules
 │   └── uploads/            Uploaded images (gitignored)
 ├── scripts/
 │   ├── export-data.mjs     Export CMS data to clipboard
 │   ├── export-to-github.mjs Push content to GitHub repo
-│   └── import-from-github.mjs Pull content from GitHub repo
+│   ├── import-from-github.mjs Pull content from GitHub repo
+│   └── clean-uploads.mjs   Remove orphaned upload files
 └── src/
     ├── App.vue             Main app layout
     ├── components/         CMS dialogs, editors, UI components
     └── lib/
+        ├── blog.ts         Blog types, frontmatter parsing, rendering
         ├── github.ts       GitHub API integration
+        ├── image-convert.ts Image format conversion
         ├── migrations.ts   Schema versioning & migration pipeline
         ├── model.ts        Data types, sanitization, defaults
-        └── persistence.ts  Fetch/save CMS data
+        ├── persistence.ts  Fetch/save CMS data
+        ├── scheduling.ts   Date-based content visibility filtering
+        └── upload.ts       Image upload handling
 ```
-
-`
 
 ***
 
@@ -150,13 +173,15 @@ Options:
 
 ### Content files
 
-| File                | Committed? | Purpose                     |
-| ------------------- | ---------- | --------------------------- |
-| `default-data.json` | Yes        | Template data for new users |
-| `cms-data.json`     | No         | Your personal CMS data      |
-| `public/data.json`  | No         | Production build content    |
-| `public/uploads/`   | No         | Uploaded images             |
-| `public/rss.xml`    | No         | Generated RSS feed          |
+| File                | Committed? | Purpose                          |
+| ------------------- | ---------- | -------------------------------- |
+| `default-data.json` | Yes        | Template data for new users      |
+| `cms-data.json`     | No         | Your personal CMS data           |
+| `public/data.json`  | No         | Production build content         |
+| `public/uploads/`   | No         | Uploaded images                  |
+| `public/rss.xml`    | No         | Generated RSS feed               |
+| `public/blog/`      | No         | Static blog JSON (build output)  |
+| `content/blog/`     | No         | Blog post Markdown source files  |
 
 On first run, `default-data.json` is automatically copied to `cms-data.json` and `public/data.json` if they don't exist.
 
@@ -195,6 +220,173 @@ npm run import:build
 ```
 
 Set the environment variables in your hosting provider's dashboard.
+
+***
+
+## Content Scheduling
+
+Links, gallery items, embeds, and blog posts all support **Publish Date** and **Expiration Date** fields.
+
+- **Publish Date** — the item won't appear on the public page before this date. For blog posts, this also serves as the display date.
+- **Expiration Date** — the item is hidden after this date.
+- Dates are ISO format (e.g. `2025-06-01`). An empty date means "no constraint."
+
+By default, scheduling is **client-side only** — the content is present in the build output but filtered at runtime. To strip scheduled content at build time (so it never reaches the browser), set `VITE_SCHEDULE_EXCLUDE_BUILD=1` in your environment.
+
+***
+
+## Blog
+
+Blog posts are Markdown files stored in `content/blog/` with frontmatter metadata:
+
+```markdown
+---
+title: My Post
+slug: my-post
+date: 2025-06-01
+excerpt: A short summary
+coverImage: /uploads/cover.jpg
+published: true
+tags: [tutorial, vue]
+publishDate: 2025-06-01
+expirationDate:
+---
+
+Your markdown content here…
+```
+
+### Features
+
+- **Markdown editor** — rich Tiptap editor with formatting, inline images, and code blocks
+- **Syntax highlighting** — 17 built-in languages (JS, TS, Python, Go, Rust, and more)
+- **Cover images** — displayed at the top of each post
+- **Tags** — filter posts with multi-select tag filtering
+- **RSS feed** — auto-generated RSS 2.0 at `/rss.xml`
+- **Per-post OG meta** — pre-rendered HTML at `dist/content/<slug>/index.html` with `og:title`, `og:description`, `og:image` for social sharing previews
+
+In development, posts are read/written via Vite middleware. In production, they're compiled to static JSON files at `/blog/index.json` and `/blog/<slug>.json`.
+
+***
+
+## Gallery
+
+A masonry grid supporting images and video:
+
+- **Images** — uploaded to `public/uploads/`
+- **Video** — YouTube URLs, Vimeo URLs, or direct MP4 uploads
+- **Cover thumbnails** — optional poster image for videos
+- **Tags** — per-item tags for filtering
+- **Lightbox** — click to expand
+- Up to **50 items**
+
+***
+
+## Resume / CV
+
+A structured resume section with:
+
+| Section | Fields |
+|---|---|
+| **Bio** | Free-text biography (up to 2000 chars) |
+| **Employment** | Company, role, description, start/end year |
+| **Education** | Institution, degree, field, start/end year |
+| **Skills** | Free-form skill tags (up to 50) |
+| **Achievements** | Title, issuer, year, description |
+
+All sections support drag-and-drop reordering.
+
+***
+
+## Custom Embeds
+
+Add custom HTML tabs to your page — useful for Spotify players, donation widgets, embedded forms, or any third-party embed.
+
+Each embed has:
+- **Label** — tab name
+- **Icon** — Lucide icon for the tab
+- **HTML** — raw HTML/iframe content
+- **Scheduling** — publish date and expiration date
+
+***
+
+## Theming
+
+Customize your page appearance with 20+ CSS variables through the CMS:
+
+| Variable | Purpose |
+|---|---|
+| `--color-brand` | Primary brand color |
+| `--color-brand-strong` | Hover/strong variant |
+| `--color-accent` | Secondary accent color |
+| `--color-ink` | Main text color |
+| `--color-ink-soft` | Muted text |
+| `--bg` | Page background |
+| `--glass` | Primary frosted-glass surface |
+| `--glass-2` | Secondary glass |
+| `--glass-strong` | High-opacity glass |
+| `--color-border` | Glass borders |
+| `--color-border-2` | Subtle dividers |
+| `--card-bg` | Card background |
+| `--card-border` | Card border |
+| `--card-text` | Card text |
+| `--radius-xl` | Large border radius |
+| `--radius-lg` | Standard border radius |
+
+Three presets are available: **light**, **dark**, and **custom** (fully manual).
+
+***
+
+## CMS Password Protection
+
+When deploying with a GitHub token baked in, the CMS is protected by password-based encryption:
+
+1. At build time, if `GITHUB_TOKEN` and `TOKEN_SECRET` are both set, the token is encrypted using **PBKDF2** (600,000 iterations, SHA-256) + **AES-256-GCM** and embedded in the JS bundle.
+2. At runtime, the CMS prompts for a password to decrypt the token via the Web Crypto API.
+3. The decrypted token is held in `sessionStorage` for the browser session only.
+
+This means the plaintext token is never stored in the deployed files.
+
+***
+
+## PWA & SEO
+
+### PWA
+
+The `manifest.json` is auto-generated from CMS data:
+- `name` / `short_name` from your display name
+- `theme_color` from your brand color
+- `icons` from your OG image and favicon
+
+### SEO
+
+- **OG meta tags** — `og:title`, `og:description`, `og:image`, `og:url`, and `twitter:card` injected at build time
+- **Per-post OG** — each blog post gets a pre-rendered HTML page with post-specific social sharing meta
+- **Favicon** — configurable in the CMS
+- **robots.txt** — allows all crawlers
+- **RSS** — `<link rel="alternate">` in the HTML head
+
+***
+
+## Custom Scripts
+
+Inject custom JavaScript or HTML into your page via the CMS:
+
+- **Head script** — injected into `<head>` (analytics, fonts, meta tags)
+- **Body-end script** — injected before `</body>` (tracking pixels, chat widgets)
+
+***
+
+## Environment Variables
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `VITE_SITE_URL` | For SEO | Base URL for RSS feeds, OG meta, and absolute URLs |
+| `VITE_SCHEDULE_EXCLUDE_BUILD` | No | Strip expired/future scheduled content at build time |
+| `GITHUB_OWNER` | For sync | GitHub repo owner |
+| `GITHUB_REPO` | For sync | GitHub repo name |
+| `GITHUB_BRANCH` | No | GitHub branch (default: `main`) |
+| `GITHUB_TOKEN` | For sync | GitHub personal access token |
+| `TOKEN_SECRET` | For CMS lock | Password for encrypting the GitHub token in the build |
 
 ***
 

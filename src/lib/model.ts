@@ -6,6 +6,8 @@ export type BioLink = {
   imageUrl: string; // optional
   enabled: boolean;
   tags: string[];
+  publishDate: string; // ISO date, e.g. "2025-06-01" — not visible before this date
+  expirationDate: string; // ISO date — not visible after this date
 };
 
 export type SocialLink = {
@@ -85,6 +87,8 @@ export type GalleryItem = {
   description: string;
   tags: string[];
   enabled: boolean;
+  publishDate: string;
+  expirationDate: string;
 };
 
 export type BioGallery = {
@@ -124,6 +128,8 @@ export type EmbedItem = {
   html: string;
   icon: string;
   enabled: boolean;
+  publishDate: string;
+  expirationDate: string;
 };
 
 export type BioScripts = {
@@ -157,6 +163,8 @@ export const newLink = (): BioLink => ({
   imageUrl: "",
   enabled: true,
   tags: [],
+  publishDate: "",
+  expirationDate: "",
 });
 
 export const newSocial = (): SocialLink => ({
@@ -211,6 +219,8 @@ export const newGalleryItem = (): GalleryItem => ({
   description: "",
   tags: [],
   enabled: true,
+  publishDate: "",
+  expirationDate: "",
 });
 
 export const defaultGallery = (): BioGallery => ({
@@ -273,6 +283,8 @@ export const newEmbed = (): EmbedItem => ({
   html: "",
   icon: "Code",
   enabled: true,
+  publishDate: "",
+  expirationDate: "",
 });
 
 export const defaultScripts = (): BioScripts => ({
@@ -311,6 +323,8 @@ export const defaultModel = (): BioModel => ({
       imageUrl: "",
       enabled: true,
       tags: [],
+      publishDate: "",
+      expirationDate: "",
     },
     {
       id: newId(),
@@ -320,6 +334,8 @@ export const defaultModel = (): BioModel => ({
       imageUrl: "",
       enabled: true,
       tags: [],
+      publishDate: "",
+      expirationDate: "",
     },
     {
       id: newId(),
@@ -329,6 +345,8 @@ export const defaultModel = (): BioModel => ({
       imageUrl: "",
       enabled: true,
       tags: [],
+      publishDate: "",
+      expirationDate: "",
     },
   ],
   socials: [
@@ -423,6 +441,8 @@ export const sanitizeModel = (input: unknown): BioModel => {
       imageUrl: sanitizeUrl(l?.imageUrl),
       enabled: typeof l?.enabled === "boolean" ? l.enabled : true,
       tags: Array.isArray(l?.tags) ? l.tags.filter((t: any) => typeof t === 'string').slice(0, 20) : [],
+      publishDate: asString(l?.publishDate).slice(0, 10),
+      expirationDate: asString(l?.expirationDate).slice(0, 10),
     }))
     .filter((l: BioLink) => !!l.id)
     .slice(0, 60);
@@ -501,6 +521,8 @@ export const sanitizeModel = (input: unknown): BioModel => {
           .filter(Boolean)
           .slice(0, 20),
         enabled: typeof g?.enabled === "boolean" ? g.enabled : true,
+        publishDate: asString(g?.publishDate).slice(0, 10),
+        expirationDate: asString(g?.expirationDate).slice(0, 10),
       }))
       .filter((g: GalleryItem) => !!g.id)
       .slice(0, 100),
@@ -543,6 +565,8 @@ export const sanitizeModel = (input: unknown): BioModel => {
       html: asString(e?.html).slice(0, 50000),
       icon: asString(e?.icon).slice(0, 60) || "Code",
       enabled: typeof e?.enabled === "boolean" ? e.enabled : true,
+      publishDate: asString(e?.publishDate).slice(0, 10),
+      expirationDate: asString(e?.expirationDate).slice(0, 10),
     }))
     .filter((e: EmbedItem) => !!e.id)
     .slice(0, 20);
