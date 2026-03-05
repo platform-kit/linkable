@@ -10,6 +10,8 @@
       :src="playerSrc"
       :poster="poster || ''"
       :autoPlay="false"
+      :muted="false"
+      :volume="1"
       load="eager"
       playsInline
       class="vds-video-player"
@@ -18,7 +20,9 @@
       <media-provider>
         <media-poster class="vds-poster" />
       </media-provider>
-      <media-video-layout />
+      <media-video-layout
+        :noFullscreenButton="false"
+      />
     </media-player>
   </div>
 </template>
@@ -41,14 +45,20 @@ import "vidstack/player/styles/default/layouts/video.css";
  * errors thrown by Vimeo/YouTube embeds when vidstack internally
  * tries to sync the playback rate on providers that don't support it.
  * This is a known limitation of embedded players and is harmless.
+ *
+ * Registered once at module level with a named function so that
+ * multiple component instances don't accumulate duplicate listeners.
  */
-if (typeof window !== "undefined") {
-  window.addEventListener("unhandledrejection", (e) => {
-    const msg = e.reason?.message || String(e.reason || "");
-    if (msg.includes("playback rate")) {
-      e.preventDefault();
-    }
-  });
+let _playbackRateListenerAttached = false;
+const _playbackRateHandler = (e: PromiseRejectionEvent) => {
+  const msg = e.reason?.message || String(e.reason || "");
+  if (msg.includes("playback rate")) {
+    e.preventDefault();
+  }
+};
+if (typeof window !== "undefined" && !_playbackRateListenerAttached) {
+  window.addEventListener("unhandledrejection", _playbackRateHandler);
+  _playbackRateListenerAttached = true;
 }
 
 const isYouTubeUrl = (url: string) =>
@@ -138,8 +148,28 @@ export default defineComponent({
       }
     };
 
+    /**
+     * Some providers (Vimeo) override muted/volume after their own
+     * internal SDK loads.  Force unmuted + full volume once the
+     * provider is ready.
+     */
+    const ensureUnmuted = () => {
+      const el = playerEl.value as any;
+      if (!el) return;
+      try {
+        if (el.muted) el.muted = false;
+        if (typeof el.volume === "number" && el.volume < 1) el.volume = 1;
+      } catch { /* swallow — provider may reject */ }
+    };
+
     onMounted(() => {
       attachCanPlayListener();
+      const el = playerEl.value;
+      if (el) {
+        // Listen for provider-change to re-enforce unmuted state
+        el.addEventListener("provider-change", ensureUnmuted);
+        el.addEventListener("can-play", ensureUnmuted, { once: true });
+      }
     });
 
     // Re-attach if the ref changes (shouldn't normally, but defensive)
@@ -209,12 +239,12 @@ export default defineComponent({
     };
 
     onBeforeUnmount(() => {
-      // Clean up listener
       const el = playerEl.value;
       if (el) {
         el.removeEventListener("can-play", markReady);
+        el.removeEventListener("provider-change", ensureUnmuted);
+        el.removeEventListener("can-play", ensureUnmuted);
       }
-      // Resolve any pending promise so nothing leaks
       if (canPlayResolve) {
         canPlayResolve();
         canPlayResolve = null;

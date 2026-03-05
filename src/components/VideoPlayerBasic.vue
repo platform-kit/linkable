@@ -52,10 +52,10 @@ export default defineComponent({
       if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0`;
       // Vimeo — showcase URL with ?video=ID
       const vmShowcaseMatch = props.src.match(/vimeo\.com\/showcase\/\d+.*[?&]video=(\d+)/);
-      if (vmShowcaseMatch) return `https://player.vimeo.com/video/${vmShowcaseMatch[1]}?autoplay=1`;
+      if (vmShowcaseMatch) return `https://player.vimeo.com/video/${vmShowcaseMatch[1]}?autoplay=1&muted=0`;
       // Vimeo — standard URL
       const vmMatch = props.src.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-      if (vmMatch) return `https://player.vimeo.com/video/${vmMatch[1]}?autoplay=1`;
+      if (vmMatch) return `https://player.vimeo.com/video/${vmMatch[1]}?autoplay=1&muted=0`;
       // Direct mp4 handled separately
       if (isMp4.value) return null;
       return null;

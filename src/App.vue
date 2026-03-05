@@ -1150,10 +1150,13 @@ export default defineComponent({
     onBeforeUnmount(() => {
       if (typeof window !== "undefined") {
         window.removeEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
+        window.removeEventListener("hashchange", applyHashTab);
         if (keydownListener) {
           window.removeEventListener("keydown", keydownListener);
         }
       }
+      // Cancel any pending persist timer
+      if (persistDebounceTimer) clearTimeout(persistDebounceTimer);
       // Clean up injected script containers
       _headContainer.remove();
       _bodyContainer.remove();
@@ -1935,13 +1938,19 @@ export default defineComponent({
 
     let persistChain: Promise<void> = Promise.resolve();
     let persistDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastModelSnapshot = "";
 
     watch(
-      model,
-      () => {
+      () => stableStringify(model.value),
+      (snapshot) => {
         if (!modelLoaded.value || suppressPersist.value) {
+          lastModelSnapshot = snapshot;
           return;
         }
+        // Skip if the serialised form hasn't actually changed
+        if (snapshot === lastModelSnapshot) return;
+        lastModelSnapshot = snapshot;
+
         // mark unsynced immediately when model changes
         unsynced.value = true;
 
@@ -1975,7 +1984,6 @@ export default defineComponent({
           isDev ? 100 : 300,
         );
       },
-      { deep: true },
     );
 
     const repoLabel = computed(() => {

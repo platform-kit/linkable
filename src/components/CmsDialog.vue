@@ -1387,13 +1387,11 @@ export default defineComponent({
     const savedSnapshot = ref(stableStringify(sanitizeModel(props.model)));
 
     watch(
-      () => props.model,
-      (m) => {
-        const sanitized = sanitizeModel(m);
-        savedSnapshot.value = stableStringify(sanitized);
-        draft.value = sanitized;
+      () => stableStringify(props.model),
+      (snapshot) => {
+        savedSnapshot.value = snapshot;
+        draft.value = sanitizeModel(props.model);
       },
-      { deep: true },
     );
 
     const hasChanges = computed(
