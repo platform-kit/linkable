@@ -783,8 +783,13 @@ const encryptTokenAtBuild = (token: string, password: string): string => {
   return combined.toString("base64");
 };
 
-    /** Read a single non-VITE_ env var from the .env file without exposing everything. */
+    /** Read a single env var: checks process.env first, then falls back to .env file. */
     const readEnvVar = (name: string): string => {
+      // 1. Check process.env (Vercel, CI/CD, etc.)
+      if (process.env[name]) {
+        return process.env[name]!.replace(/^["']|["']$/g, "").trim();
+      }
+      // 2. Fall back to local .env file
       const envPath = path.resolve(__dirname, ".env");
       if (!fs.existsSync(envPath)) return "";
       const match = fs.readFileSync(envPath, "utf8").match(new RegExp(`^${name}=(.*)$`, "m"));
