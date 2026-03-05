@@ -658,13 +658,35 @@ const blogBuildPlugin = () => ({
   },
 });
 
-/** Resolve VITE_SITE_URL from process.env, .env file, or Vite's loaded env. */
+/** Resolve VITE_SITE_URL from process.env, .env files, or manual parse. */
 const resolveSiteUrl = (): string => {
-  // 1. Explicit env var (set by host or shell)
+  // 1. Explicit env var (set by host platform or shell)
   if (process.env.VITE_SITE_URL) return process.env.VITE_SITE_URL.replace(/\/$/, "");
-  // 2. Vite's loadEnv reads .env / .env.local / .env.production etc.
-  const env = loadEnv("production", __dirname, "VITE_");
-  if (env.VITE_SITE_URL) return env.VITE_SITE_URL.replace(/\/$/, "");
+
+  // 2. Vite's loadEnv across all modes
+  for (const mode of ["production", "development", ""]) {
+    try {
+      const env = loadEnv(mode, __dirname, "VITE_");
+      if (env.VITE_SITE_URL) return env.VITE_SITE_URL.replace(/\/$/, "");
+    } catch { /* ignore */ }
+  }
+
+  // 3. Manual .env parse as last resort (handles edge cases where Vite's
+  //    loadEnv doesn't pick up the file, e.g. some CI environments)
+  const envPath = path.resolve(__dirname, ".env");
+  if (fs.existsSync(envPath)) {
+    const text = fs.readFileSync(envPath, "utf8");
+    for (const line of text.split("\n")) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("#") || !trimmed) continue;
+      const eqIdx = trimmed.indexOf("=");
+      if (eqIdx === -1) continue;
+      const key = trimmed.slice(0, eqIdx).trim();
+      const val = trimmed.slice(eqIdx + 1).trim();
+      if (key === "VITE_SITE_URL" && val) return val.replace(/\/$/, "");
+    }
+  }
+
   return "";
 };
 

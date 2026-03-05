@@ -8,8 +8,19 @@
   },
   "files": [
     "bin/",
-    "dist/",
-    "default-data.json"
+    "src/",
+    "public/",
+    "content/",
+    "scripts/",
+    "index.html",
+    "default-data.json",
+    "vite.config.ts",
+    "tailwind.config.js",
+    "postcss.config.js",
+    "tsconfig.json",
+    "tsconfig.app.json",
+    "tsconfig.node.json",
+    "components.json"
   ],
   "scripts": {
     "dev": "vite",
@@ -24,9 +35,7 @@
     "push": "node scripts/export-to-github.mjs",
     "import:build": "node scripts/import-from-github.mjs && vite build",
     "clean-uploads": "node scripts/clean-uploads.mjs",
-    "serve:nginx": "./scripts/serve-nginx.sh",
-    "prepare": "npm run build",
-    "prepublishOnly": "npm run build"
+    "serve:nginx": "./scripts/serve-nginx.sh"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.5",
@@ -45,6 +54,7 @@
     "@tiptap/vue-3": "^3.20.0",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vueuse/core": "^14.2.1",
+    "autoprefixer": "^10.4.20",
     "busboy": "^1.6.0",
     "gsap": "^3.14.2",
     "highlight.js": "^11.11.1",
@@ -53,18 +63,17 @@
     "lucide-vue-next": "^0.576.0",
     "marked": "^17.0.3",
     "primeicons": "^7.0.0",
+    "postcss": "^8.4.47",
     "primevue": "^4.5.4",
     "vidstack": "1.12.13",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.5.3",
+    "vite": "^6.3.4",
     "vue": "^3.5.29",
     "vue-router": "^5.0.3",
     "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.47",
-    "prettier": "^3.8.1",
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5.5.3",
-    "vite": "^6.3.4"
+    "prettier": "^3.8.1"
   }
 }

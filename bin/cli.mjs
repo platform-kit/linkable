@@ -15,6 +15,7 @@
  */
 
 import { createServer } from "node:http";
+import { execSync } from "node:child_process";
 import {
   readFileSync,
   existsSync,
@@ -23,6 +24,7 @@ import {
   mkdirSync,
   copyFileSync,
   writeFileSync,
+  rmSync,
 } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -138,36 +140,54 @@ const copyDirSync = (src, dest) => {
 
 // ── BUILD command ────────────────────────────────────────────────────
 
+/** Parse a .env file and return key-value pairs. */
+const loadEnvFile = (dir) => {
+  const envPath = path.join(dir, ".env");
+  if (!existsSync(envPath)) return {};
+  const text = readFileSync(envPath, "utf8");
+  const env = {};
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx === -1) continue;
+    env[trimmed.slice(0, eqIdx).trim()] = trimmed.slice(eqIdx + 1).trim();
+  }
+  return env;
+};
+
 const runBuild = () => {
   console.log(`\n🔨  Building Linkable site…\n`);
 
-  // The npm package ships a pre-built dist/ — no need to run Vite.
-  // We just copy dist/ to the output folder and inject user content.
-  const prebuiltDist = path.join(packageRoot, "dist");
-  if (!existsSync(prebuiltDist)) {
-    console.error(
-      "❌  Pre-built app not found in package. If running from source, run `npm run build` first."
-    );
+  if (!contentDir) {
+    console.error("❌  Content directory required for build. Usage: linkable build <content-dir>");
+    process.exit(1);
+  }
+
+  if (!existsSync(contentDir) || !statSync(contentDir).isDirectory()) {
+    console.error(`❌  Content directory not found: ${contentDir}`);
     process.exit(1);
   }
 
   const buildOutDir = outDir || path.resolve("dist");
 
-  // Copy the pre-built app to the output directory
-  console.log(`  ⏳ Copying app to ${buildOutDir}…`);
-  copyDirSync(prebuiltDist, buildOutDir);
-  console.log(`  ✔ Copied pre-built app`);
+  // ── 1. Stage user content into the package's expected locations ────
 
-  // Overlay user content
-  const { userDataJson, userUploadsDir } = resolveContent();
-
-  if (userDataJson) {
-    writeFileSync(path.join(buildOutDir, "data.json"), userDataJson);
-    console.log(`  ✔ Injected data.json`);
+  // Copy data.json → cms-data.json + public/data.json (where Vite plugins expect it)
+  const userDataFile = path.join(contentDir, "data.json");
+  if (existsSync(userDataFile)) {
+    const dataContent = readFileSync(userDataFile, "utf8");
+    writeFileSync(path.join(packageRoot, "cms-data.json"), dataContent);
+    writeFileSync(path.join(packageRoot, "public", "data.json"), dataContent);
+    console.log(`  ✔ Staged data.json`);
+  } else {
+    console.warn(`  ⚠ No data.json found in ${contentDir} — using default content.`);
   }
 
-  if (userUploadsDir) {
-    const destUploads = path.join(buildOutDir, "uploads");
+  // Copy uploads/ → public/uploads/
+  const userUploadsDir = path.join(contentDir, "uploads");
+  if (existsSync(userUploadsDir) && statSync(userUploadsDir).isDirectory()) {
+    const destUploads = path.join(packageRoot, "public", "uploads");
     mkdirSync(destUploads, { recursive: true });
     const files = readdirSync(userUploadsDir).filter((f) => {
       const full = path.join(userUploadsDir, f);
@@ -176,11 +196,53 @@ const runBuild = () => {
     for (const file of files) {
       copyFileSync(path.join(userUploadsDir, file), path.join(destUploads, file));
     }
-    console.log(`  ✔ Copied ${files.length} upload(s)`);
+    console.log(`  ✔ Staged ${files.length} upload(s)`);
+  }
+
+  // Copy blog/ markdown files → content/blog/
+  const userBlogDir = path.join(contentDir, "blog");
+  if (existsSync(userBlogDir) && statSync(userBlogDir).isDirectory()) {
+    const destBlog = path.join(packageRoot, "content", "blog");
+    mkdirSync(destBlog, { recursive: true });
+    const mdFiles = readdirSync(userBlogDir).filter((f) => f.endsWith(".md"));
+    for (const file of mdFiles) {
+      copyFileSync(path.join(userBlogDir, file), path.join(destBlog, file));
+    }
+    if (mdFiles.length > 0) {
+      console.log(`  ✔ Staged ${mdFiles.length} blog post(s)`);
+    }
+  }
+
+  // ── 2. Load env vars from content dir's .env file ──────────────────
+
+  const contentEnv = loadEnvFile(contentDir);
+  // Also check cwd for .env (some hosts put it there)
+  const cwdEnv = contentDir !== process.cwd() ? loadEnvFile(process.cwd()) : {};
+
+  // Merge: process.env takes precedence, then content .env, then cwd .env
+  const mergedEnv = { ...cwdEnv, ...contentEnv, ...process.env };
+
+  // ── 3. Run the real Vite build ─────────────────────────────────────
+
+  console.log(`\n  ⏳ Running Vite build…\n`);
+
+  const viteBin = path.join(packageRoot, "node_modules", ".bin", "vite");
+  const viteCmd = existsSync(viteBin) ? viteBin : "npx vite";
+  const buildCmd = `${viteCmd} build --outDir ${JSON.stringify(buildOutDir)}`;
+
+  try {
+    execSync(buildCmd, {
+      cwd: packageRoot,
+      env: mergedEnv,
+      stdio: "inherit",
+    });
+  } catch (err) {
+    console.error(`\n❌  Vite build failed.`);
+    process.exit(1);
   }
 
   console.log(`\n✅  Built to ${buildOutDir}`);
-  console.log(`    Deploy this folder to any static host (Vercel, Netlify, etc.)\n`);
+  console.log(`    Deploy this folder to any static host (Vercel, Netlify, Cloudflare Pages, etc.)\n`);
 };
 
 // ── SERVE command ────────────────────────────────────────────────────
