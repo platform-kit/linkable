@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
 
 import { sanitizeModel, stableStringify } from "./src/lib/model";
@@ -587,7 +587,7 @@ const blogBuildPlugin = () => ({
     const siteModel = fs.existsSync(dataFilePath)
       ? sanitizeModel(JSON.parse(fs.readFileSync(dataFilePath, "utf8")))
       : readDefaultModel();
-    const siteUrl = (process.env.VITE_SITE_URL || "").replace(/\/$/, "");
+    const siteUrl = resolveSiteUrl();
 
     const toAbsolute = (url: string) => {
       if (!url) return "";
@@ -658,6 +658,16 @@ const blogBuildPlugin = () => ({
   },
 });
 
+/** Resolve VITE_SITE_URL from process.env, .env file, or Vite's loaded env. */
+const resolveSiteUrl = (): string => {
+  // 1. Explicit env var (set by host or shell)
+  if (process.env.VITE_SITE_URL) return process.env.VITE_SITE_URL.replace(/\/$/, "");
+  // 2. Vite's loadEnv reads .env / .env.local / .env.production etc.
+  const env = loadEnv("production", __dirname, "VITE_");
+  if (env.VITE_SITE_URL) return env.VITE_SITE_URL.replace(/\/$/, "");
+  return "";
+};
+
 /** Build plugin: inject OG meta tags into index.html from CMS data so social
  *  crawlers (iMessage, Twitter, Facebook, etc.) can read them without JS. */
 const ogMetaPlugin = () => {
@@ -671,7 +681,7 @@ const ogMetaPlugin = () => {
     const p = model?.profile;
     if (!p) return "";
 
-    const siteUrl = (process.env.VITE_SITE_URL || "").replace(/\/$/, "");
+    const siteUrl = resolveSiteUrl();
 
     const toAbsolute = (url: string) => {
       if (!url) return "";
