@@ -28,6 +28,7 @@ Whenever you add, rename, or remove a field on `BioModel`, `BioProfile`, `BioLin
 
 1. **Bump `CURRENT_SCHEMA_VERSION`** in `src/lib/migrations.ts` (increment by 1).
 2. **Add a migration entry** to the `migrations` array in the same file. The migration function receives the raw JSON object at the previous version and must return it at the new version. Example:
+
    ```ts
    {
      toVersion: 3,
@@ -49,3 +50,12 @@ Whenever you add, rename, or remove a field on `BioModel`, `BioProfile`, `BioLin
 - `default-data.json` — committed to the repo; generic placeholder content for new users.
 - `cms-data.json` / `public/data.json` / `public/uploads/` — gitignored; personal content that lives locally or in a private repo.
 - `npm run push` exports local content to a private GitHub repo; `npm run import` pulls it back.
+
+---
+
+# Supabase Database Rules
+
+- **NEVER** use `supabase db reset` or `npm run supabase:reset` — it destroys all data.
+- To apply new migrations, **always** use `npm run supabase:migrate:up` (`npx supabase migration up --local`). This applies only pending migrations without touching existing data.
+- Never run destructive database commands (DROP TABLE, TRUNCATE, DELETE without WHERE, etc.) without explicit user confirmation.
+- When creating new migrations, use `npm run supabase:migrate <name>` to generate the file, then edit it.

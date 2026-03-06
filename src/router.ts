@@ -18,6 +18,11 @@ const router = createRouter({
       name: "blog-post",
       component: { render: () => null },
     },
+    {
+      path: "/newsletter/:id",
+      name: "newsletter-view",
+      component: { render: () => null },
+    },
   ],
 });
 

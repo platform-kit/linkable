@@ -30,6 +30,9 @@ dist-ssr
 nginx.conf
 nginx.pid
 
+# Generated Supabase types (regenerated via npm run supabase:types)
+src/lib/database.types.ts
+
 # User content (personal data, not part of the template)
 cms-data.json
 public/data.json

@@ -2,15 +2,22 @@
   <Dialog
     v-model:visible="visible"
     modal
-    header="CMS"
     :style="{ width: 'min(980px, 96vw)' }"
     :contentStyle="{ overflow: 'hidden' }"
     :showCloseIcon="true"
   >
-    <template #icons>
-      <div class="cms__status" :class="{ 'is-dirty': hasChanges }">
-        <span class="cms__dot" />
-        <span>{{ hasChanges ? "Unsaved changes" : "Saved" }}</span>
+    <template #header>
+      <div class="flex items-center justify-between w-full pr-2">
+        <span class="font-bold">CMS</span>
+        <div class="flex items-center gap-2">
+          <div class="cms__status" :class="{ 'is-dirty': hasChanges }">
+            <span class="cms__dot" />
+            <span>{{ hasChanges ? "Unsaved changes" : "Saved" }}</span>
+          </div>
+          <Button text rounded size="small" @click="lockCms" v-tooltip.bottom="'Lock &amp; sign out'">
+            <i class="pi pi-lock" />
+          </Button>
+        </div>
       </div>
     </template>
 
@@ -21,8 +28,8 @@
             <button
               type="button"
               class="cms__tab"
-              :class="{ 'is-active': tab === 'profile' }"
-              @click="tab = 'profile'"
+              :class="{ 'is-active': tab === 'site' }"
+              @click="tab = 'site'"
             >
               <span class="cms__tab-icon"><i class="pi pi-cog" /></span>
               <span class="cms__tab-label">Site</span>
@@ -32,65 +39,30 @@
             <button
               type="button"
               class="cms__tab"
-              :class="{ 'is-active': tab === 'links' }"
-              @click="tab = 'links'"
+              :class="{ 'is-active': tab === 'content' }"
+              @click="tab = 'content'"
             >
-              <span class="cms__tab-icon"><i class="pi pi-link" /></span>
-              <span class="cms__tab-label">Links</span>
-              <span class="cms__tab-pill">{{ draft.links.length }}</span>
+              <span class="cms__tab-icon"><i class="pi pi-th-large" /></span>
+              <span class="cms__tab-label">Content</span>
+              <span class="cms__tab-pill">{{ draft.links.length + draft.embeds.length + draft.gallery.items.length }}</span>
             </button>
 
             <button
               type="button"
               class="cms__tab"
-              :class="{ 'is-active': tab === 'embeds' }"
-              @click="tab = 'embeds'"
+              :class="{ 'is-active': tab === 'newsletter' }"
+              @click="tab = 'newsletter'; if (subscribers.length === 0) { loadSubscribers(); loadSends(); }"
             >
-              <span class="cms__tab-icon"><i class="pi pi-code" /></span>
-              <span class="cms__tab-label">Embeds</span>
-              <span class="cms__tab-pill" :class="{ 'cms__tab-pill--ghost': draft.embeds.length === 0 }">{{ draft.embeds.length }}</span>
+              <span class="cms__tab-icon"><i class="pi pi-envelope" /></span>
+              <span class="cms__tab-label">Newsletter</span>
+              <span class="cms__tab-pill" :class="{ 'cms__tab-pill--ghost': subscriberCounts.total === 0 }">{{ subscriberCounts.confirmed }}</span>
             </button>
-
-            <button
-              type="button"
-              class="cms__tab"
-              :class="{ 'is-active': tab === 'resume' }"
-              @click="tab = 'resume'"
-            >
-              <span class="cms__tab-icon"><i class="pi pi-file" /></span>
-              <span class="cms__tab-label">Resume</span>
-              <span class="cms__tab-pill" :class="{ 'cms__tab-pill--ghost': !draft.resume.enabled }">{{ draft.resume.enabled ? '✓' : '0' }}</span>
-            </button>
-
-            <button
-              type="button"
-              class="cms__tab"
-              :class="{ 'is-active': tab === 'gallery' }"
-              @click="tab = 'gallery'"
-            >
-              <span class="cms__tab-icon"><i class="pi pi-images" /></span>
-              <span class="cms__tab-label">Gallery</span>
-              <span class="cms__tab-pill" :class="{ 'cms__tab-pill--ghost': !draft.gallery.enabled }">{{ draft.gallery.items.length }}</span>
-            </button>
-
-            <button
-              type="button"
-              class="cms__tab"
-              :class="{ 'is-active': tab === 'blog' }"
-              @click="tab = 'blog'"
-            >
-              <span class="cms__tab-icon"><i class="pi pi-pencil" /></span>
-              <span class="cms__tab-label">Blog</span>
-              <span class="cms__tab-pill" :class="{ 'cms__tab-pill--ghost': !draft.blog.enabled }">{{ blogPostCount }}</span>
-            </button>
-
-
           </div>
         </div>
       </div>
 
       <div class="cms__content">
-        <section v-if="tab === 'profile'" class="cms__panel">
+        <section v-if="tab === 'site'" class="cms__panel">
           <div class="cms__panel-head">
             <div class="cms__title">Site</div>
             <div class="cms__sub">Configure your profile, images, and theme.</div>
@@ -456,6 +428,10 @@
                   <ToggleSwitch v-model="draft.profile.searchBlog" />
                   <label class="cms__label" style="margin: 0">Blog search</label>
                 </div>
+                <div v-if="supabaseUrl" class="cms__field" style="display: flex; align-items: center; gap: 12px">
+                  <ToggleSwitch v-model="draft.profile.searchNewsletter" />
+                  <label class="cms__label" style="margin: 0">Newsletter search</label>
+                </div>
               </div>
             </div>
           </Transition>
@@ -559,9 +535,58 @@
               </div>
             </div>
           </Transition>
+
+          <!-- Supabase -->
+          <template v-if="supabaseUrl">
+            <button type="button" class="cms__accordion-trigger" @click="siteSection.supabase = !siteSection.supabase">
+              <span class="cms__accordion-label"><i class="pi pi-database" /> Supabase</span>
+              <i class="pi" :class="siteSection.supabase ? 'pi-chevron-up' : 'pi-chevron-down'" />
+            </button>
+            <Transition name="cms-collapse">
+              <div v-if="siteSection.supabase" class="cms__accordion-body">
+                <div class="cms__form">
+                  <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] p-4 shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div class="text-sm font-extrabold text-[color:var(--color-ink)]">Backend connection</div>
+                        <div class="text-xs font-semibold text-[color:var(--color-ink-soft)]">
+                          Supabase provides the database, auth, and edge functions for backend features.
+                        </div>
+                      </div>
+                      <Tag value="Connected" severity="success" class="!rounded-full" />
+                    </div>
+                    <div class="mt-4 grid gap-2">
+                      <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Project URL</label>
+                      <InputText :model-value="supabaseUrl" disabled />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Transition>
+          </template>
         </section>
 
-        <section v-else-if="tab === 'links'" class="cms__panel">
+        <section v-else-if="tab === 'content'" class="cms__panel">
+          <!-- Content sub-tabs -->
+          <div class="cms__subTabBar">
+            <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'links' }" @click="contentSubTab = 'links'">
+              <i class="pi pi-link" /> Links
+            </button>
+            <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'embeds' }" @click="contentSubTab = 'embeds'">
+              <i class="pi pi-code" /> Embeds
+            </button>
+            <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'resume' }" @click="contentSubTab = 'resume'">
+              <i class="pi pi-file" /> Resume
+            </button>
+            <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'gallery' }" @click="contentSubTab = 'gallery'">
+              <i class="pi pi-images" /> Gallery
+            </button>
+            <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'blog' }" @click="contentSubTab = 'blog'">
+              <i class="pi pi-pencil" /> Blog
+            </button>
+          </div>
+
+          <div v-if="contentSubTab === 'links'" class="cms__subPanel">
           <div class="cms__panel-head cms__panel-head--row">
             <div>
               <div class="cms__title">Links</div>
@@ -655,9 +680,9 @@
               </template>
             </draggable>
           </div>
-        </section>
+          </div>
 
-        <section v-else-if="tab === 'embeds'" class="cms__panel">
+          <div v-else-if="contentSubTab === 'embeds'" class="cms__subPanel">
           <div class="cms__panel-head cms__panel-head--row">
             <div>
               <div class="cms__title">Embeds</div>
@@ -709,9 +734,9 @@
               </template>
             </draggable>
           </div>
-        </section>
+          </div>
 
-        <section v-else-if="tab === 'resume'" class="cms__panel">
+          <div v-else-if="contentSubTab === 'resume'" class="cms__subPanel">
           <div class="cms__panel-head cms__panel-head--row">
             <div>
               <div class="cms__title">Resume</div>
@@ -935,9 +960,9 @@
               </div>
             </div>
           </div>
-        </section>
+          </div>
 
-        <section v-else-if="tab === 'gallery'" class="cms__panel">
+          <div v-else-if="contentSubTab === 'gallery'" class="cms__subPanel">
           <div class="cms__panel-head cms__panel-head--row">
             <div>
               <div class="cms__title">Gallery</div>
@@ -1051,9 +1076,9 @@
               </template>
             </draggable>
           </div>
-        </section>
+          </div>
 
-        <section v-else-if="tab === 'blog'" class="cms__panel">
+          <div v-else-if="contentSubTab === 'blog'" class="cms__subPanel">
           <div class="cms__panel-head cms__panel-head--row">
             <div>
               <div class="cms__title">Blog</div>
@@ -1146,6 +1171,163 @@
               </button>
             </div>
           </div>
+          </div>
+        </section>
+
+        <!-- Newsletter tab -->
+        <section v-else-if="tab === 'newsletter'" class="cms__panel">
+          <div class="cms__panel-head">
+            <div class="cms__title">Newsletter</div>
+            <div class="cms__sub">Manage subscribers and send broadcasts.</div>
+          </div>
+
+          <div class="cms__card" style="margin-bottom: 10px">
+            <div class="cms__form">
+              <div class="cms__help" style="margin-bottom: 8px">Show an email signup form on your page so visitors can subscribe to your newsletter.</div>
+              <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
+                <ToggleSwitch v-model="draft.profile.newsletterEnabled" />
+                <label class="cms__label" style="margin: 0">Enable newsletter signup</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="cms__card" style="margin-bottom: 10px">
+            <div class="cms__form">
+              <div class="cms__field">
+                <label class="cms__label">Tab label</label>
+                <InputText v-model="draft.profile.newsletterLabel" class="w-full" placeholder="Newsletter" />
+                <div class="cms__help">Customise the tab name shown on the public page.</div>
+              </div>
+              <div class="cms__field">
+                <label class="cms__label">Tab icon</label>
+                <AutoComplete
+                  v-model="draft.profile.newsletterIcon"
+                  :suggestions="filteredTabIcons"
+                  @complete="searchTabIcons"
+                  placeholder="Search icons… e.g. Mail"
+                  class="w-full"
+                  :inputClass="'w-full'"
+                  forceSelection
+                >
+                  <template #option="{ option }">
+                    <div class="flex items-center gap-2.5 py-0.5">
+                      <component :is="getTabIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                      <span class="text-sm font-medium">{{ option }}</span>
+                    </div>
+                  </template>
+                  <template #value="{ value }">
+                    <div v-if="value" class="flex items-center gap-2">
+                      <component :is="getTabIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                      <span>{{ value }}</span>
+                    </div>
+                  </template>
+                </AutoComplete>
+                <div class="cms__help">Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Leave empty for default.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subscriber stats -->
+          <div class="cms__card" style="margin-bottom: 10px">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm font-extrabold text-[color:var(--color-ink)]">Subscribers</span>
+              <Button
+                text
+                rounded
+                size="small"
+                :loading="subscribersLoading"
+                @click="loadSubscribers"
+              >
+                <i class="pi pi-refresh" />
+              </Button>
+            </div>
+            <div class="flex gap-3 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+              <span class="flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-full bg-green-500" /> {{ subscriberCounts.confirmed }} confirmed</span>
+              <span class="flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-full bg-yellow-500" /> {{ subscriberCounts.pending }} pending</span>
+              <span class="flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-full bg-gray-400" /> {{ subscriberCounts.unsubscribed }} unsubbed</span>
+            </div>
+
+            <!-- Subscriber list -->
+            <div v-if="subscribersLoading" class="mt-3 text-xs text-[color:var(--color-ink-soft)] text-center py-4">Loading…</div>
+            <div v-else-if="subscribersError" class="mt-3 text-xs text-red-500 text-center py-4">{{ subscribersError }}</div>
+            <div v-else-if="subscribers.length === 0" class="mt-3 text-xs text-[color:var(--color-ink-soft)] text-center py-4">No subscribers yet.</div>
+            <div v-else class="mt-3 max-h-[240px] overflow-y-auto space-y-1">
+              <div
+                v-for="sub in subscribers"
+                :key="sub.id"
+                class="flex items-center justify-between rounded-lg px-3 py-2 text-xs hover:bg-[var(--glass)]"
+              >
+                <div class="flex items-center gap-2 min-w-0">
+                  <span
+                    class="inline-block w-2 h-2 rounded-full shrink-0"
+                    :class="sub.unsubscribed_at ? 'bg-gray-400' : sub.confirmed_at ? 'bg-green-500' : 'bg-yellow-500'"
+                  />
+                  <span class="truncate font-medium text-[color:var(--color-ink)]">{{ sub.email }}</span>
+                </div>
+                <Button
+                  text
+                  rounded
+                  severity="danger"
+                  size="small"
+                  class="!p-1"
+                  @click="deleteSubscriber(sub.id)"
+                >
+                  <i class="pi pi-trash text-[10px]" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Broadcasts / Send History -->
+          <div class="cms__card">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm font-extrabold text-[color:var(--color-ink)]">Broadcasts</span>
+              <div class="flex items-center gap-1">
+                <Button text rounded size="small" :loading="sendsLoading" @click="loadSends">
+                  <i class="pi pi-refresh" />
+                </Button>
+                <Button rounded size="small" class="cms__primary" @click="openComposeNew">
+                  <i class="pi pi-plus" />
+                  <span class="ml-1">New</span>
+                </Button>
+              </div>
+            </div>
+
+            <div v-if="sendsLoading" class="text-xs text-[color:var(--color-ink-soft)] text-center py-4">Loading…</div>
+            <div v-else-if="newsletterSends.length === 0" class="text-xs text-[color:var(--color-ink-soft)] text-center py-4">No broadcasts yet. Create your first one!</div>
+            <div v-else class="max-h-[300px] overflow-y-auto space-y-1.5">
+              <button
+                v-for="send in newsletterSends"
+                :key="send.id"
+                type="button"
+                class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-[var(--glass)] transition-colors"
+                @click="openComposeEdit(send)"
+              >
+                <div class="min-w-0 flex-1">
+                  <div class="text-xs font-bold text-[color:var(--color-ink)] truncate">{{ send.subject || '(no subject)' }}</div>
+                  <div class="text-[10px] text-[color:var(--color-ink-soft)] mt-0.5">
+                    <template v-if="send.status === 'sent'">
+                      Sent {{ formatSendDate(send.sent_at) }} · {{ send.recipient_count }} recipients · {{ send.click_count || 0 }} clicks
+                    </template>
+                    <template v-else-if="send.status === 'scheduled'">
+                      Scheduled for {{ formatSendDate(send.scheduled_at) }}
+                    </template>
+                    <template v-else-if="send.status === 'sending'">
+                      Sending…
+                    </template>
+                    <template v-else>
+                      Draft · Updated {{ formatSendDate(send.updated_at) }}
+                    </template>
+                  </div>
+                </div>
+                <Tag
+                  :value="send.status === 'sent' ? 'Sent' : send.status === 'scheduled' ? 'Scheduled' : send.status === 'sending' ? 'Sending' : 'Draft'"
+                  :severity="send.status === 'sent' ? 'success' : send.status === 'scheduled' ? 'warn' : send.status === 'sending' ? 'info' : 'secondary'"
+                  class="!rounded-full !text-[10px] shrink-0"
+                />
+              </button>
+            </div>
+          </div>
         </section>
 
 
@@ -1215,6 +1397,14 @@
       v-model="activeEmbedProxy"
       @delete="deleteActiveEmbed"
     />
+    <NewsletterComposeDrawer
+      v-model:open="composeOpen"
+      :sendRecord="composeRecord"
+      @saved="onComposeSaved"
+      @deleted="onComposeDeleted"
+      @sent="onComposeSent"
+      @reauth="$emit('reauth')"
+    />
   </Dialog>
 </template>
 
@@ -1239,6 +1429,7 @@ import ResumeEditorDrawer from "./ResumeEditorDrawer.vue";
 import GalleryEditorDrawer from "./GalleryEditorDrawer.vue";
 import BlogEditorDrawer from "./BlogEditorDrawer.vue";
 import EmbedEditorDrawer from "./EmbedEditorDrawer.vue";
+import NewsletterComposeDrawer from "./NewsletterComposeDrawer.vue";
 import { icons as lucideIcons } from "lucide-vue-next";
 import type { BioLink, BioModel, SocialLink, EducationEntry, EmploymentEntry, AchievementEntry, GalleryItem, ThemePreset, EmbedItem } from "../lib/model";
 import {
@@ -1272,6 +1463,8 @@ import {
   testGithubConnection,
   type GithubSettings,
 } from "../lib/github";
+import { encryptPayload } from "../lib/admin-crypto";
+import { getCmsPassword } from "../lib/cms-auth";
 
 export default defineComponent({
   name: "CmsDialog",
@@ -1291,22 +1484,34 @@ export default defineComponent({
     GalleryEditorDrawer,
     BlogEditorDrawer,
     EmbedEditorDrawer,
+    NewsletterComposeDrawer,
     ToggleSwitch,
   },
   props: {
     open: { type: Boolean, required: true },
     model: { type: Object as () => BioModel, required: true },
-    initialTab: { type: String as () => "profile" | "links" | "embeds" | "resume" | "gallery" | "blog", default: "profile" },
+    initialTab: { type: String as () => "site" | "content" | "newsletter" | "links" | "embeds" | "resume" | "gallery" | "blog", default: "site" },
     initialEmbedId: { type: String, default: "" },
     initialBlogSlug: { type: String, default: "" },
   },
-  emits: ["update:open", "update:model", "blog-posts-updated"],
+  emits: ["update:open", "update:model", "blog-posts-updated", "lock", "reauth"],
   setup(props, { emit }) {
     const toast = useToast();
 
     const visible = ref(props.open);
 
-    const tab = ref<"profile" | "links" | "embeds" | "resume" | "gallery" | "blog">(props.initialTab);
+    const contentSubTabs = ["links", "embeds", "resume", "gallery", "blog"] as const;
+    type ContentSubTab = typeof contentSubTabs[number];
+
+    function resolveInitialTab(val: string): { main: "site" | "content" | "newsletter"; sub: ContentSubTab } {
+      if (contentSubTabs.includes(val as ContentSubTab)) return { main: "content", sub: val as ContentSubTab };
+      if (val === "newsletter") return { main: "newsletter", sub: "links" };
+      return { main: "site", sub: "links" };
+    }
+
+    const initialResolved = resolveInitialTab(props.initialTab);
+    const tab = ref<"site" | "content" | "newsletter">(initialResolved.main);
+    const contentSubTab = ref<ContentSubTab>(initialResolved.sub);
 
     const siteSection = reactive({
       identity: false,
@@ -1318,7 +1523,149 @@ export default defineComponent({
       navigation: false,
       socials: false,
       scripts: false,
+      supabase: false,
     });
+
+    const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || "";
+
+    // ── Newsletter subscriber management ──────────────────────────
+    interface Subscriber {
+      id: string;
+      email: string;
+      created_at: string;
+      confirmed_at: string | null;
+      unsubscribed_at: string | null;
+    }
+    const subscribers = ref<Subscriber[]>([]);
+    const subscribersLoading = ref(false);
+    const subscribersError = ref("");
+    const subscriberCounts = computed(() => {
+      const confirmed = subscribers.value.filter((s) => s.confirmed_at && !s.unsubscribed_at).length;
+      const pending = subscribers.value.filter((s) => !s.confirmed_at && !s.unsubscribed_at).length;
+      const unsubscribed = subscribers.value.filter((s) => s.unsubscribed_at).length;
+      return { confirmed, pending, unsubscribed, total: subscribers.value.length };
+    });
+
+    async function invokeAdmin(body: Record<string, unknown>): Promise<{ data: Record<string, unknown> | null; error: string | null }> {
+      const pw = getCmsPassword();
+      const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || "";
+      if (!pw || !anonKey || !supabaseUrl) {
+        emit("reauth");
+        return { data: null, error: "__reauth__" };
+      }
+      const token = await encryptPayload(
+        JSON.stringify({ password: pw, ts: Date.now() }),
+        anonKey,
+      );
+      const res = await fetch(`${supabaseUrl}/functions/v1/newsletter-admin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${anonKey}`,
+          "x-admin-token": token,
+        },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        return { data: null, error: text || `HTTP ${res.status}` };
+      }
+      const data = await res.json();
+      return { data, error: null };
+    }
+
+    async function loadSubscribers() {
+      subscribersLoading.value = true;
+      subscribersError.value = "";
+      try {
+        const { data, error } = await invokeAdmin({ action: "list" });
+        if (error === "__reauth__") return;
+        if (error) {
+          subscribersError.value = error;
+          return;
+        }
+        if (data?.subscribers) {
+          subscribers.value = data.subscribers as Subscriber[];
+        }
+      } catch (e) {
+        subscribersError.value = String(e);
+      } finally {
+        subscribersLoading.value = false;
+      }
+    }
+
+    async function deleteSubscriber(id: string) {
+      const { error } = await invokeAdmin({ action: "delete", id });
+      if (error) return;
+      subscribers.value = subscribers.value.filter((s) => s.id !== id);
+    }
+
+    // ── Newsletter sends (broadcasts) management ──────────────────
+    interface SendRecord {
+      id: string;
+      subject: string;
+      excerpt_html: string;
+      body_html: string;
+      status: string;
+      scheduled_at: string | null;
+      sent_at: string | null;
+      recipient_count: number;
+      created_at: string;
+      updated_at: string;
+      click_count?: number;
+    }
+    const newsletterSends = ref<SendRecord[]>([]);
+    const sendsLoading = ref(false);
+    const composeOpen = ref(false);
+    const composeRecord = ref<SendRecord | null>(null);
+
+    async function loadSends() {
+      sendsLoading.value = true;
+      try {
+        const { data, error } = await invokeAdmin({ action: "list-sends" });
+        if (!error && data?.sends) {
+          newsletterSends.value = data.sends as SendRecord[];
+        }
+      } catch (e) {
+        console.error("[newsletter] loadSends error:", e);
+      } finally {
+        sendsLoading.value = false;
+      }
+    }
+
+    function openComposeNew() {
+      composeRecord.value = null;
+      composeOpen.value = true;
+    }
+
+    function openComposeEdit(send: SendRecord) {
+      composeRecord.value = send;
+      composeOpen.value = true;
+    }
+
+    function onComposeSaved() {
+      loadSends();
+    }
+
+    function onComposeDeleted() {
+      composeOpen.value = false;
+      loadSends();
+    }
+
+    function onComposeSent() {
+      loadSends();
+    }
+
+    function formatSendDate(d: string | null): string {
+      if (!d) return "";
+      return new Date(d).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    }
 
     watch(
       () => props.open,
@@ -1333,21 +1680,30 @@ export default defineComponent({
           blogEditorOpen.value = false;
           embedEditorOpen.value = false;
 
-          tab.value = props.initialTab;
+          const resolved = resolveInitialTab(props.initialTab);
+          tab.value = resolved.main;
+          contentSubTab.value = resolved.sub;
           // If an embed ID is provided, auto-open the embed editor for that embed
           if (props.initialEmbedId) {
-            tab.value = 'embeds';
+            tab.value = 'content';
+            contentSubTab.value = 'embeds';
             openEmbedEditor(props.initialEmbedId);
           }
           // If a blog slug is provided, auto-open the blog editor for that post
           if (props.initialBlogSlug) {
-            tab.value = 'blog';
+            tab.value = 'content';
+            contentSubTab.value = 'blog';
             openBlogEditorExisting(props.initialBlogSlug);
           }
         }
       },
     );
     watch(visible, (v) => emit("update:open", v));
+
+    function lockCms() {
+      visible.value = false;
+      emit("lock");
+    }
 
     const defaultTabOptions = [
       { label: "Links", value: "links" },
@@ -2039,6 +2395,26 @@ export default defineComponent({
       filteredTabIcons,
       searchTabIcons,
       getTabIconComponent,
+      supabaseUrl,
+      subscribers,
+      subscribersLoading,
+      subscriberCounts,
+      loadSubscribers,
+      deleteSubscriber,
+      newsletterSends,
+      sendsLoading,
+      composeOpen,
+      composeRecord,
+      loadSends,
+      openComposeNew,
+      openComposeEdit,
+      onComposeSaved,
+      onComposeDeleted,
+      onComposeSent,
+      formatSendDate,
+      lockCms,
+      subscribersError,
+      contentSubTab,
     };
   },
 });
@@ -2180,6 +2556,47 @@ cms__tab-pill {
 .cms__tab-pill--ghost {
   opacity: 0;
   pointer-events: none;
+}
+
+.cms__subTabBar {
+  display: flex;
+  gap: 4px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.cms__subTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--glass);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+  white-space: nowrap;
+}
+
+.cms__subTab:hover {
+  background: var(--glass-strong);
+  border-color: var(--color-border-2);
+}
+
+.cms__subTab.is-active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.32);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.12);
+  color: rgba(11, 18, 32, 0.96);
+}
+
+.cms__subPanel {
+  /* no extra spacing needed, panel-head handles it */
 }
 
 .cms__status {

@@ -29,14 +29,18 @@ export type BioProfile = {
   resumeLabel: string;
   galleryLabel: string;
   blogLabel: string;
+  newsletterLabel: string;
   linksIcon: string;
   resumeIcon: string;
   galleryIcon: string;
   blogIcon: string;
+  newsletterIcon: string;
   defaultTab: "links" | "resume" | "gallery" | "blog";
   searchLinks: boolean;
   searchGallery: boolean;
   searchBlog: boolean;
+  searchNewsletter: boolean;
+  newsletterEnabled: boolean;
 };
 
 export type EducationEntry = {
@@ -305,14 +309,18 @@ export const defaultModel = (): BioModel => ({
     resumeLabel: "",
     galleryLabel: "",
     blogLabel: "",
+    newsletterLabel: "",
     linksIcon: "",
     resumeIcon: "",
     galleryIcon: "",
     blogIcon: "",
+    newsletterIcon: "",
     defaultTab: "links",
     searchLinks: false,
     searchGallery: false,
     searchBlog: false,
+    searchNewsletter: false,
+    newsletterEnabled: false,
   },
   links: [
     {
@@ -421,14 +429,18 @@ export const sanitizeModel = (input: unknown): BioModel => {
     resumeLabel: asString(obj.profile?.resumeLabel).slice(0, 30),
     galleryLabel: asString(obj.profile?.galleryLabel).slice(0, 30),
     blogLabel: asString(obj.profile?.blogLabel).slice(0, 30),
+    newsletterLabel: asString(obj.profile?.newsletterLabel).slice(0, 30),
     linksIcon: asString(obj.profile?.linksIcon).slice(0, 60),
     resumeIcon: asString(obj.profile?.resumeIcon).slice(0, 60),
     galleryIcon: asString(obj.profile?.galleryIcon).slice(0, 60),
     blogIcon: asString(obj.profile?.blogIcon).slice(0, 60),
+    newsletterIcon: asString(obj.profile?.newsletterIcon).slice(0, 60),
     defaultTab: (["links", "resume", "gallery", "blog"] as const).includes(obj.profile?.defaultTab) ? obj.profile.defaultTab : "links",
     searchLinks: typeof obj.profile?.searchLinks === 'boolean' ? obj.profile.searchLinks : false,
     searchGallery: typeof obj.profile?.searchGallery === 'boolean' ? obj.profile.searchGallery : false,
     searchBlog: typeof obj.profile?.searchBlog === 'boolean' ? obj.profile.searchBlog : false,
+    searchNewsletter: typeof obj.profile?.searchNewsletter === 'boolean' ? obj.profile.searchNewsletter : false,
+    newsletterEnabled: typeof obj.profile?.newsletterEnabled === 'boolean' ? obj.profile.newsletterEnabled : false,
   };
 
   const linksRaw = Array.isArray(obj.links) ? obj.links : [];

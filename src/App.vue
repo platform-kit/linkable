@@ -91,7 +91,7 @@
           class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
           :class="
             activeTab === 'links'
-              ? 'bg-blue-500/10 shadow-lg text-[color:var(--color-brand)] '
+              ? 'tab-active'
               : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
           @click="switchTab('links')"
@@ -104,7 +104,7 @@
           class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
           :class="
             activeTab === 'resume'
-              ? 'bg-blue-500/10 shadow-lg text-[color:var(--color-brand)] '
+              ? 'tab-active'
               : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
           @click="switchTab('resume')"
@@ -117,7 +117,7 @@
           class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
           :class="
             activeTab === 'gallery'
-              ? 'bg-blue-500/10 shadow-lg text-[color:var(--color-brand)]'
+              ? 'tab-active'
               : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
           @click="switchTab('gallery')"
@@ -130,7 +130,7 @@
           class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
           :class="
             activeTab === 'blog'
-              ? 'bg-blue-500/10 shadow-lg text-[color:var(--color-brand)]'
+              ? 'tab-active'
               : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
           @click="switchTab('blog'); goBackFromBlogPost()"
@@ -144,13 +144,26 @@
           class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
           :class="
             activeTab === 'embed-' + embed.id
-              ? 'bg-blue-500/10 shadow-lg text-[color:var(--color-brand)]'
+              ? 'tab-active'
               : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
           @click="switchTab('embed-' + embed.id)"
         >
           <component :is="resolveSocialIcon(embed.icon)" :size="14" class="shrink-0" />
           {{ embed.label }}
+        </button>
+        <button
+          v-if="model.profile.newsletterEnabled"
+          class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
+          :class="
+            activeTab === 'newsletter'
+              ? 'tab-active'
+              : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
+          "
+          @click="switchTab('newsletter')"
+        >
+          <component :is="resolveSocialIcon(model.profile.newsletterIcon || 'Mail')" :size="14" class="shrink-0" />
+          {{ model.profile.newsletterLabel || 'Newsletter' }}
         </button>
       </div>
 
@@ -582,6 +595,43 @@
         <div class="embed-container" v-html="activeEmbedHtml" />
       </section>
 
+      <!-- Newsletter view (full article from /newsletter/:id) -->
+      <section
+        v-if="newsletterViewId"
+        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6"
+      >
+        <NewsletterViewPage
+          :send-id="newsletterViewId"
+          :subscriber-id="newsletterViewSid"
+          :token="newsletterViewToken"
+          @back="goBackFromNewsletter"
+        />
+      </section>
+
+      <!-- Newsletter section -->
+      <section
+        v-if="showNewsletterSection && !newsletterViewId"
+        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6"
+      >
+        <NewsletterSignup />
+        <!-- Search bar for newsletter -->
+        <SearchBar
+          v-if="(model.profile.searchNewsletter || availableNewsletterTags.length > 0)"
+          v-model="searchNewsletterQuery"
+          placeholder="Search..."
+          :show-search="!!model.profile.searchNewsletter"
+          :tag-count="availableNewsletterTags.length > 0 ? availableNewsletterTags.length : null"
+          :selected-tag-count="selectedNewsletterTags.length"
+          @filter-click="newsletterTagFilterOpen = true"
+        />
+        <NewsletterArchive
+          :search-query="searchNewsletterQuery"
+          :selected-tags="selectedNewsletterTags"
+          @view="viewNewsletter"
+          @tags-loaded="onNewsletterTagsLoaded"
+        />
+      </section>
+
       <!-- Lightbox overlay for images -->
       <Teleport to="body">
         <div
@@ -709,6 +759,8 @@
       @update:model="updateModel"
       @toggle-preview="togglePreviewMode"
       @blog-posts-updated="loadBlogPosts"
+      @lock="handleCmsLock"
+      @reauth="handleCmsReauth"
     />
 
     <!-- CMS password gate -->
@@ -884,6 +936,39 @@
       </div>
     </Dialog>
 
+    <!-- Tag filter dialog (newsletter) -->
+    <Dialog
+      v-model:visible="newsletterTagFilterOpen"
+      modal
+      header="Filter by tags"
+      :style="{ width: 'min(400px, 90vw)' }"
+    >
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="tag in availableNewsletterTags"
+          :key="tag"
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition"
+          :class="selectedNewsletterTags.includes(tag)
+            ? 'border-[var(--color-brand)]/30 bg-[var(--color-brand)]/10 text-[color:var(--color-brand)]'
+            : 'border-[var(--color-border)] bg-[var(--glass)] text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'"
+          @click="toggleNewsletterTag(tag)"
+        >
+          <i class="pi text-[10px]" :class="selectedNewsletterTags.includes(tag) ? 'pi-check-circle' : 'pi-circle'" />
+          {{ tag }}
+        </button>
+      </div>
+      <div v-if="selectedNewsletterTags.length > 0" class="mt-4 flex justify-end">
+        <button
+          type="button"
+          class="text-xs font-semibold text-[color:var(--color-brand)] hover:underline"
+          @click="selectedNewsletterTags = []"
+        >
+          Clear all
+        </button>
+      </div>
+    </Dialog>
+
     <!-- Floating CMS button -->
     <Transition name="cms-slide-right">
       <Button
@@ -973,6 +1058,9 @@ import VideoPlayer from "./components/VideoPlayer.vue";
 import MasonryGrid from "./components/MasonryGrid.vue";
 import BlogPostView from "./components/BlogPostView.vue";
 import SearchBar from "./components/SearchBar.vue";
+import NewsletterSignup from "./components/NewsletterSignup.vue";
+import NewsletterArchive from "./components/NewsletterArchive.vue";
+import NewsletterViewPage from "./components/NewsletterViewPage.vue";
 import { resolveEmbedHtml } from "./components/EmbedEditorDrawer.vue";
 import type { MasonryItem } from "./components/MasonryGrid.vue";
 import { icons as lucideIcons } from "lucide-vue-next";
@@ -1004,9 +1092,11 @@ import {
   hasEmbeddedToken,
   isTokenUnlocked,
   unlockToken,
+  clearSessionToken,
   resolveUploadUrl,
   type GithubSettings,
 } from "./lib/github";
+import { setCmsPassword, clearCmsPassword } from "./lib/cms-auth";
 import { isScheduleVisible } from "./lib/scheduling";
 
 export default defineComponent({
@@ -1023,6 +1113,9 @@ export default defineComponent({
     MasonryGrid,
     BlogPostView,
     SearchBar,
+    NewsletterSignup,
+    NewsletterArchive,
+    NewsletterViewPage,
   },
   setup() {
     const isDev = import.meta.env.DEV;
@@ -1066,6 +1159,8 @@ export default defineComponent({
           activeTab.value = "gallery";
         } else if (hash === "#blog" && blogHasContent.value) {
           activeTab.value = "blog";
+        } else if (hash === "#newsletter" && model.value.profile.newsletterEnabled) {
+          activeTab.value = "newsletter";
         } else if (hash.startsWith("#embed-")) {
           const embedId = window.location.hash.slice(1); // preserve case for ID
           const found = enabledEmbeds.value.find((e) => `embed-${e.id}` === embedId);
@@ -1141,6 +1236,14 @@ export default defineComponent({
         await loadBlogPost(slug, false);
       }
 
+      // Handle route-based newsletter view (e.g. /newsletter/:id)
+      if (route.name === 'newsletter-view' && route.params.id) {
+        activeTab.value = 'newsletter';
+        newsletterViewId.value = route.params.id as string;
+        newsletterViewSid.value = (route.query.sid as string) || '';
+        newsletterViewToken.value = (route.query.token as string) || '';
+      }
+
       setTimeout(() => {
         suppressPersist.value = false;
       }, 0);
@@ -1168,8 +1271,14 @@ export default defineComponent({
       if (name === 'blog-post' && route.params.slug) {
         activeTab.value = 'blog';
         loadBlogPost(route.params.slug as string, false);
-      } else if (name === 'home' && currentBlogPost.value) {
-        currentBlogPost.value = null;
+      } else if (name === 'newsletter-view' && route.params.id) {
+        activeTab.value = 'newsletter';
+        newsletterViewId.value = route.params.id as string;
+        newsletterViewSid.value = (route.query.sid as string) || '';
+        newsletterViewToken.value = (route.query.token as string) || '';
+      } else if (name === 'home') {
+        if (currentBlogPost.value) currentBlogPost.value = null;
+        newsletterViewId.value = '';
       }
     });
 
@@ -1371,6 +1480,7 @@ export default defineComponent({
     const submitCmsPassword = async () => {
       try {
         await unlockToken(cmsPassword.value);
+        setCmsPassword(cmsPassword.value);
         cmsPasswordOpen.value = false;
         cmsPassword.value = "";
         cmsPasswordError.value = "";
@@ -1379,6 +1489,21 @@ export default defineComponent({
       } catch {
         cmsPasswordError.value = "Wrong password. Try again.";
       }
+    };
+
+    const handleCmsLock = () => {
+      cmsOpen.value = false;
+      clearCmsPassword();
+      clearSessionToken();
+    };
+
+    const handleCmsReauth = () => {
+      cmsOpen.value = false;
+      clearCmsPassword();
+      clearSessionToken();
+      cmsPassword.value = "";
+      cmsPasswordError.value = "";
+      cmsPasswordOpen.value = true;
     };
 
     const toggleCmsButton = () => {
@@ -1492,6 +1617,10 @@ export default defineComponent({
     const linkTagFilterOpen = ref(false);
     const galleryTagFilterOpen = ref(false);
     const blogTagFilterOpen = ref(false);
+    const searchNewsletterQuery = ref("");
+    const selectedNewsletterTags = ref<string[]>([]);
+    const newsletterTagFilterOpen = ref(false);
+    const availableNewsletterTags = ref<string[]>([]);
 
     const filteredLinks = computed(() => {
       const q = searchLinksQuery.value.trim().toLowerCase();
@@ -1531,15 +1660,21 @@ export default defineComponent({
     const activeTab = ref<string>("links");
 
     const cmsInitialTab = computed(() => {
-      const validCmsTabs = ["links", "embeds", "resume", "gallery", "blog"];
-      if (validCmsTabs.includes(activeTab.value)) return activeTab.value;
+      const contentTabs = ["links", "embeds", "resume", "gallery", "blog"];
+      if (contentTabs.includes(activeTab.value)) return activeTab.value;
       if (activeTab.value.startsWith("embed-")) return "embeds";
-      return "profile";
+      if (activeTab.value === "newsletter") return "newsletter";
+      return "site";
     });
 
     const switchTab = (tab: string) => {
       activeTab.value = tab;
-      if (typeof window !== "undefined") {
+      // Clear newsletter view when switching away
+      if (newsletterViewId.value && tab !== 'newsletter') {
+        newsletterViewId.value = '';
+        router.push('/');
+      }
+      if (typeof window !== "undefined" && !newsletterViewId.value) {
         history.replaceState(null, "", `#${tab}`);
       }
     };
@@ -1609,6 +1744,20 @@ export default defineComponent({
     const blogPosts = ref<BlogPostMeta[]>([]);
     const currentBlogPost = ref<BlogPost | null>(null);
 
+    // Newsletter view state (driven by /newsletter/:id route)
+    const newsletterViewId = ref('');
+    const newsletterViewSid = ref('');
+    const newsletterViewToken = ref('');
+
+    function goBackFromNewsletter() {
+      newsletterViewId.value = '';
+      router.push('/');
+    }
+
+    function viewNewsletter(id: string) {
+      router.push(`/newsletter/${id}`);
+    }
+
     const blogHasContent = computed(() => {
       const b = model.value.blog;
       if (!b || !b.enabled) return false;
@@ -1649,6 +1798,16 @@ export default defineComponent({
       const idx = selectedBlogTags.value.indexOf(tag);
       if (idx >= 0) selectedBlogTags.value.splice(idx, 1);
       else selectedBlogTags.value.push(tag);
+    };
+
+    const toggleNewsletterTag = (tag: string) => {
+      const idx = selectedNewsletterTags.value.indexOf(tag);
+      if (idx >= 0) selectedNewsletterTags.value.splice(idx, 1);
+      else selectedNewsletterTags.value.push(tag);
+    };
+
+    const onNewsletterTagsLoaded = (tags: string[]) => {
+      availableNewsletterTags.value = tags;
     };
 
     const filteredBlogPosts = computed(() => {
@@ -1717,6 +1876,7 @@ export default defineComponent({
       if (galleryHasContent.value) count++;
       if (blogHasContent.value) count++;
       count += enabledEmbeds.value.length;
+      if (model.value.profile.newsletterEnabled) count++;
       return count;
     });
 
@@ -1749,6 +1909,13 @@ export default defineComponent({
       if (!blogHasContent.value) return false;
       if (activeEmbedItem.value) return false;
       if (showTabs.value) return activeTab.value === "blog";
+      return true;
+    });
+
+    const showNewsletterSection = computed(() => {
+      if (!model.value.profile.newsletterEnabled) return false;
+      if (activeEmbedItem.value) return false;
+      if (showTabs.value) return activeTab.value === "newsletter";
       return true;
     });
 
@@ -2044,6 +2211,8 @@ export default defineComponent({
       cmsPasswordError,
       openCms,
       submitCmsPassword,
+      handleCmsLock,
+      handleCmsReauth,
       cmsBtnVisible,
       previewMode,
       enabledLinks,
@@ -2104,6 +2273,12 @@ export default defineComponent({
       loadBlogPost,
       goBackFromBlogPost,
       showBlogSection,
+      showNewsletterSection,
+      newsletterViewId,
+      newsletterViewSid,
+      newsletterViewToken,
+      goBackFromNewsletter,
+      viewNewsletter,
       formatDate,
       searchLinksQuery,
       searchGalleryQuery,
@@ -2120,6 +2295,12 @@ export default defineComponent({
       linkTagFilterOpen,
       galleryTagFilterOpen,
       blogTagFilterOpen,
+      searchNewsletterQuery,
+      selectedNewsletterTags,
+      availableNewsletterTags,
+      toggleNewsletterTag,
+      newsletterTagFilterOpen,
+      onNewsletterTagsLoaded,
       filteredLinks,
       switchTab,
     };

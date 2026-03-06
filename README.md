@@ -340,7 +340,7 @@ Three presets are available: **light**, **dark**, and **custom** (fully manual).
 
 When deploying with a GitHub token baked in, the CMS is protected by password-based encryption:
 
-1. At build time, if `GITHUB_TOKEN` and `TOKEN_SECRET` are both set, the token is encrypted using **PBKDF2** (600,000 iterations, SHA-256) + **AES-256-GCM** and embedded in the JS bundle.
+1. At build time, if `GITHUB_TOKEN` and `CMS_PASSWORD` are both set, the token is encrypted using **PBKDF2** (600,000 iterations, SHA-256) + **AES-256-GCM** and embedded in the JS bundle.
 2. At runtime, the CMS prompts for a password to decrypt the token via the Web Crypto API.
 3. The decrypted token is held in `sessionStorage` for the browser session only.
 
@@ -386,7 +386,7 @@ Inject custom JavaScript or HTML into your page via the CMS:
 | `GITHUB_REPO` | For sync | GitHub repo name |
 | `GITHUB_BRANCH` | No | GitHub branch (default: `main`) |
 | `GITHUB_TOKEN` | For sync | GitHub personal access token |
-| `TOKEN_SECRET` | For CMS lock | Password for encrypting the GitHub token in the build |
+| `CMS_PASSWORD` | For CMS lock | Password for encrypting the GitHub token in the build |
 
 ***
 
@@ -396,7 +396,7 @@ The CMS and GitHub sync features are protected by a password-based encryption sy
 
 ### How it works
 
-1. **Build-time encryption** — During `npm run build`, the `GITHUB_TOKEN` from your `.env` file is encrypted using AES-256-GCM with a key derived from your `TOKEN_SECRET` password. Only the encrypted blob is embedded in the JavaScript bundle.
+1. **Build-time encryption** — During `npm run build`, the `GITHUB_TOKEN` from your `.env` file is encrypted using AES-256-GCM with a key derived from your `CMS_PASSWORD` password. Only the encrypted blob is embedded in the JavaScript bundle.
 2. **Runtime decryption** — When you open the CMS, you're prompted to enter the password. The app uses the Web Crypto API to derive the same key via PBKDF2 and decrypt the token in memory.
 3. **Session-only storage** — The decrypted token is cached in `sessionStorage` so you don't need to re-enter the password within the same browser tab session. It is automatically cleared when the tab is closed. It is **never** written to `localStorage`, cookies, or any other persistent storage.
 
@@ -416,7 +416,7 @@ The CMS and GitHub sync features are protected by a password-based encryption sy
 | Variable             | Purpose                                              | Exposed to browser? |
 | -------------------- | ---------------------------------------------------- | ------------------- |
 | `GITHUB_TOKEN`       | Your GitHub PAT for content sync                     | **No** — encrypted at build time, never in plaintext |
-| `TOKEN_SECRET`       | Password used to encrypt/decrypt the token           | **No** — used only at build time for key derivation; not prefixed with `VITE_` to prevent accidental client exposure  |
+| `CMS_PASSWORD`       | Password used to encrypt/decrypt the token           | **No** — used only at build time for key derivation; not prefixed with `VITE_` to prevent accidental client exposure  |
 | `GITHUB_OWNER`       | GitHub repo owner                                    | Yes (non-secret)    |
 | `GITHUB_REPO`        | GitHub repo name                                     | Yes (non-secret)    |
 | `GITHUB_BRANCH`      | GitHub branch                                        | Yes (non-secret)    |
@@ -424,7 +424,7 @@ The CMS and GitHub sync features are protected by a password-based encryption sy
 
 ### CMS password gate
 
-The CMS button in the bottom-right corner requires password authentication before opening. The same `TOKEN_SECRET` password unlocks both the CMS and the GitHub sync functionality. Once unlocked, subsequent CMS opens in the same browser tab session skip the password prompt.
+The CMS button in the bottom-right corner requires password authentication before opening. The same `CMS_PASSWORD` password unlocks both the CMS and the GitHub sync functionality. Once unlocked, subsequent CMS opens in the same browser tab session skip the password prompt.
 
 ### Security guarantees
 
@@ -436,10 +436,10 @@ The CMS button in the bottom-right corner requires password authentication befor
 
 ### Choosing a strong password
 
-Set `TOKEN_SECRET` in your `.env` file to a strong, unique password:
+Set `CMS_PASSWORD` in your `.env` file to a strong, unique password:
 
 ```env
-TOKEN_SECRET="your-strong-password-here"
+CMS_PASSWORD="your-strong-password-here"
 ```
 
 This password is required every time you open the CMS in a new browser session.
