@@ -86,10 +86,10 @@
     "vue": "^3.5.29",
     "vue-echarts": "^8.0.1",
     "vue-router": "^5.0.3",
-    "vuedraggable": "^4.1.0"
+    "vuedraggable": "^4.1.0",
+    "nodemailer": "^8.0.1"
   },
   "devDependencies": {
-    "nodemailer": "^8.0.1",
     "prettier": "^3.8.1",
     "supabase": "^2.76.16"
   },

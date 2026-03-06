@@ -547,20 +547,20 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 Deploy database migrations and all edge functions to your remote Supabase project:
 
 ```bash
-npx linkable deploy --project-ref <your-project-ref>
+npx github:platform-kit/linkable deploy --project-ref <your-project-ref>
 ```
 
 Or set the ref as an environment variable:
 
 ```bash
 export SUPABASE_PROJECT_REF=abcdefghijklmnop
-npx linkable deploy
+npx github:platform-kit/linkable deploy
 ```
 
 If you've already linked the project (`npx supabase link`), the ref is auto-detected and no flag is needed:
 
 ```bash
-npx linkable deploy
+npx github:platform-kit/linkable deploy
 ```
 
 There is also a convenience npm script:
@@ -580,7 +580,13 @@ npm run deploy:supabase
 To build the static site and deploy Supabase in sequence:
 
 ```bash
-npx linkable build ./my-content && npx linkable deploy --project-ref <ref>
+npx github:platform-kit/linkable build . && npx github:platform-kit/linkable deploy --project-ref <your-project-ref>
+```
+
+Or, if you're developing locally in a cloned repo:
+
+```bash
+npm run build && npm run deploy:supabase
 ```
 
 #### Setting secrets
