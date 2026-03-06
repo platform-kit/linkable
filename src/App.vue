@@ -67,6 +67,7 @@
                   :href="socialHref(s)"
                   :target="isEmailUrl(s.url) ? undefined : '_blank'"
                   rel="noreferrer"
+                  @click="trackClick(socialHref(s), s.label)"
                 >
                   <component :is="resolveSocialIcon(s.icon)" :size="14" class="shrink-0" />
                   <span class="truncate">{{ s.label }}</span>
@@ -100,19 +101,6 @@
           {{ model.profile.linksLabel || 'Links' }}
         </button>
         <button
-          v-if="resumeHasContent"
-          class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
-          :class="
-            activeTab === 'resume'
-              ? 'tab-active'
-              : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
-          "
-          @click="switchTab('resume')"
-        >
-          <component :is="resolveSocialIcon(model.profile.resumeIcon || 'FileText')" :size="14" class="shrink-0" />
-          {{ model.profile.resumeLabel || 'Resume' }}
-        </button>
-        <button
           v-if="galleryHasContent"
           class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
           :class="
@@ -137,6 +125,19 @@
         >
           <component :is="resolveSocialIcon(model.profile.blogIcon || 'Pencil')" :size="14" class="shrink-0" />
           {{ model.profile.blogLabel || 'Blog' }}
+        </button>
+        <button
+          v-if="resumeHasContent"
+          class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
+          :class="
+            activeTab === 'resume'
+              ? 'tab-active'
+              : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
+          "
+          @click="switchTab('resume')"
+        >
+          <component :is="resolveSocialIcon(model.profile.resumeIcon || 'FileText')" :size="14" class="shrink-0" />
+          {{ model.profile.resumeLabel || 'Resume' }}
         </button>
         <button
           v-for="embed in enabledEmbeds"
@@ -191,6 +192,7 @@
             :href="link.url"
             :target="link.url.startsWith('#') ? '_self' : '_blank'"
             :rel="link.url.startsWith('#') ? undefined : 'noreferrer'"
+            @click="trackClick(link.url, link.title)"
           >
             <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
               <div
@@ -1098,6 +1100,7 @@ import {
 } from "./lib/github";
 import { setCmsPassword, clearCmsPassword } from "./lib/cms-auth";
 import { isScheduleVisible } from "./lib/scheduling";
+import { trackPageview, trackClick, isAnalyticsEnabled } from "./lib/analytics";
 
 export default defineComponent({
   name: "App",
@@ -1248,6 +1251,9 @@ export default defineComponent({
         suppressPersist.value = false;
       }, 0);
 
+      // Track initial pageview
+      trackPageview();
+
       updateGithubStatus();
     });
 
@@ -1280,6 +1286,8 @@ export default defineComponent({
         if (currentBlogPost.value) currentBlogPost.value = null;
         newsletterViewId.value = '';
       }
+      // Track pageview on route change
+      trackPageview();
     });
 
     // Apply theme CSS variables reactively
@@ -2303,6 +2311,7 @@ export default defineComponent({
       onNewsletterTagsLoaded,
       filteredLinks,
       switchTab,
+      trackClick,
     };
   },
 });

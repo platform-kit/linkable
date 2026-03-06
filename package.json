@@ -49,6 +49,7 @@
     "deploy:supabase": "node bin/cli.mjs deploy"
   },
   "dependencies": {
+    "@fingerprintjs/fingerprintjs": "^5.1.0",
     "@floating-ui/dom": "^1.7.5",
     "@primevue/themes": "^4.5.4",
     "@supabase/supabase-js": "^2.98.0",
@@ -68,6 +69,7 @@
     "@vueuse/core": "^14.2.1",
     "autoprefixer": "^10.4.20",
     "busboy": "^1.6.0",
+    "echarts": "^6.0.0",
     "gsap": "^3.14.2",
     "highlight.js": "^11.11.1",
     "lit-html": "^3.3.2",
@@ -82,6 +84,7 @@
     "vidstack": "1.12.13",
     "vite": "^6.3.4",
     "vue": "^3.5.29",
+    "vue-echarts": "^8.0.1",
     "vue-router": "^5.0.3",
     "vuedraggable": "^4.1.0"
   },
@@ -90,6 +93,8 @@
     "supabase": "^2.76.16"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["supabase"]
+    "onlyBuiltDependencies": [
+      "supabase"
+    ]
   }
 }

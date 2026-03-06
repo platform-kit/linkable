@@ -24,7 +24,7 @@
     <div class="cms">
       <div class="cms__tabBar">
         <div class="cms__tabBarInner">
-          <div class="cms__tabs">
+          <div class="cms__tabs" :class="{ 'cms__tabs--4': supabaseUrl }">
             <button
               type="button"
               class="cms__tab"
@@ -56,6 +56,18 @@
               <span class="cms__tab-icon"><i class="pi pi-envelope" /></span>
               <span class="cms__tab-label">Newsletter</span>
               <span class="cms__tab-pill" :class="{ 'cms__tab-pill--ghost': subscriberCounts.total === 0 }">{{ subscriberCounts.confirmed }}</span>
+            </button>
+
+            <button
+              v-if="supabaseUrl"
+              type="button"
+              class="cms__tab"
+              :class="{ 'is-active': tab === 'analytics' }"
+              @click="tab = 'analytics'"
+            >
+              <span class="cms__tab-icon"><i class="pi pi-chart-line" /></span>
+              <span class="cms__tab-label">Analytics</span>
+              <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">0</span>
             </button>
           </div>
         </div>
@@ -318,6 +330,146 @@
             </div>
           </Transition>
 
+          <!-- Search -->
+          <button type="button" class="cms__accordion-trigger" @click="siteSection.search = !siteSection.search">
+            <span class="cms__accordion-label"><i class="pi pi-search" /> Search</span>
+            <i class="pi" :class="siteSection.search ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="siteSection.search" class="cms__accordion-body">
+              <div class="cms__form">
+                <div class="cms__help" style="margin-bottom: 8px">Enable search bars for visitors to filter content in each section.</div>
+                <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
+                  <ToggleSwitch v-model="draft.profile.searchLinks" />
+                  <label class="cms__label" style="margin: 0">Links search</label>
+                </div>
+                <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
+                  <ToggleSwitch v-model="draft.profile.searchGallery" />
+                  <label class="cms__label" style="margin: 0">Gallery search</label>
+                </div>
+                <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
+                  <ToggleSwitch v-model="draft.profile.searchBlog" />
+                  <label class="cms__label" style="margin: 0">Blog search</label>
+                </div>
+                <div v-if="supabaseUrl" class="cms__field" style="display: flex; align-items: center; gap: 12px">
+                  <ToggleSwitch v-model="draft.profile.searchNewsletter" />
+                  <label class="cms__label" style="margin: 0">Newsletter search</label>
+                </div>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- Navigation -->
+          <button type="button" class="cms__accordion-trigger" @click="siteSection.navigation = !siteSection.navigation">
+            <span class="cms__accordion-label"><i class="pi pi-compass" /> Navigation</span>
+            <i class="pi" :class="siteSection.navigation ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="siteSection.navigation" class="cms__accordion-body">
+              <div class="cms__form">
+                <div class="cms__field">
+                  <label class="cms__label">Default tab</label>
+                  <Select
+                    v-model="draft.profile.defaultTab"
+                    :options="defaultTabOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="w-full"
+                  />
+                  <div class="cms__help">The tab visitors see first when they land on your page.</div>
+                </div>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- Socials -->
+          <button type="button" class="cms__accordion-trigger" @click="siteSection.socials = !siteSection.socials">
+            <span class="cms__accordion-label"><i class="pi pi-share-alt" /> Socials</span>
+            <i class="pi" :class="siteSection.socials ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="siteSection.socials" class="cms__accordion-body">
+              <div class="cms__form">
+                <div class="cms__help" style="margin-bottom: 8px">
+                  Add social links that show under your name.
+                </div>
+
+                <div class="flex justify-end" style="margin-bottom: 8px">
+                  <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditSocial">
+                    <i class="pi pi-plus" />
+                    <span class="cms__btn-label">Add social</span>
+                  </Button>
+                </div>
+
+                <div v-if="draft.socials.length === 0" class="cms__empty">
+                  <div class="cms__empty-title">No socials yet</div>
+                  <div class="cms__empty-sub">
+                    Add GitHub, Instagram, X, YouTube, TikTok, or Website.
+                  </div>
+                </div>
+
+                <draggable
+                  v-else
+                  v-model="draft.socials"
+                  item-key="id"
+                  handle=".drag"
+                  :animation="160"
+                  class="cms__socialList"
+                >
+                  <template #item="{ element: s }">
+                    <button
+                      type="button"
+                      class="cms__row"
+                      @click="openSocialEditor(s.id)"
+                    >
+                      <span class="cms__row-drag drag" aria-label="Drag">
+                        <i class="pi pi-bars" />
+                      </span>
+
+                      <span class="cms__row-thumb">
+                        <component :is="resolveLucideIcon(s.icon)" :size="16" />
+                      </span>
+
+                      <span class="cms__row-text">
+                        <span class="cms__row-title">{{ s.label || s.icon || 'Social' }}</span>
+                        <span class="cms__row-sub">{{ s.url || "(no url)" }}</span>
+                      </span>
+
+                      <span class="cms__row-meta">
+                        <Tag v-if="!s.enabled" severity="warning" value="Hidden" class="!rounded-full" />
+                        <i v-else class="pi pi-check-circle cms__ok" />
+                        <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
+                      </span>
+                    </button>
+                  </template>
+                </draggable>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- Scripts -->
+          <button type="button" class="cms__accordion-trigger" @click="siteSection.scripts = !siteSection.scripts">
+            <span class="cms__accordion-label"><i class="pi pi-code" /> Scripts</span>
+            <i class="pi" :class="siteSection.scripts ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="siteSection.scripts" class="cms__accordion-body">
+              <div class="cms__form">
+                <div class="cms__help" style="margin-bottom: 8px">Inject custom JavaScript for analytics, tracking pixels, or other third-party scripts.</div>
+                <div class="cms__field">
+                  <label class="cms__label">Head scripts</label>
+                  <div class="cms__help">Inserted inside <code>&lt;head&gt;</code> — ideal for analytics, meta-pixel, etc.</div>
+                  <Textarea v-model="draft.scripts.headScript" rows="5" placeholder='<script src="https://..."></script>' style="font-family: monospace; font-size: 13px" />
+                </div>
+                <div class="cms__field">
+                  <label class="cms__label">Body-end scripts</label>
+                  <div class="cms__help">Inserted just before <code>&lt;/body&gt;</code> — for chat widgets, defer scripts, etc.</div>
+                  <Textarea v-model="draft.scripts.bodyEndScript" rows="5" placeholder='<script src="https://..."></script>' style="font-family: monospace; font-size: 13px" />
+                </div>
+              </div>
+            </div>
+          </Transition>
+
           <!-- GitHub Sync -->
           <button type="button" class="cms__accordion-trigger" @click="siteSection.github = !siteSection.github">
             <span class="cms__accordion-label"><i class="pi pi-github" /> GitHub Sync</span>
@@ -407,135 +559,6 @@
             </div>
           </Transition>
 
-          <!-- Search -->
-          <button type="button" class="cms__accordion-trigger" @click="siteSection.search = !siteSection.search">
-            <span class="cms__accordion-label"><i class="pi pi-search" /> Search</span>
-            <i class="pi" :class="siteSection.search ? 'pi-chevron-up' : 'pi-chevron-down'" />
-          </button>
-          <Transition name="cms-collapse">
-            <div v-if="siteSection.search" class="cms__accordion-body">
-              <div class="cms__form">
-                <div class="cms__help" style="margin-bottom: 8px">Enable search bars for visitors to filter content in each section.</div>
-                <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
-                  <ToggleSwitch v-model="draft.profile.searchLinks" />
-                  <label class="cms__label" style="margin: 0">Links search</label>
-                </div>
-                <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
-                  <ToggleSwitch v-model="draft.profile.searchGallery" />
-                  <label class="cms__label" style="margin: 0">Gallery search</label>
-                </div>
-                <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
-                  <ToggleSwitch v-model="draft.profile.searchBlog" />
-                  <label class="cms__label" style="margin: 0">Blog search</label>
-                </div>
-                <div v-if="supabaseUrl" class="cms__field" style="display: flex; align-items: center; gap: 12px">
-                  <ToggleSwitch v-model="draft.profile.searchNewsletter" />
-                  <label class="cms__label" style="margin: 0">Newsletter search</label>
-                </div>
-              </div>
-            </div>
-          </Transition>
-
-          <!-- Navigation -->
-          <button type="button" class="cms__accordion-trigger" @click="siteSection.navigation = !siteSection.navigation">
-            <span class="cms__accordion-label"><i class="pi pi-compass" /> Navigation</span>
-            <i class="pi" :class="siteSection.navigation ? 'pi-chevron-up' : 'pi-chevron-down'" />
-          </button>
-          <Transition name="cms-collapse">
-            <div v-if="siteSection.navigation" class="cms__accordion-body">
-              <div class="cms__form">
-                <div class="cms__field">
-                  <label class="cms__label">Default tab</label>
-                  <Select
-                    v-model="draft.profile.defaultTab"
-                    :options="defaultTabOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    class="w-full"
-                  />
-                  <div class="cms__help">The tab visitors see first when they land on your page.</div>
-                </div>
-              </div>
-            </div>
-          </Transition>
-
-          <!-- Socials -->
-          <button type="button" class="cms__accordion-trigger" @click="siteSection.socials = !siteSection.socials">
-            <span class="cms__accordion-label"><i class="pi pi-share-alt" /> Socials</span>
-            <i class="pi" :class="siteSection.socials ? 'pi-chevron-up' : 'pi-chevron-down'" />
-          </button>
-          <Transition name="cms-collapse">
-            <div v-if="siteSection.socials" class="cms__accordion-body">
-              <div class="cms__form">
-                <div class="cms__help" style="margin-bottom: 8px">
-                  Add social links that show under your name.
-                </div>
-
-                <div class="flex justify-end" style="margin-bottom: 8px">
-                  <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditSocial">
-                    <i class="pi pi-plus" />
-                    <span class="cms__btn-label">Add social</span>
-                  </Button>
-                </div>
-
-                <div v-if="draft.socials.length === 0" class="cms__empty">
-                  <div class="cms__empty-title">No socials yet</div>
-                  <div class="cms__empty-sub">
-                    Add GitHub, Instagram, X, YouTube, TikTok, or Website.
-                  </div>
-                </div>
-
-                <div v-else class="cms__socialList">
-                  <button
-                    v-for="s in draft.socials"
-                    :key="s.id"
-                    type="button"
-                    class="cms__row"
-                    @click="openSocialEditor(s.id)"
-                  >
-                    <span class="cms__row-drag cms__row-drag--muted" aria-hidden="true">
-                      <component :is="resolveLucideIcon(s.icon)" :size="16" />
-                    </span>
-
-                    <span class="cms__row-text">
-                      <span class="cms__row-title">{{ s.label || s.icon || 'Social' }}</span>
-                      <span class="cms__row-sub">{{ s.url || "(no url)" }}</span>
-                    </span>
-
-                    <span class="cms__row-meta">
-                      <Tag v-if="!s.enabled" severity="warning" value="Hidden" class="!rounded-full" />
-                      <i v-else class="pi pi-check-circle cms__ok" />
-                      <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </Transition>
-
-          <!-- Scripts -->
-          <button type="button" class="cms__accordion-trigger" @click="siteSection.scripts = !siteSection.scripts">
-            <span class="cms__accordion-label"><i class="pi pi-code" /> Scripts</span>
-            <i class="pi" :class="siteSection.scripts ? 'pi-chevron-up' : 'pi-chevron-down'" />
-          </button>
-          <Transition name="cms-collapse">
-            <div v-if="siteSection.scripts" class="cms__accordion-body">
-              <div class="cms__form">
-                <div class="cms__help" style="margin-bottom: 8px">Inject custom JavaScript for analytics, tracking pixels, or other third-party scripts.</div>
-                <div class="cms__field">
-                  <label class="cms__label">Head scripts</label>
-                  <div class="cms__help">Inserted inside <code>&lt;head&gt;</code> — ideal for analytics, meta-pixel, etc.</div>
-                  <Textarea v-model="draft.scripts.headScript" rows="5" placeholder='<script src="https://..."></script>' style="font-family: monospace; font-size: 13px" />
-                </div>
-                <div class="cms__field">
-                  <label class="cms__label">Body-end scripts</label>
-                  <div class="cms__help">Inserted just before <code>&lt;/body&gt;</code> — for chat widgets, defer scripts, etc.</div>
-                  <Textarea v-model="draft.scripts.bodyEndScript" rows="5" placeholder='<script src="https://..."></script>' style="font-family: monospace; font-size: 13px" />
-                </div>
-              </div>
-            </div>
-          </Transition>
-
           <!-- Supabase -->
           <template v-if="supabaseUrl">
             <button type="button" class="cms__accordion-trigger" @click="siteSection.supabase = !siteSection.supabase">
@@ -567,16 +590,10 @@
         </section>
 
         <section v-else-if="tab === 'content'" class="cms__panel">
-          <!-- Content sub-tabs -->
-          <div class="cms__subTabBar">
+          <!-- Content sub-tabs (desktop) -->
+          <div class="cms__subTabBar cms__subTabBar--desktop">
             <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'links' }" @click="contentSubTab = 'links'">
               <i class="pi pi-link" /> Links
-            </button>
-            <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'embeds' }" @click="contentSubTab = 'embeds'">
-              <i class="pi pi-code" /> Embeds
-            </button>
-            <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'resume' }" @click="contentSubTab = 'resume'">
-              <i class="pi pi-file" /> Resume
             </button>
             <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'gallery' }" @click="contentSubTab = 'gallery'">
               <i class="pi pi-images" /> Gallery
@@ -584,6 +601,23 @@
             <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'blog' }" @click="contentSubTab = 'blog'">
               <i class="pi pi-pencil" /> Blog
             </button>
+            <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'resume' }" @click="contentSubTab = 'resume'">
+              <i class="pi pi-file" /> Resume
+            </button>
+            <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'embeds' }" @click="contentSubTab = 'embeds'">
+              <i class="pi pi-code" /> Embeds
+            </button>
+          </div>
+          <!-- Content sub-tabs (mobile) -->
+          <div class="cms__subTabBar cms__subTabBar--mobile">
+            <Select
+              :modelValue="contentSubTab"
+              @update:modelValue="contentSubTab = $event"
+              :options="contentSubTabOptions"
+              optionLabel="label"
+              optionValue="value"
+              class="w-full"
+            />
           </div>
 
           <div v-if="contentSubTab === 'links'" class="cms__subPanel">
@@ -682,47 +716,109 @@
           </div>
           </div>
 
-          <div v-else-if="contentSubTab === 'embeds'" class="cms__subPanel">
+          <div v-else-if="contentSubTab === 'gallery'" class="cms__subPanel">
           <div class="cms__panel-head cms__panel-head--row">
             <div>
-              <div class="cms__title">Embeds</div>
-              <div class="cms__sub">Add HTML embeds (Cal.com, Zoom, YouTube, etc.) that appear as separate tabs.</div>
+              <div class="cms__title">Gallery</div>
+              <div class="cms__sub">Manage images and videos for your gallery.</div>
             </div>
 
-            <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditEmbed">
+            <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditGalleryItem">
               <i class="pi pi-plus" />
-              <span class="cms__btn-label">Add embed</span>
+              <span class="cms__btn-label">Add item</span>
               <span class="cms__btn-label--compact">Add</span>
             </Button>
           </div>
 
+          <div class="cms__card" style="margin-bottom: 10px">
+            <div class="cms__form">
+              <div class="cms__field">
+                <label class="cms__label">Tab label</label>
+                <InputText v-model="draft.profile.galleryLabel" class="w-full" placeholder="Gallery" />
+                <div class="cms__help">Customise the tab name shown on the public page.</div>
+              </div>
+              <div class="cms__field">
+                <label class="cms__label">Tab icon</label>
+                <AutoComplete
+                  v-model="draft.profile.galleryIcon"
+                  :suggestions="filteredTabIcons"
+                  @complete="searchTabIcons"
+                  placeholder="Search icons… e.g. Images"
+                  class="w-full"
+                  :inputClass="'w-full'"
+                  forceSelection
+                >
+                  <template #option="{ option }">
+                    <div class="flex items-center gap-2.5 py-0.5">
+                      <component :is="getTabIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                      <span class="text-sm font-medium">{{ option }}</span>
+                    </div>
+                  </template>
+                  <template #value="{ value }">
+                    <div v-if="value" class="flex items-center gap-2">
+                      <component :is="getTabIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                      <span>{{ value }}</span>
+                    </div>
+                  </template>
+                </AutoComplete>
+                <div class="cms__help">Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Leave empty for default.</div>
+              </div>
+            </div>
+          </div>
+
           <div class="cms__card">
-            <div v-if="draft.embeds.length === 0" class="cms__empty">
-              <div class="cms__empty-title">No embeds yet</div>
-              <div class="cms__empty-sub">Click "Add embed" to create your first embedded tab.</div>
+            <div class="cms__form">
+              <!-- Enable / disable gallery -->
+              <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
+                <div>
+                  <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable gallery</div>
+                  <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+                    When disabled, the gallery tab will not appear on the public page.
+                  </div>
+                </div>
+                <ToggleSwitch v-model="draft.gallery.enabled" />
+              </div>
+            </div>
+
+            <div v-if="draft.gallery.items.length === 0" class="cms__empty mt-3">
+              <div class="cms__empty-title">No gallery items yet</div>
+              <div class="cms__empty-sub">Click "Add item" to upload an image or add a video.</div>
             </div>
 
             <draggable
               v-else
-              v-model="draft.embeds"
+              v-model="draft.gallery.items"
               item-key="id"
               handle=".drag"
               :animation="160"
-              class="cms__list"
+              class="cms__list mt-3"
             >
               <template #item="{ element }">
-                <button type="button" class="cms__row" @click="openEmbedEditor(element.id)">
+                <button type="button" class="cms__row" @click="openGalleryEditor(element.id)">
                   <span class="cms__row-drag drag" aria-label="Drag">
                     <i class="pi pi-bars" />
                   </span>
 
                   <span class="cms__row-thumb">
-                    <component :is="resolveLucideIcon(element.icon)" :size="18" class="text-[color:var(--color-ink-soft)]" />
+                    <img
+                      v-if="element.type === 'image' && element.src"
+                      :src="element.src"
+                      alt=""
+                      class="h-full w-full object-cover"
+                    />
+                    <img
+                      v-else-if="element.type === 'video' && element.coverUrl"
+                      :src="element.coverUrl"
+                      alt=""
+                      class="h-full w-full object-cover"
+                    />
+                    <i v-else-if="element.type === 'video'" class="pi pi-video text-[color:var(--color-ink-soft)]" />
+                    <i v-else class="pi pi-image text-[color:var(--color-ink-soft)]" />
                   </span>
 
                   <span class="cms__row-text">
-                    <span class="cms__row-title">{{ element.label || "Untitled" }}</span>
-                    <span class="cms__row-sub">{{ element.html ? 'Has embed code' : '(no embed code)' }}</span>
+                    <span class="cms__row-title">{{ element.title || 'Untitled' }}</span>
+                    <span class="cms__row-sub">{{ element.type === 'video' ? (element.src || '(no source)') : (element.src ? 'Image' : '(no image)') }}</span>
                   </span>
 
                   <span class="cms__row-meta">
@@ -733,6 +829,101 @@
                 </button>
               </template>
             </draggable>
+          </div>
+          </div>
+
+          <div v-else-if="contentSubTab === 'blog'" class="cms__subPanel">
+          <div class="cms__panel-head cms__panel-head--row">
+            <div>
+              <div class="cms__title">Blog</div>
+              <div class="cms__sub">Create and manage blog posts (stored as Markdown files).</div>
+            </div>
+
+            <Button rounded class="cms__primary cms__primary--addon" @click="openBlogEditorNew">
+              <i class="pi pi-plus" />
+              <span class="cms__btn-label">New post</span>
+              <span class="cms__btn-label--compact">New</span>
+            </Button>
+          </div>
+
+          <div class="cms__card" style="margin-bottom: 10px">
+            <div class="cms__form">
+              <div class="cms__field">
+                <label class="cms__label">Tab label</label>
+                <InputText v-model="draft.profile.blogLabel" class="w-full" placeholder="Blog" />
+                <div class="cms__help">Customise the tab name shown on the public page.</div>
+              </div>
+              <div class="cms__field">
+                <label class="cms__label">Tab icon</label>
+                <AutoComplete
+                  v-model="draft.profile.blogIcon"
+                  :suggestions="filteredTabIcons"
+                  @complete="searchTabIcons"
+                  placeholder="Search icons… e.g. Pencil"
+                  class="w-full"
+                  :inputClass="'w-full'"
+                  forceSelection
+                >
+                  <template #option="{ option }">
+                    <div class="flex items-center gap-2.5 py-0.5">
+                      <component :is="getTabIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                      <span class="text-sm font-medium">{{ option }}</span>
+                    </div>
+                  </template>
+                  <template #value="{ value }">
+                    <div v-if="value" class="flex items-center gap-2">
+                      <component :is="getTabIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                      <span>{{ value }}</span>
+                    </div>
+                  </template>
+                </AutoComplete>
+                <div class="cms__help">Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Leave empty for default.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cms__card">
+            <div class="cms__form">
+              <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
+                <div>
+                  <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable blog</div>
+                  <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+                    When disabled, the blog tab will not appear on the public page.
+                  </div>
+                </div>
+                <ToggleSwitch v-model="draft.blog.enabled" />
+              </div>
+            </div>
+
+            <div v-if="blogPosts.length === 0" class="cms__empty mt-3">
+              <div class="cms__empty-title">No blog posts yet</div>
+              <div class="cms__empty-sub">Click "New post" to create your first article.</div>
+            </div>
+
+            <div v-else class="cms__blogList cms__list mt-3">
+              <button
+                v-for="post in blogPosts"
+                :key="post.slug"
+                type="button"
+                class="cms__row"
+                @click="openBlogEditorExisting(post.slug)"
+              >
+                <span class="cms__row-thumb">
+                  <i class="pi pi-file-edit text-[color:var(--color-ink-soft)]" />
+                </span>
+
+                <span class="cms__row-text">
+                  <span class="cms__row-title">{{ post.title }}</span>
+                  <span class="cms__row-sub">{{ post.date }}{{ post.tags.length ? ' · ' + post.tags.join(', ') : '' }}</span>
+                </span>
+
+                <span class="cms__row-meta">
+                  <Tag v-if="!post.published" severity="warning" value="Draft" class="!rounded-full" />
+                  <i v-else class="pi pi-check-circle cms__ok" />
+                  <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
+                </span>
+              </button>
+            </div>
           </div>
           </div>
 
@@ -962,109 +1153,47 @@
           </div>
           </div>
 
-          <div v-else-if="contentSubTab === 'gallery'" class="cms__subPanel">
+          <div v-else-if="contentSubTab === 'embeds'" class="cms__subPanel">
           <div class="cms__panel-head cms__panel-head--row">
             <div>
-              <div class="cms__title">Gallery</div>
-              <div class="cms__sub">Manage images and videos for your gallery.</div>
+              <div class="cms__title">Embeds</div>
+              <div class="cms__sub">Add HTML embeds (Cal.com, Zoom, YouTube, etc.) that appear as separate tabs.</div>
             </div>
 
-            <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditGalleryItem">
+            <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditEmbed">
               <i class="pi pi-plus" />
-              <span class="cms__btn-label">Add item</span>
+              <span class="cms__btn-label">Add embed</span>
               <span class="cms__btn-label--compact">Add</span>
             </Button>
           </div>
 
-          <div class="cms__card" style="margin-bottom: 10px">
-            <div class="cms__form">
-              <div class="cms__field">
-                <label class="cms__label">Tab label</label>
-                <InputText v-model="draft.profile.galleryLabel" class="w-full" placeholder="Gallery" />
-                <div class="cms__help">Customise the tab name shown on the public page.</div>
-              </div>
-              <div class="cms__field">
-                <label class="cms__label">Tab icon</label>
-                <AutoComplete
-                  v-model="draft.profile.galleryIcon"
-                  :suggestions="filteredTabIcons"
-                  @complete="searchTabIcons"
-                  placeholder="Search icons… e.g. Images"
-                  class="w-full"
-                  :inputClass="'w-full'"
-                  forceSelection
-                >
-                  <template #option="{ option }">
-                    <div class="flex items-center gap-2.5 py-0.5">
-                      <component :is="getTabIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
-                      <span class="text-sm font-medium">{{ option }}</span>
-                    </div>
-                  </template>
-                  <template #value="{ value }">
-                    <div v-if="value" class="flex items-center gap-2">
-                      <component :is="getTabIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
-                      <span>{{ value }}</span>
-                    </div>
-                  </template>
-                </AutoComplete>
-                <div class="cms__help">Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Leave empty for default.</div>
-              </div>
-            </div>
-          </div>
-
           <div class="cms__card">
-            <div class="cms__form">
-              <!-- Enable / disable gallery -->
-              <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
-                <div>
-                  <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable gallery</div>
-                  <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-                    When disabled, the gallery tab will not appear on the public page.
-                  </div>
-                </div>
-                <ToggleSwitch v-model="draft.gallery.enabled" />
-              </div>
-            </div>
-
-            <div v-if="draft.gallery.items.length === 0" class="cms__empty mt-3">
-              <div class="cms__empty-title">No gallery items yet</div>
-              <div class="cms__empty-sub">Click "Add item" to upload an image or add a video.</div>
+            <div v-if="draft.embeds.length === 0" class="cms__empty">
+              <div class="cms__empty-title">No embeds yet</div>
+              <div class="cms__empty-sub">Click "Add embed" to create your first embedded tab.</div>
             </div>
 
             <draggable
               v-else
-              v-model="draft.gallery.items"
+              v-model="draft.embeds"
               item-key="id"
               handle=".drag"
               :animation="160"
-              class="cms__list mt-3"
+              class="cms__list"
             >
               <template #item="{ element }">
-                <button type="button" class="cms__row" @click="openGalleryEditor(element.id)">
+                <button type="button" class="cms__row" @click="openEmbedEditor(element.id)">
                   <span class="cms__row-drag drag" aria-label="Drag">
                     <i class="pi pi-bars" />
                   </span>
 
                   <span class="cms__row-thumb">
-                    <img
-                      v-if="element.type === 'image' && element.src"
-                      :src="element.src"
-                      alt=""
-                      class="h-full w-full object-cover"
-                    />
-                    <img
-                      v-else-if="element.type === 'video' && element.coverUrl"
-                      :src="element.coverUrl"
-                      alt=""
-                      class="h-full w-full object-cover"
-                    />
-                    <i v-else-if="element.type === 'video'" class="pi pi-video text-[color:var(--color-ink-soft)]" />
-                    <i v-else class="pi pi-image text-[color:var(--color-ink-soft)]" />
+                    <component :is="resolveLucideIcon(element.icon)" :size="18" class="text-[color:var(--color-ink-soft)]" />
                   </span>
 
                   <span class="cms__row-text">
-                    <span class="cms__row-title">{{ element.title || 'Untitled' }}</span>
-                    <span class="cms__row-sub">{{ element.type === 'video' ? (element.src || '(no source)') : (element.src ? 'Image' : '(no image)') }}</span>
+                    <span class="cms__row-title">{{ element.label || "Untitled" }}</span>
+                    <span class="cms__row-sub">{{ element.html ? 'Has embed code' : '(no embed code)' }}</span>
                   </span>
 
                   <span class="cms__row-meta">
@@ -1075,101 +1204,6 @@
                 </button>
               </template>
             </draggable>
-          </div>
-          </div>
-
-          <div v-else-if="contentSubTab === 'blog'" class="cms__subPanel">
-          <div class="cms__panel-head cms__panel-head--row">
-            <div>
-              <div class="cms__title">Blog</div>
-              <div class="cms__sub">Create and manage blog posts (stored as Markdown files).</div>
-            </div>
-
-            <Button rounded class="cms__primary cms__primary--addon" @click="openBlogEditorNew">
-              <i class="pi pi-plus" />
-              <span class="cms__btn-label">New post</span>
-              <span class="cms__btn-label--compact">New</span>
-            </Button>
-          </div>
-
-          <div class="cms__card" style="margin-bottom: 10px">
-            <div class="cms__form">
-              <div class="cms__field">
-                <label class="cms__label">Tab label</label>
-                <InputText v-model="draft.profile.blogLabel" class="w-full" placeholder="Blog" />
-                <div class="cms__help">Customise the tab name shown on the public page.</div>
-              </div>
-              <div class="cms__field">
-                <label class="cms__label">Tab icon</label>
-                <AutoComplete
-                  v-model="draft.profile.blogIcon"
-                  :suggestions="filteredTabIcons"
-                  @complete="searchTabIcons"
-                  placeholder="Search icons… e.g. Pencil"
-                  class="w-full"
-                  :inputClass="'w-full'"
-                  forceSelection
-                >
-                  <template #option="{ option }">
-                    <div class="flex items-center gap-2.5 py-0.5">
-                      <component :is="getTabIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
-                      <span class="text-sm font-medium">{{ option }}</span>
-                    </div>
-                  </template>
-                  <template #value="{ value }">
-                    <div v-if="value" class="flex items-center gap-2">
-                      <component :is="getTabIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
-                      <span>{{ value }}</span>
-                    </div>
-                  </template>
-                </AutoComplete>
-                <div class="cms__help">Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Leave empty for default.</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="cms__card">
-            <div class="cms__form">
-              <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
-                <div>
-                  <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable blog</div>
-                  <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-                    When disabled, the blog tab will not appear on the public page.
-                  </div>
-                </div>
-                <ToggleSwitch v-model="draft.blog.enabled" />
-              </div>
-            </div>
-
-            <div v-if="blogPosts.length === 0" class="cms__empty mt-3">
-              <div class="cms__empty-title">No blog posts yet</div>
-              <div class="cms__empty-sub">Click "New post" to create your first article.</div>
-            </div>
-
-            <div v-else class="cms__blogList cms__list mt-3">
-              <button
-                v-for="post in blogPosts"
-                :key="post.slug"
-                type="button"
-                class="cms__row"
-                @click="openBlogEditorExisting(post.slug)"
-              >
-                <span class="cms__row-thumb">
-                  <i class="pi pi-file-edit text-[color:var(--color-ink-soft)]" />
-                </span>
-
-                <span class="cms__row-text">
-                  <span class="cms__row-title">{{ post.title }}</span>
-                  <span class="cms__row-sub">{{ post.date }}{{ post.tags.length ? ' · ' + post.tags.join(', ') : '' }}</span>
-                </span>
-
-                <span class="cms__row-meta">
-                  <Tag v-if="!post.published" severity="warning" value="Draft" class="!rounded-full" />
-                  <i v-else class="pi pi-check-circle cms__ok" />
-                  <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
-                </span>
-              </button>
-            </div>
           </div>
           </div>
         </section>
@@ -1330,6 +1364,10 @@
           </div>
         </section>
 
+        <AnalyticsPanel
+          v-else-if="tab === 'analytics'"
+          @reauth="$emit('reauth')"
+        />
 
       </div>
     </div>
@@ -1430,6 +1468,7 @@ import GalleryEditorDrawer from "./GalleryEditorDrawer.vue";
 import BlogEditorDrawer from "./BlogEditorDrawer.vue";
 import EmbedEditorDrawer from "./EmbedEditorDrawer.vue";
 import NewsletterComposeDrawer from "./NewsletterComposeDrawer.vue";
+import AnalyticsPanel from "./AnalyticsPanel.vue";
 import { icons as lucideIcons } from "lucide-vue-next";
 import type { BioLink, BioModel, SocialLink, EducationEntry, EmploymentEntry, AchievementEntry, GalleryItem, ThemePreset, EmbedItem } from "../lib/model";
 import {
@@ -1485,12 +1524,13 @@ export default defineComponent({
     BlogEditorDrawer,
     EmbedEditorDrawer,
     NewsletterComposeDrawer,
+    AnalyticsPanel,
     ToggleSwitch,
   },
   props: {
     open: { type: Boolean, required: true },
     model: { type: Object as () => BioModel, required: true },
-    initialTab: { type: String as () => "site" | "content" | "newsletter" | "links" | "embeds" | "resume" | "gallery" | "blog", default: "site" },
+    initialTab: { type: String as () => "site" | "content" | "newsletter" | "analytics" | "links" | "embeds" | "resume" | "gallery" | "blog", default: "site" },
     initialEmbedId: { type: String, default: "" },
     initialBlogSlug: { type: String, default: "" },
   },
@@ -1500,17 +1540,26 @@ export default defineComponent({
 
     const visible = ref(props.open);
 
-    const contentSubTabs = ["links", "embeds", "resume", "gallery", "blog"] as const;
+    const contentSubTabs = ["links", "gallery", "blog", "resume", "embeds"] as const;
     type ContentSubTab = typeof contentSubTabs[number];
 
-    function resolveInitialTab(val: string): { main: "site" | "content" | "newsletter"; sub: ContentSubTab } {
+    const contentSubTabOptions = [
+      { label: "Links", value: "links" },
+      { label: "Gallery", value: "gallery" },
+      { label: "Blog", value: "blog" },
+      { label: "Resume", value: "resume" },
+      { label: "Embeds", value: "embeds" },
+    ];
+
+    function resolveInitialTab(val: string): { main: "site" | "content" | "newsletter" | "analytics"; sub: ContentSubTab } {
       if (contentSubTabs.includes(val as ContentSubTab)) return { main: "content", sub: val as ContentSubTab };
       if (val === "newsletter") return { main: "newsletter", sub: "links" };
+      if (val === "analytics") return { main: "analytics", sub: "links" };
       return { main: "site", sub: "links" };
     }
 
     const initialResolved = resolveInitialTab(props.initialTab);
-    const tab = ref<"site" | "content" | "newsletter">(initialResolved.main);
+    const tab = ref<"site" | "content" | "newsletter" | "analytics">(initialResolved.main);
     const contentSubTab = ref<ContentSubTab>(initialResolved.sub);
 
     const siteSection = reactive({
@@ -2415,6 +2464,7 @@ export default defineComponent({
       lockCms,
       subscribersError,
       contentSubTab,
+      contentSubTabOptions,
     };
   },
 });
@@ -2457,6 +2507,10 @@ cms__tabBar {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+}
+
+.cms__tabs--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .cms__tab {
@@ -2559,12 +2613,28 @@ cms__tab-pill {
 }
 
 .cms__subTabBar {
-  display: flex;
-  gap: 4px;
   padding: 0 0 12px;
   border-bottom: 1px solid var(--color-border);
   margin-bottom: 16px;
+}
+
+.cms__subTabBar--desktop {
+  display: none;
+  gap: 4px;
   overflow-x: auto;
+}
+
+.cms__subTabBar--mobile {
+  display: block;
+}
+
+@media (min-width: 640px) {
+  .cms__subTabBar--desktop {
+    display: flex;
+  }
+  .cms__subTabBar--mobile {
+    display: none;
+  }
 }
 
 .cms__subTab {
@@ -2809,11 +2879,11 @@ cms__row {
 }
 
 cms__socialList .cms__row {
-  grid-template-columns: 44px 1fr auto;
+  grid-template-columns: 34px 44px 1fr auto;
 }
 
 .cms__socialList .cms__row {
-  grid-template-columns: 44px 1fr auto;
+  grid-template-columns: 34px 44px 1fr auto;
 }
 
 .cms__blogList .cms__row {
