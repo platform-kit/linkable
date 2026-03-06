@@ -8,15 +8,14 @@
 - Put components into src/components/
 - The main page (default page) is src/pages/Index.tsx
 - UPDATE the main page to include the new components. OTHERWISE, the user can NOT see any components!
-- ALWAYS try to use the PrimeVue UI library.
 - Tailwind CSS: always use Tailwind CSS for styling components. Utilize Tailwind classes extensively for layout, spacing, colors, and other design aspects.
 
 Available packages and libraries:
 
-- The lucide-react package is installed for icons.
-- Use prebuilt components from the shadcn/ui library after importing them. Note that these files shouldn't be edited, so make new components if you need to change them.
+- ALWAYS try to use the PrimeVue UI library instead of creating components from scratch. Most of the low-level components you need already exist here.
+- The lucide-vue-next package is installed for icons.
 
----
+***
 
 # Content Schema & Migration System
 
@@ -26,7 +25,7 @@ The content data model lives in `src/lib/model.ts` (`BioModel` type). Every pers
 
 Whenever you add, rename, or remove a field on `BioModel`, `BioProfile`, `BioLink`, or `SocialLink`:
 
-1. **Bump `CURRENT_SCHEMA_VERSION`** in `src/lib/migrations.ts` (increment by 1).
+1. **Bump** **`CURRENT_SCHEMA_VERSION`** **CURRENT_SCHEMA_VERSION** in `src/lib/migrations.ts` (increment by 1).
 2. **Add a migration entry** to the `migrations` array in the same file. The migration function receives the raw JSON object at the previous version and must return it at the new version. Example:
 
    ```ts
@@ -40,9 +39,10 @@ Whenever you add, rename, or remove a field on `BioModel`, `BioProfile`, `BioLin
      },
    }
    ```
-3. **Update `sanitizeModel()`** in `src/lib/model.ts` so it reads/validates the new field.
-4. **Update `defaultModel()`** in `src/lib/model.ts` to include the new field.
-5. **Update `default-data.json`** (the template seed file) with the new field and the new `schemaVersion`.
+
+3. **Update** **`sanitizeModel()`** **sanitizeModel()** in `src/lib/model.ts` so it reads/validates the new field.
+4. **Update** **`defaultModel()`** **defaultModel()** in `src/lib/model.ts` to include the new field.
+5. **Update** **`default-data.json`** **default-data.json** (the template seed file) with the new field and the new `schemaVersion`.
 6. **Never delete a migration** — old users may jump multiple versions.
 
 ## Content file separation
@@ -51,7 +51,7 @@ Whenever you add, rename, or remove a field on `BioModel`, `BioProfile`, `BioLin
 - `cms-data.json` / `public/data.json` / `public/uploads/` — gitignored; personal content that lives locally or in a private repo.
 - `npm run push` exports local content to a private GitHub repo; `npm run import` pulls it back.
 
----
+***
 
 # Supabase Database Rules
 

@@ -1,240 +1,42 @@
 <template>
   <div class="min-h-dvh overflow-x-hidden">
-    <header class="mx-auto w-full max-w-[740px] px-3 pt-4 sm:px-4 sm:pt-10">
-      <div class="glass overflow-hidden rounded-[var(--radius-xl)]">
-        <!-- Banner image -->
-        <img
-          v-if="bannerSrc"
-          :src="bannerSrc"
-          alt="Banner"
-          class="h-28 w-full object-cover sm:h-52"
-          @error="onBannerError"
-        />
-
-        <div class="p-3 sm:p-6">
-          <div class="flex items-start gap-3 sm:gap-4">
-            <div
-              class="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--glass-2)] shadow-sm backdrop-blur-md"
-            >
-              <img
-                v-if="avatarSrc"
-                :src="avatarSrc"
-                alt="Avatar"
-                class="h-full w-full object-cover"
-                @error="onAvatarError"
-              />
-              <div
-                v-else
-                class="grid h-full w-full place-items-center bg-[var(--glass)] text-sm font-semibold text-[color:var(--color-ink-soft)]"
-              >
-                {{ initials }}
-              </div>
-            </div>
-
-            <div class="min-w-0 flex-1">
-              <div
-                class="flex items-start justify-between gap-3"
-                @dblclick="toggleCmsButton"
-              >
-                <div class="min-w-0 cursor-pointer select-none">
-                  <h1
-                    class="truncate text-lg font-semibold tracking-tight sm:text-2xl"
-                  >
-                    {{ model.profile.displayName || "Your Name" }}
-                  </h1>
-                  <p
-                    v-if="model.profile.tagline"
-                    class="mt-1 line-clamp-2 text-sm text-[color:var(--color-ink-soft)]"
-                  >
-                    {{ model.profile.tagline }}
-                  </p>
-                  <p
-                    v-else
-                    class="mt-1 text-sm text-[color:var(--color-ink-soft)]"
-                  >
-                    Add a short tagline in the CMS.
-                  </p>
-                </div>
-              </div>
-
-              <div
-                class="mt-2 flex flex-wrap items-center gap-1.5 sm:mt-3 sm:gap-2"
-              >
-                <a
-                  v-for="s in enabledSocials"
-                  :key="s.id"
-                  class="card-item inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm transition sm:gap-2 sm:px-3 sm:py-1.5"
-                  :href="socialHref(s)"
-                  :target="isEmailUrl(s.url) ? undefined : '_blank'"
-                  rel="noreferrer"
-                  @click="trackClick(socialHref(s), s.label)"
-                >
-                  <component :is="resolveSocialIcon(s.icon)" :size="14" class="shrink-0" />
-                  <span class="truncate">{{ s.label }}</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
+    <component
+      :is="resolvedProfileHeader"
+      :display-name="model.profile.displayName"
+      :tagline="model.profile.tagline"
+      :avatar-src="avatarSrc"
+      :banner-src="bannerSrc"
+      :initials="initials"
+      :socials="enabledSocials"
+      @avatar-error="onAvatarError"
+      @banner-error="onBannerError"
+      @dblclick-name="toggleCmsButton"
+      @social-click="trackClick"
+    />
 
     <main
       class="mx-auto w-full max-w-[740px] px-3 pb-24 pt-4 sm:px-4 sm:pb-10 sm:pt-6 d-block"
     >
-      <!-- Tabbed navigation: show when 2+ content sections are active -->
-      <div
-        v-if="showTabs"
-        class="mb-5 gap-2 mx-auto glass  overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-4 text-center"
-      >
-        <button
-          v-if="enabledLinks.length > 0"
-          class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
-          :class="
-            activeTab === 'links'
-              ? 'tab-active'
-              : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
-          "
-          @click="switchTab('links')"
-        >
-          <component :is="resolveSocialIcon(model.profile.linksIcon || 'Link')" :size="14" class="shrink-0" />
-          {{ model.profile.linksLabel || 'Links' }}
-        </button>
-        <button
-          v-if="galleryHasContent"
-          class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
-          :class="
-            activeTab === 'gallery'
-              ? 'tab-active'
-              : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
-          "
-          @click="switchTab('gallery')"
-        >
-          <component :is="resolveSocialIcon(model.profile.galleryIcon || 'Images')" :size="14" class="shrink-0" />
-          {{ model.profile.galleryLabel || 'Gallery' }}
-        </button>
-        <button
-          v-if="blogHasContent"
-          class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
-          :class="
-            activeTab === 'blog'
-              ? 'tab-active'
-              : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
-          "
-          @click="switchTab('blog'); goBackFromBlogPost()"
-        >
-          <component :is="resolveSocialIcon(model.profile.blogIcon || 'Pencil')" :size="14" class="shrink-0" />
-          {{ model.profile.blogLabel || 'Blog' }}
-        </button>
-        <button
-          v-if="resumeHasContent"
-          class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
-          :class="
-            activeTab === 'resume'
-              ? 'tab-active'
-              : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
-          "
-          @click="switchTab('resume')"
-        >
-          <component :is="resolveSocialIcon(model.profile.resumeIcon || 'FileText')" :size="14" class="shrink-0" />
-          {{ model.profile.resumeLabel || 'Resume' }}
-        </button>
-        <button
-          v-for="embed in enabledEmbeds"
-          :key="embed.id"
-          class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
-          :class="
-            activeTab === 'embed-' + embed.id
-              ? 'tab-active'
-              : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
-          "
-          @click="switchTab('embed-' + embed.id)"
-        >
-          <component :is="resolveSocialIcon(embed.icon)" :size="14" class="shrink-0" />
-          {{ embed.label }}
-        </button>
-        <button
-          v-if="model.profile.newsletterEnabled"
-          class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
-          :class="
-            activeTab === 'newsletter'
-              ? 'tab-active'
-              : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
-          "
-          @click="switchTab('newsletter')"
-        >
-          <component :is="resolveSocialIcon(model.profile.newsletterIcon || 'Mail')" :size="14" class="shrink-0" />
-          {{ model.profile.newsletterLabel || 'Newsletter' }}
-        </button>
-      </div>
+      <component
+        :is="resolvedTabNav"
+        :visible="showTabs"
+        :active-tab="activeTab"
+        :tabs="tabItems"
+        @switch="handleTabSwitch"
+      />
 
       <!-- Links section -->
-      <section
+      <component
         v-if="showLinksSection"
-        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-4"
+        :is="resolvedLinksSection"
+        :links="enabledLinks"
+        :search-enabled="model.profile.searchLinks"
+        :available-tags="availableLinkTags"
+        :selected-tags="selectedLinkTags"
+        @link-click="trackClick"
+        @filter-click="linkTagFilterOpen = true"
       >
-        <!-- Search bar for links -->
-        <SearchBar
-          v-if="model.profile.searchLinks && enabledLinks.length > 0"
-          v-model="searchLinksQuery"
-          placeholder="Search links…"
-          :show-search="model.profile.searchLinks"
-          :tag-count="availableLinkTags.length > 0 ? availableLinkTags.length : null"
-          :selected-tag-count="selectedLinkTags.length"
-          @filter-click="linkTagFilterOpen = true"
-        />
-
-        <div v-if="filteredLinks.length" class="grid gap-2">
-          <a
-            v-for="link in filteredLinks"
-            :key="link.id"
-            class="card-item group relative flex min-w-0 items-center justify-between gap-2 rounded-2xl px-3 py-3 transition sm:gap-3 sm:px-4"
-            :href="link.url"
-            :target="link.url.startsWith('#') ? '_self' : '_blank'"
-            :rel="link.url.startsWith('#') ? undefined : 'noreferrer'"
-            @click="trackClick(link.url, link.title)"
-          >
-            <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-              <div
-                class="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--glass)] shadow-sm backdrop-blur-md"
-              >
-                <img
-                  v-if="link.imageUrl"
-                  :src="resolveUploadUrl(link.imageUrl)"
-                  alt=""
-                  class="h-full w-full object-cover"
-                  loading="lazy"
-                />
-                <i
-                  v-else
-                  class="pi pi-link text-[color:var(--color-ink-soft)]"
-                />
-              </div>
-
-              <div class="min-w-0">
-                <div class="truncate text-sm font-semibold">
-                  {{ link.title }}
-                </div>
-                <div
-                  v-if="link.subtitle"
-                  class="truncate text-xs text-[color:var(--color-ink-soft)]"
-                >
-                  {{ link.subtitle }}
-                </div>
-              </div>
-            </div>
-
-            <i
-              class="pi pi-arrow-right shrink-0 text-[color:var(--color-ink-soft)] transition group-hover:translate-x-0.5"
-            />
-          </a>
-        </div>
-
-        <div v-else class="p-6 text-center">
-          <div class="text-sm font-semibold">No links yet</div>
-          <div class="mt-1 text-sm text-[color:var(--color-ink-soft)]">
-            Open the CMS and add your first button.
-          </div>
+        <template #empty-action>
           <Button
             v-if="canUseCms"
             rounded
@@ -243,359 +45,50 @@
           >
             Add links
           </Button>
-        </div>
-      </section>
+        </template>
+      </component>
 
       <!-- Resume section -->
-      <section
+      <component
         v-if="showResumeSection"
-        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6"
-      >
-        <!-- Bio -->
-        <div v-if="model.resume.bio" class="mb-4 sm:mb-5">
-          <h2
-            class="mb-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-2 sm:text-xs"
-          >
-            About
-          </h2>
-          <p
-            class="text-[13px] leading-relaxed text-[color:var(--color-ink)] sm:text-sm"
-            style="white-space: pre-line"
-          >
-            {{ model.resume.bio }}
-          </p>
-        </div>
-
-        <!-- Employment -->
-        <div v-if="model.resume.employment.length" class="mb-4 sm:mb-5">
-          <h2
-            class="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-3 sm:text-xs"
-          >
-            Experience
-          </h2>
-          <div class="grid gap-2 sm:gap-3">
-            <div
-              v-for="job in model.resume.employment"
-              :key="job.id"
-              class="card-item rounded-xl p-3 shadow-sm sm:rounded-2xl sm:p-4"
-            >
-              <div class="flex items-start justify-between gap-2 sm:gap-3">
-                <div class="min-w-0 flex-1">
-                  <div
-                    class="text-[13px] font-semibold text-[color:var(--color-ink)] sm:text-sm"
-                  >
-                    {{ job.role }}
-                  </div>
-                  <div
-                    class="text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs"
-                  >
-                    {{ job.company }}
-                  </div>
-                </div>
-                <div
-                  v-if="job.startYear || job.endYear"
-                  class="shrink-0 text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs"
-                >
-                  {{ job.startYear }}–{{ job.endYear }}
-                </div>
-              </div>
-              <p
-                v-if="job.description"
-                class="mt-1.5 text-[11px] leading-relaxed text-[color:var(--color-ink-soft)] sm:mt-2 sm:text-xs"
-                style="white-space: pre-line"
-              >
-                {{ job.description }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Education -->
-        <div v-if="model.resume.education.length" class="mb-4 sm:mb-5">
-          <h2
-            class="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-3 sm:text-xs"
-          >
-            Education
-          </h2>
-          <div class="grid gap-2 sm:gap-3">
-            <div
-              v-for="edu in model.resume.education"
-              :key="edu.id"
-              class="card-item rounded-xl p-3 shadow-sm sm:rounded-2xl sm:p-4"
-            >
-              <div class="flex items-start justify-between gap-2 sm:gap-3">
-                <div class="min-w-0 flex-1">
-                  <div
-                    class="text-[13px] font-semibold text-[color:var(--color-ink)] sm:text-sm"
-                  >
-                    {{ edu.institution }}
-                  </div>
-                  <div
-                    class="text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs"
-                  >
-                    {{ [edu.degree, edu.field].filter(Boolean).join(" · ") }}
-                  </div>
-                </div>
-                <div
-                  v-if="edu.startYear || edu.endYear"
-                  class="shrink-0 text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs"
-                >
-                  {{ edu.startYear }}–{{ edu.endYear }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Skills -->
-        <div v-if="model.resume.skills.length" class="mb-4 sm:mb-5">
-          <h2
-            class="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-3 sm:text-xs"
-          >
-            Skills
-          </h2>
-          <div class="flex flex-wrap gap-1.5 sm:gap-2">
-            <span
-              v-for="(skill, i) in model.resume.skills"
-              :key="i"
-              class="card-item inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-sm sm:px-3 sm:py-1.5 sm:text-xs"
-            >
-              {{ skill }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Achievements -->
-        <div v-if="model.resume.achievements.length">
-          <h2
-            class="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-3 sm:text-xs"
-          >
-            Achievements
-          </h2>
-          <div class="grid gap-2 sm:gap-3">
-            <div
-              v-for="ach in model.resume.achievements"
-              :key="ach.id"
-              class="card-item rounded-xl p-3 shadow-sm sm:rounded-2xl sm:p-4"
-            >
-              <div class="flex items-start justify-between gap-2 sm:gap-3">
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-1.5">
-                    <i class="pi pi-star-fill text-[11px] text-amber-500" />
-                    <div
-                      class="text-[13px] font-semibold text-[color:var(--color-ink)] sm:text-sm"
-                    >
-                      {{ ach.title }}
-                    </div>
-                  </div>
-                  <div
-                    v-if="ach.issuer"
-                    class="text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs"
-                  >
-                    {{ ach.issuer }}
-                  </div>
-                </div>
-                <div
-                  v-if="ach.year"
-                  class="shrink-0 text-[11px] font-semibold text-[color:var(--color-ink-soft)] sm:text-xs"
-                >
-                  {{ ach.year }}
-                </div>
-              </div>
-              <p
-                v-if="ach.description"
-                class="mt-1.5 text-[11px] leading-relaxed text-[color:var(--color-ink-soft)] sm:mt-2 sm:text-xs"
-                style="white-space: pre-line"
-              >
-                {{ ach.description }}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+        :is="resolvedResumeSection"
+        :resume="model.resume"
+      />
 
       <!-- Gallery section -->
-      <section
+      <component
         v-if="showGallerySection"
-        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6"
-      >
-        <!-- Search bar for gallery -->
-        <SearchBar
-          v-if="model.profile.searchGallery || availableGalleryTags.length > 0"
-          v-model="searchGalleryQuery"
-          placeholder="Search gallery…"
-          :show-search="!!model.profile.searchGallery"
-          :tag-count="availableGalleryTags.length > 0 ? availableGalleryTags.length : null"
-          :selected-tag-count="selectedGalleryTags.length"
-          @filter-click="galleryTagFilterOpen = true"
-        />
-
-     
-        <MasonryGrid
-          :items="masonryItems"
-          :gap="12"
-          :duration="0.6"
-          :stagger="0.04"
-          animate-from="bottom"
-          :scale-on-hover="true"
-          :hover-scale="0.97"
-        >
-          <template #default="{ item }">
-            <!-- Image item -->
-            <button
-              v-if="item.type === 'image'"
-              type="button"
-              class="card-item group relative block h-full w-full overflow-hidden shadow-sm transition"
-              @click="openLightbox(item)"
-            >
-              <img
-                :src="resolveUploadUrl(item.src as string)"
-                :alt="(item.title as string) || 'Gallery image'"
-                class="h-full w-full object-cover transition group-hover:scale-[1.02]"
-                loading="lazy"
-              />
-              <div
-                v-if="item.title"
-                class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2.5 pb-2 pt-6 sm:px-3 sm:pb-2.5 sm:pt-8"
-              >
-                <div class="text-[11px] font-semibold text-white/90 sm:text-xs">
-                  {{ item.title }}
-                </div>
-              </div>
-            </button>
-
-            <!-- Video item -->
-            <button
-              v-else-if="item.type === 'video'"
-              type="button"
-              class="card-item group relative block h-full w-full overflow-hidden shadow-sm transition"
-              @click="openVideoPlayer(item)"
-            >
-              <img
-                v-if="item.coverUrl"
-                :src="resolveUploadUrl(item.coverUrl as string)"
-                :alt="(item.title as string) || 'Video thumbnail'"
-                class="absolute inset-0 h-full w-full object-cover transition group-hover:scale-[1.02]"
-                loading="lazy"
-              />
-              <div
-                v-else
-                class="absolute inset-0 flex items-center justify-center bg-black/10"
-              >
-                <i class="pi pi-video text-2xl text-white/60" />
-              </div>
-              <!-- Play overlay -->
-              <div class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                <div
-                  class="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white shadow-lg backdrop-blur-sm transition group-hover:scale-110 sm:h-12 sm:w-12"
-                >
-                  <i class="pi pi-play text-sm sm:text-base" />
-                </div>
-              </div>
-              <div
-                v-if="item.title"
-                class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2.5 pb-2 pt-6 sm:px-3 sm:pb-2.5 sm:pt-8"
-              >
-                <div class="text-[11px] font-semibold text-white/90 sm:text-xs">
-                  {{ item.title }}
-                </div>
-              </div>
-            </button>
-          </template>
-        </MasonryGrid>
-      </section>
+        :is="resolvedGallerySection"
+        :items="masonryItems"
+        :search-enabled="!!model.profile.searchGallery"
+        :available-tags="availableGalleryTags"
+        :selected-tags="selectedGalleryTags"
+        @open-lightbox="openLightbox"
+        @open-video="openVideoPlayer"
+        @filter-click="galleryTagFilterOpen = true"
+      />
 
       <!-- Blog section -->
-      <section
+      <component
         v-if="showBlogSection"
-        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6"
-      >
-        <!-- Blog post detail view -->
-        <template v-if="currentBlogPost">
-          <BlogPostView :post="currentBlogPost" @back="goBackFromBlogPost" />
-        </template>
-
-        <!-- Blog listing -->
-        <template v-else>
-          <!-- Search bar for blog -->
-          <SearchBar
-            v-if="(model.profile.searchBlog || availableBlogTags.length > 0) && publishedBlogPosts.length > 0"
-            v-model="searchBlogQuery"
-            placeholder="Search posts…"
-            :show-search="!!model.profile.searchBlog"
-            :tag-count="availableBlogTags.length > 0 ? availableBlogTags.length : null"
-            :selected-tag-count="selectedBlogTags.length"
-            @filter-click="blogTagFilterOpen = true"
-          />
-
-          <h2
-            class="mb-3 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-4 sm:text-xs"
-          >
-            {{ model.profile.blogLabel || 'Blog' }}
-          </h2>
-
-          <div v-if="filteredBlogPosts.length === 0" class="py-6 text-center text-sm text-[color:var(--color-ink-soft)]">
-            {{ searchBlogQuery.trim() ? 'No matching posts.' : 'No posts yet.' }}
-          </div>
-
-          <div v-else class="grid gap-3">
-            <button
-              v-for="post in filteredBlogPosts"
-              :key="post.slug"
-              type="button"
-              class="card-item group flex items-start gap-3 rounded-2xl p-3 text-left shadow-sm transition sm:gap-4 sm:p-4"
-              @click="loadBlogPost(post.slug)"
-            >
-              <img
-                v-if="post.coverImage"
-                :src="resolveUploadUrl(post.coverImage)"
-                alt=""
-                class="h-16 w-16 shrink-0 rounded-xl border border-[var(--color-border)] object-cover sm:h-20 sm:w-20"
-                loading="lazy"
-              />
-              <div
-                v-else
-                class="grid h-16 w-16 shrink-0 place-items-center rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)]"
-              >
-                <i class="pi pi-file-edit text-[color:var(--color-ink-soft)]" />
-              </div>
-
-              <div class="min-w-0 flex-1">
-                <div class="text-[13px] font-semibold text-[color:var(--color-ink)] sm:text-sm">
-                  {{ post.title }}
-                </div>
-                <div
-                  v-if="post.excerpt"
-                  class="mt-0.5 line-clamp-2 text-[11px] text-[color:var(--color-ink-soft)] sm:text-xs"
-                >
-                  {{ post.excerpt }}
-                </div>
-                <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-[color:var(--color-ink-soft)]">
-                  <span>{{ formatDate(post.date) }}</span>
-                  <span
-                    v-for="tag in post.tags"
-                    :key="tag"
-                    class="rounded-full border border-[var(--color-border)] bg-[var(--glass-2)] px-1.5 py-0.5"
-                  >
-                    {{ tag }}
-                  </span>
-                </div>
-              </div>
-
-              <i class="pi pi-arrow-right mt-1 shrink-0 text-[color:var(--color-ink-soft)] transition group-hover:translate-x-0.5" />
-            </button>
-          </div>
-        </template>
-      </section>
+        :is="resolvedBlogSection"
+        :posts="publishedBlogPosts"
+        :current-post="currentBlogPost"
+        :label="model.profile.blogLabel || 'Blog'"
+        :search-enabled="!!model.profile.searchBlog"
+        :available-tags="availableBlogTags"
+        :selected-tags="selectedBlogTags"
+        @load-post="loadBlogPost"
+        @back="goBackFromBlogPost"
+        @filter-click="blogTagFilterOpen = true"
+      />
 
       <!-- Embed sections -->
-      <section
+      <component
         v-if="activeEmbedItem"
-        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6 "
-      >
-      
-        <div class="embed-container" v-html="activeEmbedHtml" />
-      </section>
+        :is="resolvedEmbedSection"
+        :html="activeEmbedHtml"
+      />
 
       <!-- Newsletter view (full article from /newsletter/:id) -->
       <section
@@ -611,143 +104,37 @@
       </section>
 
       <!-- Newsletter section -->
-      <section
+      <component
         v-if="showNewsletterSection && !newsletterViewId"
-        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6"
-      >
-        <NewsletterSignup />
-        <!-- Search bar for newsletter -->
-        <SearchBar
-          v-if="(model.profile.searchNewsletter || availableNewsletterTags.length > 0)"
-          v-model="searchNewsletterQuery"
-          placeholder="Search..."
-          :show-search="!!model.profile.searchNewsletter"
-          :tag-count="availableNewsletterTags.length > 0 ? availableNewsletterTags.length : null"
-          :selected-tag-count="selectedNewsletterTags.length"
-          @filter-click="newsletterTagFilterOpen = true"
-        />
-        <NewsletterArchive
-          :search-query="searchNewsletterQuery"
-          :selected-tags="selectedNewsletterTags"
-          @view="viewNewsletter"
-          @tags-loaded="onNewsletterTagsLoaded"
-        />
-      </section>
+        :is="resolvedNewsletterSection"
+        :search-enabled="!!model.profile.searchNewsletter"
+        :available-tags="availableNewsletterTags"
+        :selected-tags="selectedNewsletterTags"
+        @view="viewNewsletter"
+        @tags-loaded="onNewsletterTagsLoaded"
+        @filter-click="newsletterTagFilterOpen = true"
+      />
 
       <!-- Lightbox overlay for images -->
-      <Teleport to="body">
-        <div
-          v-if="lightboxOpen && lightboxItem"
-          class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
-          @click.self="closeLightbox"
-        >
-          <button
-            type="button"
-            class="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30"
-            @click="closeLightbox"
-          >
-            <i class="pi pi-times text-lg" />
-          </button>
-          <div class="relative max-h-[90vh] max-w-[90vw]">
-            <img
-              :src="resolveUploadUrl(lightboxItem.src)"
-              :alt="lightboxItem.title || 'Gallery image'"
-              class="max-h-[80vh] max-w-full rounded-lg object-contain shadow-2xl"
-            />
-            <div
-              v-if="lightboxItem.title || lightboxItem.description"
-              class="mt-3 max-w-lg text-center"
-            >
-              <div
-                v-if="lightboxItem.title"
-                class="text-sm font-semibold text-white"
-              >
-                {{ lightboxItem.title }}
-              </div>
-              <div
-                v-if="lightboxItem.description"
-                class="mt-1 text-xs leading-relaxed text-white/70"
-                style="white-space: pre-line"
-              >
-                {{ lightboxItem.description }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </Teleport>
+      <component
+        :is="resolvedLightboxOverlay"
+        :open="lightboxOpen"
+        :item="lightboxItem"
+        @close="closeLightbox"
+      />
 
-      <!-- Video player overlay — always mounted so players pre-load -->
-      <Teleport to="body">
-        <div
-          v-show="videoPlayerOpen"
-          class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-2 backdrop-blur-sm sm:p-4"
-          @click.self="closeVideoPlayer"
-        >
-          <button
-            type="button"
-            class="absolute right-2 top-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30 sm:right-4 sm:top-4"
-            @click="closeVideoPlayer"
-          >
-            <i class="pi pi-times text-lg" />
-          </button>
-          <div class="relative w-full max-w-4xl" style="max-height: 85vh; max-height: 85dvh; max-width: min(56rem, calc((85dvh - 3rem) * 16 / 9));">
-            <!-- One pre-loaded VideoPlayer per video, only the active one is visible -->
-            <div
-              v-for="(vItem, vIdx) in videoGalleryItems"
-              :key="vItem.src"
-              v-show="activeVideoIdx === vIdx"
-            >
-              <VideoPlayer
-                :ref="(el: any) => setVideoPlayerRef(vIdx, el)"
-                :src="resolveUploadUrl(vItem.src)"
-                :poster="vItem.coverUrl ? resolveUploadUrl(vItem.coverUrl) : ''"
-              />
-            </div>
-            <div v-if="videoPlayerItem?.title || videoPlayerItem?.description" class="mt-3 max-w-lg mx-auto text-center">
-              <div
-                v-if="videoPlayerItem?.title"
-                class="text-sm font-semibold text-white"
-              >
-                {{ videoPlayerItem.title }}
-              </div>
-              <div
-                v-if="videoPlayerItem?.description"
-                class="mt-1 text-xs leading-relaxed text-white/70"
-                style="white-space: pre-line"
-              >
-                {{ videoPlayerItem.description }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </Teleport>
+      <!-- Video player overlay -->
+      <component
+        :is="resolvedVideoOverlay"
+        :open="videoPlayerOpen"
+        :video-items="videoGalleryItems"
+        :active-index="activeVideoIdx"
+        :active-item="videoPlayerItem"
+        @close="closeVideoPlayer"
+        @set-ref="setVideoPlayerRef"
+      />
 
-      <footer
-        class="mt-6 flex items-center justify-center gap-3 text-center text-xs text-[color:var(--color-ink-soft)]"
-      >
-        <a
-          href="https://github.com/platform-kit/linkable"
-          target="_blank"
-          rel="noreferrer"
-          class="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--glass-2)] px-3 py-1.5 shadow-sm backdrop-blur-md transition hover:bg-[var(--glass)]"
-        >
-          <span
-            class="h-1.5 w-1.5 rounded-full bg-[color:var(--color-brand)] shadow-[0_0_0_4px_rgba(37,99,235,0.12)]"
-          ></span>
-          <span>Made with Linkable</span>
-        </a>
-        <a
-          v-if="blogHasContent"
-          href="/rss.xml"
-          target="_blank"
-          rel="noreferrer"
-          class="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--glass-2)] px-3 py-1.5 shadow-sm backdrop-blur-md transition hover:bg-[var(--glass)]"
-          title="RSS Feed"
-        >
-          <component :is="resolveSocialIcon('Rss')" :size="14" />
-          <span>RSS</span>
-        </a>
-      </footer>
+      <component :is="resolvedPageFooter" :show-rss="blogHasContent" />
     </main>
 
     <CmsDialog
@@ -839,137 +226,35 @@
 
     <Toast />
 
-    <!-- Tag filter dialog (links) -->
-    <Dialog
-      v-model:visible="linkTagFilterOpen"
-      modal
-      header="Filter by tags"
-      :style="{ width: 'min(400px, 90vw)' }"
-    >
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="tag in availableLinkTags"
-          :key="tag"
-          type="button"
-          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition"
-          :class="selectedLinkTags.includes(tag)
-            ? 'border-[var(--color-brand)]/30 bg-[var(--color-brand)]/10 text-[color:var(--color-brand)]'
-            : 'border-[var(--color-border)] bg-[var(--glass)] text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'"
-          @click="toggleLinkTag(tag)"
-        >
-          <i class="pi text-[10px]" :class="selectedLinkTags.includes(tag) ? 'pi-check-circle' : 'pi-circle'" />
-          {{ tag }}
-        </button>
-      </div>
-      <div v-if="selectedLinkTags.length > 0" class="mt-4 flex justify-end">
-        <button
-          type="button"
-          class="text-xs font-semibold text-[color:var(--color-brand)] hover:underline"
-          @click="selectedLinkTags = []"
-        >
-          Clear all
-        </button>
-      </div>
-    </Dialog>
-
-    <!-- Tag filter dialog (gallery) -->
-    <Dialog
-      v-model:visible="galleryTagFilterOpen"
-      modal
-      header="Filter by tags"
-      :style="{ width: 'min(400px, 90vw)' }"
-    >
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="tag in availableGalleryTags"
-          :key="tag"
-          type="button"
-          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition"
-          :class="selectedGalleryTags.includes(tag)
-            ? 'border-[var(--color-brand)]/30 bg-[var(--color-brand)]/10 text-[color:var(--color-brand)]'
-            : 'border-[var(--color-border)] bg-[var(--glass)] text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'"
-          @click="toggleGalleryTag(tag)"
-        >
-          <i class="pi text-[10px]" :class="selectedGalleryTags.includes(tag) ? 'pi-check-circle' : 'pi-circle'" />
-          {{ tag }}
-        </button>
-      </div>
-      <div v-if="selectedGalleryTags.length > 0" class="mt-4 flex justify-end">
-        <button
-          type="button"
-          class="text-xs font-semibold text-[color:var(--color-brand)] hover:underline"
-          @click="selectedGalleryTags = []"
-        >
-          Clear all
-        </button>
-      </div>
-    </Dialog>
-
-    <!-- Tag filter dialog (blog) -->
-    <Dialog
-      v-model:visible="blogTagFilterOpen"
-      modal
-      header="Filter by tags"
-      :style="{ width: 'min(400px, 90vw)' }"
-    >
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="tag in availableBlogTags"
-          :key="tag"
-          type="button"
-          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition"
-          :class="selectedBlogTags.includes(tag)
-            ? 'border-[var(--color-brand)]/30 bg-[var(--color-brand)]/10 text-[color:var(--color-brand)]'
-            : 'border-[var(--color-border)] bg-[var(--glass)] text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'"
-          @click="toggleBlogTag(tag)"
-        >
-          <i class="pi text-[10px]" :class="selectedBlogTags.includes(tag) ? 'pi-check-circle' : 'pi-circle'" />
-          {{ tag }}
-        </button>
-      </div>
-      <div v-if="selectedBlogTags.length > 0" class="mt-4 flex justify-end">
-        <button
-          type="button"
-          class="text-xs font-semibold text-[color:var(--color-brand)] hover:underline"
-          @click="selectedBlogTags = []"
-        >
-          Clear all
-        </button>
-      </div>
-    </Dialog>
-
-    <!-- Tag filter dialog (newsletter) -->
-    <Dialog
-      v-model:visible="newsletterTagFilterOpen"
-      modal
-      header="Filter by tags"
-      :style="{ width: 'min(400px, 90vw)' }"
-    >
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="tag in availableNewsletterTags"
-          :key="tag"
-          type="button"
-          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition"
-          :class="selectedNewsletterTags.includes(tag)
-            ? 'border-[var(--color-brand)]/30 bg-[var(--color-brand)]/10 text-[color:var(--color-brand)]'
-            : 'border-[var(--color-border)] bg-[var(--glass)] text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'"
-          @click="toggleNewsletterTag(tag)"
-        >
-          <i class="pi text-[10px]" :class="selectedNewsletterTags.includes(tag) ? 'pi-check-circle' : 'pi-circle'" />
-          {{ tag }}
-        </button>
-      </div>
-      <div v-if="selectedNewsletterTags.length > 0" class="mt-4 flex justify-end">
-        <button
-          type="button"
-          class="text-xs font-semibold text-[color:var(--color-brand)] hover:underline"
-          @click="selectedNewsletterTags = []"
-        >
-          Clear all
-        </button>
-      </div>
-    </Dialog>
+    <!-- Tag filter dialogs -->
+    <TagFilterDialog
+      :open="linkTagFilterOpen"
+      :tags="availableLinkTags"
+      :selected-tags="selectedLinkTags"
+      @update:open="linkTagFilterOpen = $event"
+      @update:selected-tags="selectedLinkTags = $event"
+    />
+    <TagFilterDialog
+      :open="galleryTagFilterOpen"
+      :tags="availableGalleryTags"
+      :selected-tags="selectedGalleryTags"
+      @update:open="galleryTagFilterOpen = $event"
+      @update:selected-tags="selectedGalleryTags = $event"
+    />
+    <TagFilterDialog
+      :open="blogTagFilterOpen"
+      :tags="availableBlogTags"
+      :selected-tags="selectedBlogTags"
+      @update:open="blogTagFilterOpen = $event"
+      @update:selected-tags="selectedBlogTags = $event"
+    />
+    <TagFilterDialog
+      :open="newsletterTagFilterOpen"
+      :tags="availableNewsletterTags"
+      :selected-tags="selectedNewsletterTags"
+      @update:open="newsletterTagFilterOpen = $event"
+      @update:selected-tags="selectedNewsletterTags = $event"
+    />
 
     <!-- Floating CMS button -->
     <Transition name="cms-slide-right">
@@ -1056,15 +341,26 @@ import { useToast } from "primevue/usetoast";
 
 import CmsDialog from "./components/CmsDialog.vue";
 import GitCommitDialog from "./components/GitCommitDialog.vue";
-import VideoPlayer from "./components/VideoPlayer.vue";
-import MasonryGrid from "./components/MasonryGrid.vue";
-import BlogPostView from "./components/BlogPostView.vue";
-import SearchBar from "./components/SearchBar.vue";
-import NewsletterSignup from "./components/NewsletterSignup.vue";
-import NewsletterArchive from "./components/NewsletterArchive.vue";
 import NewsletterViewPage from "./components/NewsletterViewPage.vue";
 import { resolveEmbedHtml } from "./components/EmbedEditorDrawer.vue";
 import type { MasonryItem } from "./components/MasonryGrid.vue";
+
+// Default user-facing components (overridable via src/overrides/)
+import DefaultProfileHeader from "./components/ProfileHeader.vue";
+import DefaultTabNav from "./components/TabNav.vue";
+import type { TabItem } from "./components/TabNav.vue";
+import DefaultLinksSection from "./components/LinksSection.vue";
+import DefaultResumeSection from "./components/ResumeSection.vue";
+import DefaultGallerySection from "./components/GallerySection.vue";
+import DefaultBlogSection from "./components/BlogSection.vue";
+import DefaultEmbedSection from "./components/EmbedSection.vue";
+import DefaultNewsletterSection from "./components/NewsletterSection.vue";
+import DefaultLightboxOverlay from "./components/LightboxOverlay.vue";
+import DefaultVideoOverlay from "./components/VideoOverlay.vue";
+import DefaultPageFooter from "./components/PageFooter.vue";
+import TagFilterDialog from "./components/TagFilterDialog.vue";
+
+import { useComponent } from "./lib/component-resolver";
 import { icons as lucideIcons } from "lucide-vue-next";
 import {
   defaultModel,
@@ -1112,19 +408,27 @@ export default defineComponent({
     Toast,
     CmsDialog,
     GitCommitDialog,
-    VideoPlayer,
-    MasonryGrid,
-    BlogPostView,
-    SearchBar,
-    NewsletterSignup,
-    NewsletterArchive,
     NewsletterViewPage,
+    TagFilterDialog,
   },
   setup() {
     const isDev = import.meta.env.DEV;
     const toast = useToast();
     const route = useRoute();
     const router = useRouter();
+
+    // ── Override-aware component resolution ──────────────────────────
+    const resolvedProfileHeader = useComponent("ProfileHeader", DefaultProfileHeader);
+    const resolvedTabNav = useComponent("TabNav", DefaultTabNav);
+    const resolvedLinksSection = useComponent("LinksSection", DefaultLinksSection);
+    const resolvedResumeSection = useComponent("ResumeSection", DefaultResumeSection);
+    const resolvedGallerySection = useComponent("GallerySection", DefaultGallerySection);
+    const resolvedBlogSection = useComponent("BlogSection", DefaultBlogSection);
+    const resolvedEmbedSection = useComponent("EmbedSection", DefaultEmbedSection);
+    const resolvedNewsletterSection = useComponent("NewsletterSection", DefaultNewsletterSection);
+    const resolvedLightboxOverlay = useComponent("LightboxOverlay", DefaultLightboxOverlay);
+    const resolvedVideoOverlay = useComponent("VideoOverlay", DefaultVideoOverlay);
+    const resolvedPageFooter = useComponent("PageFooter", DefaultPageFooter);
 
     const model = ref<BioModel>(defaultModel());
     const modelLoaded = ref(false);
@@ -1890,6 +1194,34 @@ export default defineComponent({
 
     const showTabs = computed(() => contentSections.value >= 2);
 
+    const tabItems = computed<TabItem[]>(() => {
+      const items: TabItem[] = [];
+      if (enabledLinks.value.length > 0) {
+        items.push({ key: "links", label: model.value.profile.linksLabel || "Links", icon: model.value.profile.linksIcon || "Link" });
+      }
+      if (galleryHasContent.value) {
+        items.push({ key: "gallery", label: model.value.profile.galleryLabel || "Gallery", icon: model.value.profile.galleryIcon || "Images" });
+      }
+      if (blogHasContent.value) {
+        items.push({ key: "blog", label: model.value.profile.blogLabel || "Blog", icon: model.value.profile.blogIcon || "Pencil" });
+      }
+      if (resumeHasContent.value) {
+        items.push({ key: "resume", label: model.value.profile.resumeLabel || "Resume", icon: model.value.profile.resumeIcon || "FileText" });
+      }
+      for (const embed of enabledEmbeds.value) {
+        items.push({ key: "embed-" + embed.id, label: embed.label, icon: embed.icon });
+      }
+      if (model.value.profile.newsletterEnabled) {
+        items.push({ key: "newsletter", label: model.value.profile.newsletterLabel || "Newsletter", icon: model.value.profile.newsletterIcon || "Mail" });
+      }
+      return items;
+    });
+
+    const handleTabSwitch = (tab: string) => {
+      if (tab === "blog") goBackFromBlogPost();
+      switchTab(tab);
+    };
+
     const showLinksSection = computed(() => {
       if (activeEmbedItem.value) return false;
       if (showTabs.value) return activeTab.value === "links";
@@ -2252,9 +1584,6 @@ export default defineComponent({
       onAvatarError,
       bannerSrc,
       onBannerError,
-      isEmailUrl,
-      socialHref,
-      resolveSocialIcon,
       exportJson,
       importOpen,
       importText,
@@ -2276,9 +1605,9 @@ export default defineComponent({
       activeEmbedHtml,
       blogPosts,
       publishedBlogPosts,
-      filteredBlogPosts,
       currentBlogPost,
       loadBlogPost,
+      loadBlogPosts,
       goBackFromBlogPost,
       showBlogSection,
       showNewsletterSection,
@@ -2287,31 +1616,34 @@ export default defineComponent({
       newsletterViewToken,
       goBackFromNewsletter,
       viewNewsletter,
-      formatDate,
-      searchLinksQuery,
-      searchGalleryQuery,
-      searchBlogQuery,
       selectedLinkTags,
       selectedGalleryTags,
       selectedBlogTags,
       availableLinkTags,
       availableGalleryTags,
       availableBlogTags,
-      toggleLinkTag,
-      toggleGalleryTag,
-      toggleBlogTag,
       linkTagFilterOpen,
       galleryTagFilterOpen,
       blogTagFilterOpen,
-      searchNewsletterQuery,
       selectedNewsletterTags,
       availableNewsletterTags,
-      toggleNewsletterTag,
       newsletterTagFilterOpen,
       onNewsletterTagsLoaded,
-      filteredLinks,
-      switchTab,
       trackClick,
+      // Resolved overridable components
+      resolvedProfileHeader,
+      resolvedTabNav,
+      resolvedLinksSection,
+      resolvedResumeSection,
+      resolvedGallerySection,
+      resolvedBlogSection,
+      resolvedEmbedSection,
+      resolvedNewsletterSection,
+      resolvedLightboxOverlay,
+      resolvedVideoOverlay,
+      resolvedPageFooter,
+      tabItems,
+      handleTabSwitch,
     };
   },
 });
@@ -2342,9 +1674,4 @@ export default defineComponent({
   transform: translateY(16px) translateX(-12px);
 }
 
-.embed-container {
-  border-radius:15px;
-  overflow:hidden;
-  box-shadow:0px 15px 30px rgba(0,30,100,0.15);
-}
 </style>
