@@ -344,7 +344,7 @@ const runServe = () => {
 
 // ── DEPLOY command ───────────────────────────────────────────────────
 
-const runDeploy = () => {
+const runDeploy = async () => {
   console.log(`\n🚀  Deploying Supabase (migrations + edge functions)…\n`);
 
   // ── Helper: read env var from process.env, fall back to .env file ──
@@ -399,6 +399,28 @@ const runDeploy = () => {
   }
 
   console.log("  ✔ Environment checks passed\n");
+
+  // #5 SMTP credential verification (only if SMTP vars are present)
+  const smtpHost = getEnv("SMTP_HOST");
+  const smtpPort = getEnv("SMTP_PORT");
+  const smtpUser = getEnv("SMTP_USER");
+  const smtpPass = getEnv("SMTP_PASSWORD");
+  if (smtpHost && smtpPort && smtpUser && smtpPass) {
+    const { default: nodemailer } = await import("nodemailer");
+    const transport = nodemailer.createTransport({
+      host: smtpHost,
+      port: Number(smtpPort),
+      secure: Number(smtpPort) === 465,
+      auth: { user: smtpUser, pass: smtpPass },
+    });
+    try {
+      await transport.verify();
+      console.log(`  ✔ SMTP credentials verified (${smtpHost}:${smtpPort})\n`);
+    } catch (err) {
+      console.error(`❌  SMTP verification failed (${smtpHost}:${smtpPort}): ${err.message}`);
+      process.exit(1);
+    }
+  }
 
   const supabaseDir = path.join(packageRoot, "supabase");
   if (!existsSync(supabaseDir)) {
@@ -543,7 +565,7 @@ const runDeploy = () => {
 if (command === "build") {
   runBuild();
 } else if (command === "deploy") {
-  runDeploy();
+  runDeploy().catch(err => { console.error(err); process.exit(1); });
 } else {
   runServe();
 }

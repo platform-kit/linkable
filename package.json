@@ -89,6 +89,7 @@
     "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
+    "nodemailer": "^8.0.1",
     "prettier": "^3.8.1",
     "supabase": "^2.76.16"
   },
