@@ -347,6 +347,59 @@ const runServe = () => {
 const runDeploy = () => {
   console.log(`\n🚀  Deploying Supabase (migrations + edge functions)…\n`);
 
+  // ── Helper: read env var from process.env, fall back to .env file ──
+  const getEnv = (key) => {
+    if (process.env[key]) return process.env[key];
+    try {
+      const envFile = readFileSync(path.join(packageRoot, ".env"), "utf-8");
+      const m = envFile.match(new RegExp(`^${key}=["']?([^"'\\s]+)["']?`, "m"));
+      return m ? m[1] : null;
+    } catch { return null; }
+  };
+
+  // ── Pre-flight env checks ─────────────────────────────────────────
+  const missing = (keys) => keys.filter(k => !getEnv(k));
+
+  // #1 GitHub
+  const githubKeys = [
+    "GITHUB_OWNER", "GITHUB_REPO", "GITHUB_TOKEN", "GITHUB_BRANCH",
+    "GITHUB_DATA_PATH", "GITHUB_UPLOADS_DIR",
+  ];
+  const missingGithub = missing(githubKeys);
+  if (missingGithub.length) {
+    console.error(`❌  Missing required GitHub env vars:\n   ${missingGithub.join(", ")}`);
+    process.exit(1);
+  }
+
+  // #2 CMS password
+  if (!getEnv("CMS_PASSWORD")) {
+    console.error("❌  Missing required env var: CMS_PASSWORD");
+    process.exit(1);
+  }
+
+  // #3 Site URL
+  if (!getEnv("VITE_SITE_URL")) {
+    console.error("❌  Missing required env var: VITE_SITE_URL");
+    process.exit(1);
+  }
+
+  // #4 Supabase (optional — but if VITE_SUPABASE_URL is set, all related keys are required)
+  if (getEnv("VITE_SUPABASE_URL")) {
+    const supabaseKeys = [
+      "VITE_SUPABASE_ANON_KEY",
+      "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD",
+      "SMTP_FROM_EMAIL", "SMTP_FROM_NAME",
+      "NEWSLETTER_SECRET", "SITE_NAME", "CRON_SECRET",
+    ];
+    const missingSupabase = missing(supabaseKeys);
+    if (missingSupabase.length) {
+      console.error(`❌  VITE_SUPABASE_URL is set, so these env vars are also required:\n   ${missingSupabase.join(", ")}`);
+      process.exit(1);
+    }
+  }
+
+  console.log("  ✔ Environment checks passed\n");
+
   const supabaseDir = path.join(packageRoot, "supabase");
   if (!existsSync(supabaseDir)) {
     console.error("❌  No supabase/ directory found in the project.");
@@ -420,15 +473,6 @@ const runDeploy = () => {
   // ── Step 1b: Sync Vault secrets ────────────────────────────────────
   // pg_cron reads project_url, anon_key, and cron_secret from Vault
   // to build HTTP requests to edge functions.
-  const getEnv = (key) => {
-    if (process.env[key]) return process.env[key];
-    try {
-      const envFile = readFileSync(path.join(packageRoot, ".env"), "utf-8");
-      const m = envFile.match(new RegExp(`^${key}=["']?([^"'\\s]+)["']?`, "m"));
-      return m ? m[1] : null;
-    } catch { return null; }
-  };
-
   const vaultSecrets = [
     { name: "project_url", value: getEnv("VITE_SUPABASE_URL") },
     { name: "anon_key", value: getEnv("VITE_SUPABASE_ANON_KEY") },
