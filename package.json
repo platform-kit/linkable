@@ -12,6 +12,7 @@
     "public/",
     "content/",
     "scripts/",
+    "supabase/",
     "index.html",
     "default-data.json",
     "vite.config.ts",
