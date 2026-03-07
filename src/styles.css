@@ -82,6 +82,9 @@ body {
 [data-layout="minimal"] body {
   background-image: none;
 }
+[data-dark][data-layout="minimal"] .dark-border-subtle {
+  border-color: rgba(255, 255, 255, 0.1);
+}
 [data-layout="minimal"] body::before {
   display: none;
 }
@@ -206,7 +209,11 @@ body::before {
    so the admin UI is unaffected by the public theme.
 -------------------------------- */
 .p-dialog,
-.p-drawer {
+.p-drawer,
+.p-select-overlay,
+.p-autocomplete-overlay,
+.p-multiselect-overlay,
+.p-popover {
   --bg: #f5f7fb;
   --color-ink: #0b1220;
   --color-ink-soft: rgba(11, 18, 32, 0.62);
@@ -220,6 +227,75 @@ body::before {
   --color-accent: #ff5a7a;
   --radius-xl: 1.6rem;
   --radius-lg: 1.2rem;
+  color-scheme: light;
+}
+
+/*
+ * Reset dark-mode & theme-layout overrides inside CMS containers.
+ * These rules must be more specific than [data-dark] / [data-layout] selectors
+ * so the admin UI always renders in light mode regardless of theme.
+ */
+.p-dialog .search-bar,
+.p-drawer .search-bar,
+.p-select-overlay .search-bar,
+.p-autocomplete-overlay .search-bar,
+.p-multiselect-overlay .search-bar,
+.p-popover .search-bar {
+  background: rgba(0, 0, 0, 0.06) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(12px) !important;
+}
+.p-dialog .search-bar:hover,
+.p-dialog .search-bar:focus-within,
+.p-drawer .search-bar:hover,
+.p-drawer .search-bar:focus-within {
+  background: rgba(0, 0, 0, 0.10) !important;
+  border-color: transparent !important;
+}
+
+/* Force light text colors in CMS inputs */
+.p-dialog input,
+.p-dialog textarea,
+.p-dialog select,
+.p-dialog .p-inputtext,
+.p-drawer input,
+.p-drawer textarea,
+.p-drawer select,
+.p-drawer .p-inputtext,
+.p-select-overlay,
+.p-autocomplete-overlay,
+.p-multiselect-overlay {
+  color: #0b1220 !important;
+  -webkit-text-fill-color: #0b1220;
+}
+
+/* Force light backgrounds on PrimeVue overlays */
+.p-select-overlay,
+.p-autocomplete-overlay,
+.p-multiselect-overlay,
+.p-popover {
+  background: #ffffff !important;
+  border: 1px solid rgba(11, 18, 32, 0.1) !important;
+  color: #0b1220 !important;
+}
+
+/* Force light option items in overlays */
+.p-select-overlay .p-select-option,
+.p-autocomplete-overlay .p-autocomplete-option,
+.p-multiselect-overlay .p-multiselect-option {
+  color: #0b1220 !important;
+}
+.p-select-overlay .p-select-option:hover,
+.p-autocomplete-overlay .p-autocomplete-option:hover,
+.p-multiselect-overlay .p-multiselect-option:hover {
+  background: rgba(59, 130, 246, 0.08) !important;
+}
+
+/* Reset dark-border-subtle inside CMS */
+.p-dialog .dark-border-subtle,
+.p-drawer .dark-border-subtle {
+  border-color: transparent !important;
 }
 
 /* -----------------------------

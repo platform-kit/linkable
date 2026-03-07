@@ -25,7 +25,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/import-from-github.mjs && node scripts/export-data.mjs && vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "format": "prettier --write .",

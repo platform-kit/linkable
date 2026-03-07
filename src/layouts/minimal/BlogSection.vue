@@ -17,51 +17,40 @@
         @filter-click="$emit('filter-click')"
       />
 
-      <h2
-        class="text-xs font-semibold uppercase tracking-widest text-[color:var(--color-ink-soft)]"
-      >
-        {{ label }}
-      </h2>
-
       <div v-if="filtered.length === 0" class="py-8 text-center text-sm text-[color:var(--color-ink-soft)]">
         {{ searchQuery.trim() ? 'No matching posts.' : 'No posts yet.' }}
       </div>
 
-      <div v-else class="divide-y divide-[var(--color-border2)]">
-        <article
+      <div v-else class="space-y-2">
+        <button
           v-for="post in filtered"
           :key="post.slug"
-          class="group cursor-pointer py-4 transition first:pt-0 hover:opacity-80"
+          type="button"
+          class="group flex w-full items-center gap-3 rounded-lg bg-[rgba(0,50,100,0.0625)] px-3 py-3.5 text-left transition hover:opacity-80 sm:py-4"
           @click="$emit('load-post', post.slug)"
         >
-          <div class="flex items-start gap-4">
-            <div
-              v-if="post.coverImage"
-              class="h-16 w-24 shrink-0 overflow-hidden rounded-md border border-[var(--color-border2)] sm:h-20 sm:w-28"
-            >
-              <img
-                :src="post.coverImage"
-                alt=""
-                class="h-full w-full object-cover"
-                loading="lazy"
-              />
+          <img
+            v-if="post.coverImage"
+            :src="post.coverImage"
+            alt=""
+            class="h-9 w-9 shrink-0 rounded-lg border border-transparent dark-border-subtle object-cover sm:h-10 sm:w-10"
+            loading="lazy"
+          />
+          <div class="min-w-0 flex-1">
+            <div class="text-sm font-medium text-[color:var(--color-ink)]">
+              {{ post.title }}
             </div>
-            <div class="min-w-0 flex-1">
-              <h3 class="text-sm font-medium text-[color:var(--color-ink)]">
-                {{ post.title }}
-              </h3>
-              <p
-                v-if="post.excerpt"
-                class="mt-1 line-clamp-2 text-xs leading-relaxed text-[color:var(--color-ink-soft)]"
-              >
-                {{ post.excerpt }}
-              </p>
-              <div class="mt-1.5 text-[11px] tabular-nums text-[color:var(--color-ink-soft)]">
-                {{ formatDate(post.date) }}
-              </div>
+            <div class="mt-0.5 truncate text-xs text-[color:var(--color-ink-soft)]">
+              {{ formatDate(post.date) }}<template v-if="post.excerpt"> · {{ post.excerpt }}</template>
             </div>
           </div>
-        </article>
+          <svg
+            class="h-4 w-4 shrink-0 text-[color:var(--color-ink-soft)] transition group-hover:translate-x-0.5"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
       </div>
     </template>
   </section>

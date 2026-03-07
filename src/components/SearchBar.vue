@@ -18,6 +18,7 @@
         :value="modelValue"
         @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
         type="text"
+        autocomplete="off"
         :placeholder="placeholder"
         class="min-w-0 flex-1 bg-transparent text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-ink-soft)] outline-none"
       />
@@ -68,5 +69,14 @@ export default defineComponent({
 .search-bar--active,
 .search-bar:focus-within {
   background: rgba(0, 0, 0, 0.10);
+}
+
+/* Neutralize browser autofill styling */
+.search-bar input:-webkit-autofill,
+.search-bar input:-webkit-autofill:hover,
+.search-bar input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-ink);
+  -webkit-box-shadow: 0 0 0 1000px transparent inset;
+  transition: background-color 5000s ease-in-out 0s;
 }
 </style>

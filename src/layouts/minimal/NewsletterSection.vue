@@ -6,45 +6,15 @@
     </div>
 
     <template v-else-if="sends.length">
-      <div class="flex items-center justify-between">
-      
-        <button
-          v-if="availableTags.length > 0"
-          type="button"
-          class="relative rounded-md p-1.5 text-[color:var(--color-ink-soft)] transition hover:text-[color:var(--color-brand)]"
-          @click.stop="$emit('filter-click')"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-          </svg>
-          <span
-            v-if="selectedTags.length > 0"
-            class="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-[var(--color-brand)] px-1 text-[8px] font-bold text-white"
-          >{{ selectedTags.length }}</span>
-        </button>
-      </div>
-
-      <!-- Search -->
-      <div
-        v-if="searchEnabled"
-        class="search-bar mt-3 flex items-center gap-2.5 rounded-xl border border-transparent px-3 py-2 text-sm backdrop-blur-md transition-all duration-200 focus-within:border-[var(--color-brand)] focus-within:ring-1 focus-within:ring-[var(--color-brand)]"
-        :class="searchQuery.trim() ? 'search-bar--active' : ''"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round" class="shrink-0 text-[color:var(--color-ink-soft)]">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.3-4.3"/>
-        </svg>
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search..."
-          class="min-w-0 flex-1 bg-transparent text-[color:var(--color-ink)] placeholder:text-[color:var(--color-ink-soft)] outline-none"
-        />
-      </div>
+      <SearchBar
+        v-if="searchEnabled || availableTags.length > 0"
+        v-model="searchQuery"
+        placeholder="Search…"
+        :show-search="searchEnabled"
+        :tag-count="availableTags.length > 0 ? availableTags.length : null"
+        :selected-tag-count="selectedTags.length"
+        @filter-click="$emit('filter-click')"
+      />
 
       <!-- Issue list -->
       <div v-if="filteredSends.length" class="mt-4 space-y-2">
@@ -59,7 +29,7 @@
             v-if="send.cover_image"
             :src="send.cover_image"
             alt=""
-            class="h-9 w-9 shrink-0 rounded-lg border border-[var(--color-border2)] object-cover sm:h-10 sm:w-10"
+            class="h-9 w-9 shrink-0 rounded-lg border border-transparent dark-border-subtle object-cover sm:h-10 sm:w-10"
             loading="lazy"
           />
           <div class="min-w-0 flex-1">
@@ -145,6 +115,7 @@
 import { defineComponent, ref, computed, onMounted, watch, type PropType } from "vue";
 export type { NewsletterSectionProps, NewsletterSectionEmits } from "../../lib/component-contracts";
 import { supabase } from "../../lib/supabase";
+import SearchBar from "../../components/SearchBar.vue";
 
 interface SendSummary {
   id: string;
@@ -157,6 +128,7 @@ interface SendSummary {
 
 export default defineComponent({
   name: "MinimalNewsletterSection",
+  components: { SearchBar },
   props: {
     searchEnabled: { type: Boolean, default: false },
     availableTags: { type: Array as PropType<string[]>, default: () => [] },

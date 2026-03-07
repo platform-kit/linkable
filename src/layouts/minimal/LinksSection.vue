@@ -22,7 +22,7 @@
       >
         <div
           v-if="link.imageUrl"
-          class="h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-[var(--color-border2)] sm:h-10 sm:w-10"
+          class="h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-transparent dark-border-subtle sm:h-10 sm:w-10"
         >
           <img
             :src="resolveUploadUrl(link.imageUrl)"
