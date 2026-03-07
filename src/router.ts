@@ -23,6 +23,11 @@ const router = createRouter({
       name: "newsletter-view",
       component: { render: () => null },
     },
+    {
+      path: "/confirmed",
+      name: "newsletter-confirmed",
+      component: { render: () => null },
+    },
   ],
 });
 

@@ -100,9 +100,22 @@
         @back="goBackFromNewsletter"
       />
 
+      <!-- Newsletter confirmation page (from /confirmed?status=...) -->
+      <div v-if="confirmationStatus" class="flex flex-col items-center justify-center py-16 text-center">
+        <div class="text-5xl mb-4">{{ confirmationIcon }}</div>
+        <h1 class="text-2xl font-bold mb-2" :class="confirmationIsError ? 'text-red-500' : 'text-[color:var(--color-ink)]'">{{ confirmationTitle }}</h1>
+        <p class="text-[color:var(--color-ink-soft)] max-w-sm">{{ confirmationMessage }}</p>
+        <button
+          class="mt-6 rounded-full bg-[color:var(--color-brand)] px-6 py-2.5 text-white font-medium shadow-sm hover:opacity-90 transition"
+          @click="$router.push('/')"
+        >
+          Go Home
+        </button>
+      </div>
+
       <!-- Newsletter section -->
       <component
-        v-if="showNewsletterSection && !newsletterViewId"
+        v-if="showNewsletterSection && !newsletterViewId && !confirmationStatus"
         :is="resolvedNewsletterSection"
         :search-enabled="!!model.profile.searchNewsletter"
         :available-tags="availableNewsletterTags"
@@ -550,6 +563,12 @@ export default defineComponent({
         newsletterViewToken.value = (route.query.token as string) || '';
       }
 
+      // Handle newsletter confirmation page (e.g. /confirmed?status=success)
+      if (route.name === 'newsletter-confirmed') {
+        activeTab.value = 'newsletter';
+        confirmationStatus.value = (route.query.status as string) || 'error';
+      }
+
       setTimeout(() => {
         suppressPersist.value = false;
       }, 0);
@@ -585,9 +604,13 @@ export default defineComponent({
         newsletterViewId.value = route.params.id as string;
         newsletterViewSid.value = (route.query.sid as string) || '';
         newsletterViewToken.value = (route.query.token as string) || '';
+      } else if (name === 'newsletter-confirmed') {
+        activeTab.value = 'newsletter';
+        confirmationStatus.value = (route.query.status as string) || 'error';
       } else if (name === 'home') {
         if (currentBlogPost.value) currentBlogPost.value = null;
         newsletterViewId.value = '';
+        confirmationStatus.value = '';
       }
       // Track pageview on route change
       trackPageview();
@@ -1072,6 +1095,24 @@ export default defineComponent({
     const newsletterViewId = ref('');
     const newsletterViewSid = ref('');
     const newsletterViewToken = ref('');
+
+    // Newsletter confirmation state (driven by /confirmed?status=... route)
+    const confirmationStatus = ref('');
+
+    const confirmationMap: Record<string, { icon: string; title: string; message: string; error?: boolean }> = {
+      success: { icon: '🎉', title: "You're subscribed!", message: 'Your email has been confirmed. You\'ll now receive updates.' },
+      expired: { icon: '⏰', title: 'Link Expired', message: 'This confirmation link has expired. Please subscribe again to receive a new one.', error: true },
+      invalid: { icon: '⚠️', title: 'Invalid Link', message: 'This confirmation link is invalid or missing required parameters.', error: true },
+      'not-found': { icon: '🔍', title: 'Not Found', message: 'We couldn\'t find a pending subscription for this email address.', error: true },
+      'already-confirmed': { icon: '✅', title: 'Already Confirmed', message: 'Your email address has already been confirmed. You\'re all set!' },
+      error: { icon: '❌', title: 'Something went wrong', message: 'We couldn\'t confirm your subscription. Please try again later.', error: true },
+    };
+
+    const confirmationInfo = computed(() => confirmationMap[confirmationStatus.value] || confirmationMap.error);
+    const confirmationIcon = computed(() => confirmationInfo.value.icon);
+    const confirmationTitle = computed(() => confirmationInfo.value.title);
+    const confirmationMessage = computed(() => confirmationInfo.value.message);
+    const confirmationIsError = computed(() => !!confirmationInfo.value.error);
 
     function goBackFromNewsletter() {
       newsletterViewId.value = '';
@@ -1628,6 +1669,11 @@ export default defineComponent({
       newsletterViewToken,
       goBackFromNewsletter,
       viewNewsletter,
+      confirmationStatus,
+      confirmationIcon,
+      confirmationTitle,
+      confirmationMessage,
+      confirmationIsError,
       selectedLinkTags,
       selectedGalleryTags,
       selectedBlogTags,
