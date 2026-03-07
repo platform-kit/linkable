@@ -54,7 +54,7 @@ Features needed to make Linkable a fully-fledged static site generation framewor
 
 | #  | Feature                          | Status | Description                                                                                                                                                                                                  |
 | -- | -------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 22 | **Full SSR / Pre-rendering**     | ⬜      | Pages are currently SPA-hydrated. HTML shells have OG tags but no rendered content. Investigate `prerender` or headless Chromium to generate fully rendered static HTML for SEO and initial paint.            |
+| 22 | **Full SSR / Pre-rendering**     | ✅      | Build-time pre-rendering via Puppeteer. The `prerenderBuildPlugin` launches headless Chrome, navigates each route, waits for the Vue app to signal readiness, and writes fully rendered HTML to `dist/`.      |
 | 23 | **File-based Routing**           | ⬜      | Routes are declared in layout manifests. Add optional filesystem-convention routing (e.g. `pages/about.vue` → `/about`) for user layouts.                                                                   |
 | 24 | **Middleware / Per-request Logic**| ⬜      | No per-request server middleware. Supabase edge functions cover API needs but there's no route-level middleware for auth guards, redirects, or headers.                                                       |
 | 25 | **ISR / Incremental Rebuilds**   | ⬜      | Full rebuild required on every deploy. Investigate incremental static regeneration for large sites with many layout routes.                                                                                   |
@@ -85,3 +85,4 @@ Core features that are complete and shipped:
 - **Content Scheduling** — Publish date and expiration date for links, gallery items, embeds, and blog posts; optional build-time exclusion via `VITE_SCHEDULE_EXCLUDE_BUILD`
 - **Drag-and-Drop Reordering** — Reorder links, embeds, socials, gallery items, and resume sections via vuedraggable
 - **Tab Icons** — Customizable Lucide icons for each default section tab
+- **Pre-rendering** — Build-time Puppeteer pre-rendering of `/` and layout routes with `prerender` set, producing fully rendered static HTML for SEO and fast initial paint
