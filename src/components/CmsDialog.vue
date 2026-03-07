@@ -203,48 +203,54 @@
                     optionValue="value"
                     class="w-full"
                   />
-                  <div class="cms__help">Choose a preset to populate all values, or pick Custom to edit freely.</div>
+                  <div class="cms__help">Choose a base theme. You can override individual values below.</div>
+                </div>
+
+                <div v-if="hasAnyOverride" class="cms__field" style="margin-bottom: 4px;">
+                  <button class="cms__reset-all-btn" @click="resetAll">
+                    <i class="pi pi-undo" style="font-size: 12px;" /> Reset all overrides
+                  </button>
                 </div>
 
                 <div class="cms__color-section-label">Colours</div>
                 <div class="cms__color-grid">
                   <div class="cms__color-field">
-                    <label class="cms__label">Brand</label>
+                    <label class="cms__label">Brand <button v-if="isOverridden('colorBrand')" class="cms__reset-btn" @click="resetField('colorBrand')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <input type="color" v-model="draft.theme.colorBrand" class="cms__color-swatch" />
                       <InputText v-model="draft.theme.colorBrand" class="cms__color-hex" />
                     </div>
                   </div>
                   <div class="cms__color-field">
-                    <label class="cms__label">Brand Strong</label>
+                    <label class="cms__label">Brand Strong <button v-if="isOverridden('colorBrandStrong')" class="cms__reset-btn" @click="resetField('colorBrandStrong')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <input type="color" v-model="draft.theme.colorBrandStrong" class="cms__color-swatch" />
                       <InputText v-model="draft.theme.colorBrandStrong" class="cms__color-hex" />
                     </div>
                   </div>
                   <div class="cms__color-field">
-                    <label class="cms__label">Accent</label>
+                    <label class="cms__label">Accent <button v-if="isOverridden('colorAccent')" class="cms__reset-btn" @click="resetField('colorAccent')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <input type="color" v-model="draft.theme.colorAccent" class="cms__color-swatch" />
                       <InputText v-model="draft.theme.colorAccent" class="cms__color-hex" />
                     </div>
                   </div>
                   <div class="cms__color-field">
-                    <label class="cms__label">Text</label>
+                    <label class="cms__label">Text <button v-if="isOverridden('colorInk')" class="cms__reset-btn" @click="resetField('colorInk')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <input type="color" v-model="draft.theme.colorInk" class="cms__color-swatch" />
                       <InputText v-model="draft.theme.colorInk" class="cms__color-hex" />
                     </div>
                   </div>
                   <div class="cms__color-field">
-                    <label class="cms__label">Text Soft</label>
+                    <label class="cms__label">Text Soft <button v-if="isOverridden('colorInkSoft')" class="cms__reset-btn" @click="resetField('colorInkSoft')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <input type="color" v-model="draft.theme.colorInkSoft" class="cms__color-swatch" />
                       <InputText v-model="draft.theme.colorInkSoft" class="cms__color-hex" />
                     </div>
                   </div>
                   <div class="cms__color-field">
-                    <label class="cms__label">Background</label>
+                    <label class="cms__label">Background <button v-if="isOverridden('bg')" class="cms__reset-btn" @click="resetField('bg')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <input type="color" v-model="draft.theme.bg" class="cms__color-swatch" />
                       <InputText v-model="draft.theme.bg" class="cms__color-hex" />
@@ -255,35 +261,35 @@
                 <div class="cms__color-section-label">Surfaces &amp; Borders</div>
                 <div class="cms__color-grid">
                   <div class="cms__color-field">
-                    <label class="cms__label">Glass</label>
+                    <label class="cms__label">Glass <button v-if="isOverridden('glass')" class="cms__reset-btn" @click="resetField('glass')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <input type="color" :value="toHex(draft.theme.glass)" @input="draft.theme.glass = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
                       <InputText v-model="draft.theme.glass" class="cms__color-hex" placeholder="rgba(255,255,255,0.66)" />
                     </div>
                   </div>
                   <div class="cms__color-field">
-                    <label class="cms__label">Glass 2</label>
+                    <label class="cms__label">Glass 2 <button v-if="isOverridden('glass2')" class="cms__reset-btn" @click="resetField('glass2')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <input type="color" :value="toHex(draft.theme.glass2)" @input="draft.theme.glass2 = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
                       <InputText v-model="draft.theme.glass2" class="cms__color-hex" placeholder="rgba(255,255,255,0.52)" />
                     </div>
                   </div>
                   <div class="cms__color-field">
-                    <label class="cms__label">Glass Strong</label>
+                    <label class="cms__label">Glass Strong <button v-if="isOverridden('glassStrong')" class="cms__reset-btn" @click="resetField('glassStrong')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <input type="color" :value="toHex(draft.theme.glassStrong)" @input="draft.theme.glassStrong = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
                       <InputText v-model="draft.theme.glassStrong" class="cms__color-hex" placeholder="rgba(255,255,255,0.82)" />
                     </div>
                   </div>
                   <div class="cms__color-field">
-                    <label class="cms__label">Border</label>
+                    <label class="cms__label">Border <button v-if="isOverridden('colorBorder')" class="cms__reset-btn" @click="resetField('colorBorder')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <input type="color" :value="toHex(draft.theme.colorBorder)" @input="draft.theme.colorBorder = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
                       <InputText v-model="draft.theme.colorBorder" class="cms__color-hex" placeholder="rgba(255,255,255,0.62)" />
                     </div>
                   </div>
                   <div class="cms__color-field">
-                    <label class="cms__label">Border 2</label>
+                    <label class="cms__label">Border 2 <button v-if="isOverridden('colorBorder2')" class="cms__reset-btn" @click="resetField('colorBorder2')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <input type="color" :value="toHex(draft.theme.colorBorder2)" @input="draft.theme.colorBorder2 = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
                       <InputText v-model="draft.theme.colorBorder2" class="cms__color-hex" placeholder="rgba(11,18,32,0.10)" />
@@ -294,21 +300,21 @@
                 <div class="cms__color-section-label">Card Items</div>
                 <div class="cms__color-grid">
                   <div class="cms__color-field">
-                    <label class="cms__label">Card Background</label>
+                    <label class="cms__label">Card Background <button v-if="isOverridden('cardBg')" class="cms__reset-btn" @click="resetField('cardBg')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <input type="color" :value="toHex(draft.theme.cardBg)" @input="draft.theme.cardBg = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
                       <InputText v-model="draft.theme.cardBg" class="cms__color-hex" placeholder="rgba(255,255,255,0.66)" />
                     </div>
                   </div>
                   <div class="cms__color-field">
-                    <label class="cms__label">Card Border</label>
+                    <label class="cms__label">Card Border <button v-if="isOverridden('cardBorder')" class="cms__reset-btn" @click="resetField('cardBorder')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <input type="color" :value="toHex(draft.theme.cardBorder)" @input="draft.theme.cardBorder = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
                       <InputText v-model="draft.theme.cardBorder" class="cms__color-hex" placeholder="rgba(255,255,255,0.62)" />
                     </div>
                   </div>
                   <div class="cms__color-field">
-                    <label class="cms__label">Card Text</label>
+                    <label class="cms__label">Card Text <button v-if="isOverridden('cardText')" class="cms__reset-btn" @click="resetField('cardText')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <input type="color" v-model="draft.theme.cardText" class="cms__color-swatch" />
                       <InputText v-model="draft.theme.cardText" class="cms__color-hex" placeholder="#0b1220" />
@@ -319,13 +325,13 @@
                 <div class="cms__color-section-label">Radius</div>
                 <div class="cms__color-grid">
                   <div class="cms__color-field">
-                    <label class="cms__label">Card Radius (XL)</label>
+                    <label class="cms__label">Card Radius (XL) <button v-if="isOverridden('radiusXl')" class="cms__reset-btn" @click="resetField('radiusXl')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <InputText v-model="draft.theme.radiusXl" class="cms__color-hex cms__color-hex--full" placeholder="1.6rem" />
                     </div>
                   </div>
                   <div class="cms__color-field">
-                    <label class="cms__label">Inner Radius (LG)</label>
+                    <label class="cms__label">Inner Radius (LG) <button v-if="isOverridden('radiusLg')" class="cms__reset-btn" @click="resetField('radiusLg')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                     <div class="cms__color-input-wrap">
                       <InputText v-model="draft.theme.radiusLg" class="cms__color-hex cms__color-hex--full" placeholder="1.2rem" />
                     </div>
@@ -1963,14 +1969,19 @@ export default defineComponent({
     };
 
     const resetTheme = () => {
-      draft.value.theme = defaultTheme();
+      const layout = draft.value.theme.layout || "default";
+      const preset = draft.value.theme.preset === "dark" ? "dark" : "light";
+      const layoutPresets = LAYOUT_PRESETS[layout] || LAYOUT_PRESETS.default;
+      const factory = layoutPresets[preset] || THEME_PRESETS[preset];
+      const base = factory ? factory() : defaultTheme();
+      const { layoutVars } = draft.value.theme;
+      draft.value.theme = { ...base, preset: draft.value.theme.preset, layout, layoutVars };
       toast.add({ severity: "info", summary: "Theme reset", detail: "Colours restored to defaults.", life: 1600 });
     };
 
     const presetOptions = [
       { label: "Light", value: "light" },
       { label: "Dark", value: "dark" },
-      { label: "Custom", value: "custom" },
     ];
 
     const layoutOptions = computed(() =>
@@ -1995,12 +2006,45 @@ export default defineComponent({
       draft.value.theme.layoutVars[cssVar] = value;
     };
 
-    let applyingPreset = false;
+    const getPresetDefaults = () => {
+      const layout = draft.value.theme.layout || "default";
+      const preset = draft.value.theme.preset === "dark" ? "dark" : "light";
+      const layoutPresets = LAYOUT_PRESETS[layout] || LAYOUT_PRESETS.default;
+      const factory = layoutPresets[preset] || THEME_PRESETS[preset];
+      return factory ? factory() : defaultTheme();
+    };
+
+    const themeVarKeys = [
+      "colorBrand", "colorBrandStrong", "colorAccent", "colorInk", "colorInkSoft",
+      "bg", "glass", "glass2", "glassStrong", "colorBorder", "colorBorder2",
+      "cardBg", "cardBorder", "cardText", "radiusXl", "radiusLg",
+    ] as const;
+
+    const isOverridden = (key: string) => {
+      const defaults = getPresetDefaults();
+      return (draft.value.theme as any)[key] !== (defaults as any)[key];
+    };
+
+    const resetField = (key: string) => {
+      const defaults = getPresetDefaults();
+      (draft.value.theme as any)[key] = (defaults as any)[key];
+    };
+
+    const hasAnyOverride = computed(() =>
+      themeVarKeys.some((k) => isOverridden(k)),
+    );
+
+    const resetAll = () => {
+      const defaults = getPresetDefaults();
+      for (const k of themeVarKeys) {
+        (draft.value.theme as any)[k] = (defaults as any)[k];
+      }
+    };
+
     const applyPreset = (preset: ThemePreset) => {
       const layout = draft.value.theme.layout || "default";
       const layoutPresets = LAYOUT_PRESETS[layout] || LAYOUT_PRESETS.default;
       const factory = layoutPresets[preset] || THEME_PRESETS[preset];
-      applyingPreset = true;
       if (factory) {
         const presetTheme = factory();
         const { layoutVars } = draft.value.theme;
@@ -2008,7 +2052,6 @@ export default defineComponent({
       } else {
         draft.value.theme.preset = preset;
       }
-      setTimeout(() => { applyingPreset = false; }, 0);
     };
 
     // Save/restore per-layout theme when switching layouts
@@ -2031,21 +2074,7 @@ export default defineComponent({
       },
     );
 
-    // Auto-switch to "custom" when user manually edits a theme value
-    const themeColorKeys = [
-      "colorBrand", "colorBrandStrong", "colorAccent", "colorInk", "colorInkSoft",
-      "bg", "glass", "glass2", "glassStrong", "colorBorder", "colorBorder2",
-      "cardBg", "cardBorder", "cardText",
-      "radiusXl", "radiusLg",
-    ] as const;
-    watch(
-      () => themeColorKeys.map((k) => draft.value.theme[k]).join("|"),
-      () => {
-        if (!applyingPreset && draft.value.theme.preset !== "custom") {
-          draft.value.theme.preset = "custom";
-        }
-      },
-    );
+
 
     /** Convert any CSS color string (hex, rgb, rgba) to #rrggbb for <input type="color"> */
     const toHex = (color: string): string => {
@@ -2470,6 +2499,10 @@ export default defineComponent({
       getLayoutVar,
       setLayoutVar,
       applyPreset,
+      isOverridden,
+      resetField,
+      hasAnyOverride,
+      resetAll,
       linkEditorOpen,
       activeLink,
       activeLinkProxy,
@@ -3392,5 +3425,48 @@ cms__footer-right {
 .cms__reset-theme:hover {
   background: rgba(255, 255, 255, 0.82);
   color: rgba(11, 18, 32, 0.85);
+}
+
+.cms__reset-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  transition: background 120ms ease;
+  vertical-align: middle;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+.cms__reset-btn:hover {
+  background: rgba(59, 130, 246, 0.24);
+}
+
+.cms__reset-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: rgba(59, 130, 246, 0.08);
+  font-size: 12px;
+  font-weight: 700;
+  color: #3b82f6;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.cms__reset-all-btn:hover {
+  background: rgba(59, 130, 246, 0.16);
 }
 </style>
