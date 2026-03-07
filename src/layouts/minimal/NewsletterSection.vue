@@ -81,7 +81,7 @@
           placeholder="you@example.com"
           required
           :disabled="subscribing"
-          class="newsletter-input flex-1 rounded-lg shadow-sm bg-white  px-4 py-2.5 text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-ink-soft)] outline-none transition-all focus:border-[var(--color-brand)] focus:shadow-[0_0_0_3px_rgba(var(--brand-rgb,59,130,246),0.12)]"
+          class="newsletter-input flex-1 rounded-lg shadow-sm bg-[var(--glass,#fff)] border border-transparent px-4 py-2.5 text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-ink-soft)] outline-none transition-all hover:border-[var(--color-border2)] focus:border-[var(--color-brand)] focus:shadow-[0_0_0_3px_rgba(var(--brand-rgb,59,130,246),0.12)]"
         />
         <button
           type="submit"
@@ -95,7 +95,7 @@
 
       <div
         v-else
-        class="mx-auto mt-5 inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-5 py-2.5 text-sm font-medium text-emerald-600"
+        class="newsletter-success mx-auto mt-5 inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-5 py-2.5 text-sm font-medium text-emerald-600"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -252,5 +252,13 @@ export default defineComponent({
 .newsletter-signup-card {
   background: none;
   border: 1px solid var(--color-border2);
+}
+
+[data-dark] .newsletter-input {
+  background: var(--glass, rgba(255,255,255,0.06)) !important;
+}
+
+[data-dark] .newsletter-success {
+  color: #6ee7b7;
 }
 </style>

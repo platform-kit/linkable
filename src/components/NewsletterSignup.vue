@@ -29,7 +29,7 @@
 
     <div
       v-else
-      class="flex items-center gap-2 rounded-full bg-green-500/10 px-4 py-2 text-sm font-semibold text-green-700"
+      class="newsletter-success flex items-center gap-2 rounded-full bg-green-500/10 px-4 py-2 text-sm font-semibold text-green-700"
     >
       <i class="pi pi-check-circle" />
       Check your email to confirm your subscription!
@@ -86,3 +86,9 @@ export default defineComponent({
   },
 });
 </script>
+
+<style scoped>
+[data-dark] .newsletter-success {
+  color: #6ee7b7;
+}
+</style>
