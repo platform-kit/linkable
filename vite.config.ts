@@ -831,6 +831,128 @@ const encryptTokenAtBuild = (token: string, password: string): string => {
   return combined.toString("base64");
 };
 
+/**
+ * Build plugin: pre-render static HTML shells for layout routes that have
+ * `prerender` set.  Uses the same pattern as blogBuildPlugin's closeBundle.
+ *
+ * At build time, reads the active layout from cms-data.json, loads its
+ * manifest.ts via esbuild, and generates dist/{path}/index.html with the
+ * prerender metadata baked into OG tags.
+ */
+const layoutRouteBuildPlugin = () => ({
+  name: "layout-route-prerender",
+  async closeBundle() {
+    const distDir = path.resolve(__dirname, "dist");
+    const indexHtmlPath = path.join(distDir, "index.html");
+    if (!fs.existsSync(indexHtmlPath)) return;
+
+    // Determine the active layout from CMS data
+    const data = fs.existsSync(dataFilePath)
+      ? JSON.parse(fs.readFileSync(dataFilePath, "utf8"))
+      : null;
+    const layoutName: string = data?.theme?.layout || "default";
+
+    // Find the manifest source file
+    const manifestPath = path.resolve(__dirname, "src", "layouts", layoutName, "manifest.ts");
+    if (!fs.existsSync(manifestPath)) return;
+
+    // Compile the manifest TS → JS using esbuild (available via Vite)
+    let manifestModule: any;
+    try {
+      const requireFromVite = createRequire(
+        // @ts-ignore - require.resolve works at config time
+        await import("node:module").then((m) =>
+          m.default.createRequire(import.meta.url).resolve("vite"),
+        ),
+      );
+      const esbuild = requireFromVite("esbuild");
+      const source = fs.readFileSync(manifestPath, "utf8");
+      const result = esbuild.transformSync(source, {
+        loader: "ts",
+        format: "cjs",
+        target: "node18",
+      });
+      // Strip type-only imports that esbuild leaves as require() calls
+      const code = result.code
+        .replace(/require\([^)]+\)/g, "undefined")
+        .replace(/exports\.default\s*=/, "module.exports =");
+      const m = { exports: {} as any };
+      new Function("module", "exports", "require", code)(m, m.exports, () => undefined);
+      manifestModule = m.exports?.default ?? m.exports;
+    } catch (err) {
+      console.log(`[layout-route-prerender] Could not load manifest for "${layoutName}" — skipping.`);
+      return;
+    }
+
+    const routes: { path: string; prerender: { title: string; description?: string; ogImage?: string } }[] =
+      (manifestModule?.routes ?? []).filter((r: any) => r?.prerender);
+
+    if (routes.length === 0) return;
+
+    const siteUrl = resolveSiteUrl();
+    const siteModel = fs.existsSync(dataFilePath)
+      ? sanitizeModel(JSON.parse(fs.readFileSync(dataFilePath, "utf8")))
+      : readDefaultModel();
+
+    const toAbsolute = (url: string) => {
+      if (!url) return "";
+      if (/^https?:\/\//.test(url)) return url;
+      return siteUrl ? `${siteUrl}${url.startsWith("/") ? "" : "/"}${url}` : url;
+    };
+
+    const esc = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    const baseHtml = fs.readFileSync(indexHtmlPath, "utf8");
+    let count = 0;
+
+    for (const route of routes) {
+      const { title, description, ogImage } = route.prerender;
+      const image = ogImage || siteModel?.profile?.ogImageUrl || "";
+      const pageUrl = siteUrl ? `${siteUrl}${route.path}` : "";
+
+      const ogTags: string[] = [];
+      ogTags.push(`<meta property="og:title" content="${esc(title)}" />`);
+      if (description) {
+        ogTags.push(`<meta property="og:description" content="${esc(description)}" />`);
+      }
+      if (image) {
+        ogTags.push(`<meta property="og:image" content="${esc(toAbsolute(image))}" />`);
+        ogTags.push(`<meta name="twitter:card" content="summary_large_image" />`);
+      }
+      ogTags.push(`<meta property="og:type" content="website" />`);
+      if (pageUrl) {
+        ogTags.push(`<meta property="og:url" content="${esc(pageUrl)}" />`);
+      }
+
+      let pageHtml = baseHtml;
+      pageHtml = pageHtml.replace(/<meta\s+(?:property="og:|name="twitter:)[^>]*\/>\s*\n?\s*/g, "");
+      pageHtml = pageHtml.replace(/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`);
+      if (description) {
+        pageHtml = pageHtml.replace(
+          /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/,
+          `<meta name="description" content="${esc(description)}" />`,
+        );
+      }
+      pageHtml = pageHtml.replace("</head>", `    ${ogTags.join("\n    ")}\n  </head>`);
+
+      // Convert path like "/projects" → dist/projects/index.html
+      // Skip paths with dynamic params (e.g. /projects/:slug)
+      if (route.path.includes(":")) continue;
+
+      const segments = route.path.replace(/^\//, "").replace(/\/$/, "");
+      const outDir = path.join(distDir, segments);
+      fs.mkdirSync(outDir, { recursive: true });
+      fs.writeFileSync(path.join(outDir, "index.html"), pageHtml);
+      count++;
+    }
+
+    if (count > 0) {
+      console.log(`[layout-route-prerender] Generated ${count} static HTML shell(s)`);
+    }
+  },
+});
+
     /** Read a single env var: checks process.env first, then falls back to .env file. */
     const readEnvVar = (name: string): string => {
       // 1. Check process.env (Vercel, CI/CD, etc.)
@@ -900,6 +1022,7 @@ const encryptTokenAtBuild = (token: string, password: string): string => {
           cmsMiddlewarePlugin(),
           blogBuildPlugin(),
           scheduleBuildPlugin(),
+          layoutRouteBuildPlugin(),
           manifestBuildPlugin(),
           ogMetaPlugin(),
           vue({

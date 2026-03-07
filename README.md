@@ -701,6 +701,11 @@ export default {
       component: () => import("./ProjectsPage.vue"),
       label: "Projects",
       icon: "pi-briefcase",
+      prerender: {
+        title: "Projects — My Portfolio",
+        description: "A showcase of my recent work.",
+        ogImage: "/uploads/projects-og.jpg",
+      },
     },
     {
       path: "/projects/:slug",
@@ -717,6 +722,20 @@ Route components receive two props automatically:
 When a layout route is active, the default page content (profile header, tabs, sections) is hidden and the route component renders in its place. Navigation can be wired via standard `<router-link>` or programmatic `router.push()`.
 
 The `label` and `icon` fields are surfaced in `layoutRoutes` (available in the template) so nav components can render links to layout-contributed pages.
+
+#### Static pre-rendering (SEO / social previews)
+
+By default, layout routes are client-side only. Adding a `prerender` object to a route tells the build to generate a static HTML shell at `dist/{path}/index.html` with baked-in OG meta tags. This ensures social crawlers (iMessage, Twitter, Facebook) and SEO bots can read the page metadata without executing JavaScript.
+
+```ts
+prerender: {
+  title: "Projects — My Portfolio",
+  description: "A showcase of my recent work.",
+  ogImage: "/uploads/projects-og.jpg",   // absolute or root-relative
+},
+```
+
+Routes with dynamic params (e.g. `/projects/:slug`) are skipped — only static paths are pre-rendered. The actual page content is still rendered client-side by Vue.
 
 ### Zod validation
 

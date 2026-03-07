@@ -69,6 +69,19 @@ export interface LayoutRoute {
   icon?: string;
   /** Optional Vue Router route meta. */
   meta?: Record<string, unknown>;
+  /**
+   * When set, a static HTML shell with OG meta tags is generated for this
+   * route at build time so social crawlers and SEO bots can read it.
+   * The page content is still rendered client-side.
+   */
+  prerender?: {
+    /** Page title (used in `<title>` and `og:title`). */
+    title: string;
+    /** Meta description (used in `<meta name="description">` and `og:description`). */
+    description?: string;
+    /** OG image URL (absolute or root-relative). */
+    ogImage?: string;
+  };
 }
 
 export interface LayoutManifest {
