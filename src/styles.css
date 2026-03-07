@@ -82,6 +82,7 @@ body {
 [data-layout="minimal"] body {
   background-image: none;
 }
+
 [data-dark][data-layout="minimal"] .dark-border-subtle {
   border-color: rgba(255, 255, 255, 0.1);
 }

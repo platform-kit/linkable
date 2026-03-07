@@ -153,6 +153,7 @@ export type BioModel = {
   blog: BioBlog;
   embeds: EmbedItem[];
   theme: BioTheme;
+  layoutThemes: Record<string, BioTheme>;
   scripts: BioScripts;
 };
 
@@ -272,10 +273,54 @@ export const darkTheme = (): BioTheme => ({
   glass: "rgba(40, 52, 72, 0.78)",
   glass2: "rgba(40, 52, 72, 0.60)",
   glassStrong: "rgba(50, 62, 82, 0.92)",
-  colorBorder: "rgba(148, 163, 184, 0.38)",
-  colorBorder2: "rgba(148, 163, 184, 0.22)",
+  colorBorder: "rgba(148, 163, 184, 0.24)",
+  colorBorder2: "rgba(148, 163, 184, 0.12)",
   cardBg: "rgba(40, 52, 72, 0.78)",
-  cardBorder: "rgba(148, 163, 184, 0.38)",
+  cardBorder: "rgba(148, 163, 184, 0.24)",
+  cardText: "#f1f5f9",
+  radiusXl: "1.6rem",
+  radiusLg: "1.2rem",
+  layoutVars: {},
+});
+
+export const minimalLightTheme = (): BioTheme => ({
+  layout: "minimal",
+  preset: "light",
+  colorBrand: "#3b82f6",
+  colorBrandStrong: "#2563eb",
+  colorAccent: "#ff5a7a",
+  colorInk: "#0b1220",
+  colorInkSoft: "rgba(11, 18, 32, 0.62)",
+  bg: "#f5f7fb",
+  glass: "rgba(255, 255, 255, 0.9)",
+  glass2: "rgba(255, 255, 255, 0.6)",
+  glassStrong: "rgba(255, 255, 255, 0.82)",
+  colorBorder: "rgba(11, 18, 32, 0.08)",
+  colorBorder2: "rgba(11, 18, 32, 0.08)",
+  cardBg: "transparent",
+  cardBorder: "rgba(11, 18, 32, 0.08)",
+  cardText: "#0b1220",
+  radiusXl: "1.6rem",
+  radiusLg: "1.2rem",
+  layoutVars: {},
+});
+
+export const minimalDarkTheme = (): BioTheme => ({
+  layout: "minimal",
+  preset: "dark",
+  colorBrand: "#60a5fa",
+  colorBrandStrong: "#3b82f6",
+  colorAccent: "#f472b6",
+  colorInk: "#f1f5f9",
+  colorInkSoft: "rgba(241, 245, 249, 0.55)",
+  bg: "#000000",
+  glass: "rgba(255, 255, 255, 0.06)",
+  glass2: "rgba(255, 255, 255, 0.04)",
+  glassStrong: "rgba(50, 62, 82, 0.92)",
+  colorBorder: "rgba(148, 163, 184, 0.18)",
+  colorBorder2: "rgba(148, 163, 184, 0.18)",
+  cardBg: "transparent",
+  cardBorder: "rgba(148, 163, 184, 0.18)",
   cardText: "#f1f5f9",
   radiusXl: "1.6rem",
   radiusLg: "1.2rem",
@@ -285,6 +330,11 @@ export const darkTheme = (): BioTheme => ({
 export const THEME_PRESETS: Record<string, () => BioTheme> = {
   light: defaultTheme,
   dark: darkTheme,
+};
+
+export const LAYOUT_PRESETS: Record<string, Record<string, () => BioTheme>> = {
+  default: { light: defaultTheme, dark: darkTheme },
+  minimal: { light: minimalLightTheme, dark: minimalDarkTheme },
 };
 
 export const newEmbed = (): EmbedItem => ({
@@ -384,6 +434,10 @@ export const defaultModel = (): BioModel => ({
   blog: defaultBlog(),
   embeds: [],
   theme: defaultTheme(),
+  layoutThemes: {
+    default: defaultTheme(),
+    minimal: minimalLightTheme(),
+  },
   scripts: defaultScripts(),
 });
 
@@ -431,6 +485,34 @@ const sanitizeUrl = (v: unknown) => {
 };
 
 import { migrateToLatest, CURRENT_SCHEMA_VERSION } from "./migrations";
+
+const sanitizeTheme = (raw: unknown, fallback: BioTheme): BioTheme => {
+  const t = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const presetVal = asString(t.preset);
+  const preset: ThemePreset = (presetVal === "light" || presetVal === "dark" || presetVal === "custom") ? presetVal : fallback.preset;
+  const layout = asString(t.layout).slice(0, 40) || fallback.layout;
+  return {
+    layout,
+    preset,
+    colorBrand: asString(t.colorBrand).slice(0, 40) || fallback.colorBrand,
+    colorBrandStrong: asString(t.colorBrandStrong).slice(0, 40) || fallback.colorBrandStrong,
+    colorAccent: asString(t.colorAccent).slice(0, 40) || fallback.colorAccent,
+    colorInk: asString(t.colorInk).slice(0, 40) || fallback.colorInk,
+    colorInkSoft: asString(t.colorInkSoft).slice(0, 60) || fallback.colorInkSoft,
+    bg: asString(t.bg).slice(0, 40) || fallback.bg,
+    glass: asString(t.glass).slice(0, 60) || fallback.glass,
+    glass2: asString(t.glass2).slice(0, 60) || fallback.glass2,
+    glassStrong: asString(t.glassStrong).slice(0, 60) || fallback.glassStrong,
+    colorBorder: asString(t.colorBorder).slice(0, 60) || fallback.colorBorder,
+    colorBorder2: asString(t.colorBorder2).slice(0, 60) || fallback.colorBorder2,
+    cardBg: asString(t.cardBg).slice(0, 60) || fallback.cardBg,
+    cardBorder: asString(t.cardBorder).slice(0, 60) || fallback.cardBorder,
+    cardText: asString(t.cardText).slice(0, 40) || fallback.cardText,
+    radiusXl: asString(t.radiusXl).slice(0, 20) || fallback.radiusXl,
+    radiusLg: asString(t.radiusLg).slice(0, 20) || fallback.radiusLg,
+    layoutVars: sanitizeLayoutVars(t.layoutVars),
+  };
+};
 
 export const sanitizeModel = (input: unknown): BioModel => {
   const obj = migrateToLatest(input);
@@ -557,32 +639,20 @@ export const sanitizeModel = (input: unknown): BioModel => {
       .slice(0, 100),
   };
 
-  const themeRaw = obj.theme && typeof obj.theme === "object" ? obj.theme : {};
-  const defaults = defaultTheme();
-  const presetVal = asString(themeRaw.preset);
-  const preset: ThemePreset = (presetVal === "light" || presetVal === "dark" || presetVal === "custom") ? presetVal : "light";
-  const layout = asString(themeRaw.layout).slice(0, 40) || "default";
-  const theme: BioTheme = {
-    layout,
-    preset,
-    colorBrand: asString(themeRaw.colorBrand).slice(0, 40) || defaults.colorBrand,
-    colorBrandStrong: asString(themeRaw.colorBrandStrong).slice(0, 40) || defaults.colorBrandStrong,
-    colorAccent: asString(themeRaw.colorAccent).slice(0, 40) || defaults.colorAccent,
-    colorInk: asString(themeRaw.colorInk).slice(0, 40) || defaults.colorInk,
-    colorInkSoft: asString(themeRaw.colorInkSoft).slice(0, 60) || defaults.colorInkSoft,
-    bg: asString(themeRaw.bg).slice(0, 40) || defaults.bg,
-    glass: asString(themeRaw.glass).slice(0, 60) || defaults.glass,
-    glass2: asString(themeRaw.glass2).slice(0, 60) || defaults.glass2,
-    glassStrong: asString(themeRaw.glassStrong).slice(0, 60) || defaults.glassStrong,
-    colorBorder: asString(themeRaw.colorBorder).slice(0, 60) || defaults.colorBorder,
-    colorBorder2: asString(themeRaw.colorBorder2).slice(0, 60) || defaults.colorBorder2,
-    cardBg: asString(themeRaw.cardBg).slice(0, 60) || defaults.cardBg,
-    cardBorder: asString(themeRaw.cardBorder).slice(0, 60) || defaults.cardBorder,
-    cardText: asString(themeRaw.cardText).slice(0, 40) || defaults.cardText,
-    radiusXl: asString(themeRaw.radiusXl).slice(0, 20) || defaults.radiusXl,
-    radiusLg: asString(themeRaw.radiusLg).slice(0, 20) || defaults.radiusLg,
-    layoutVars: sanitizeLayoutVars(themeRaw.layoutVars),
-  };
+  const theme = sanitizeTheme(obj.theme, defaultTheme());
+
+  // Sanitize per-layout theme storage
+  const layoutThemesRaw = obj.layoutThemes && typeof obj.layoutThemes === "object" ? obj.layoutThemes : {};
+  const layoutDefaults: Record<string, () => BioTheme> = { default: defaultTheme, minimal: minimalLightTheme };
+  const layoutThemes: Record<string, BioTheme> = {};
+  for (const [key, factory] of Object.entries(layoutDefaults)) {
+    layoutThemes[key] = sanitizeTheme((layoutThemesRaw as any)[key], factory());
+  }
+  for (const [key, val] of Object.entries(layoutThemesRaw as Record<string, unknown>)) {
+    if (!layoutThemes[key]) layoutThemes[key] = sanitizeTheme(val, defaultTheme());
+  }
+  // Keep layoutThemes in sync with active theme
+  layoutThemes[theme.layout] = { ...theme };
 
   const blogRaw = obj.blog && typeof obj.blog === "object" ? obj.blog : {};
   const blog: BioBlog = {
@@ -609,7 +679,7 @@ export const sanitizeModel = (input: unknown): BioModel => {
     bodyEndScript: asString(scriptsRaw.bodyEndScript).slice(0, 10000),
   };
 
-  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, links, socials, resume, gallery, blog, embeds, theme, scripts };
+  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, links, socials, resume, gallery, blog, embeds, theme, layoutThemes, scripts };
 };
 
 export const stableStringify = (model: BioModel) => JSON.stringify(model, null, 2);

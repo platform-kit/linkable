@@ -1519,6 +1519,7 @@ import {
   defaultTheme,
   darkTheme,
   THEME_PRESETS,
+  LAYOUT_PRESETS,
   newLink,
   newSocial,
   newEducation,
@@ -1996,18 +1997,39 @@ export default defineComponent({
 
     let applyingPreset = false;
     const applyPreset = (preset: ThemePreset) => {
-      const factory = THEME_PRESETS[preset];
+      const layout = draft.value.theme.layout || "default";
+      const layoutPresets = LAYOUT_PRESETS[layout] || LAYOUT_PRESETS.default;
+      const factory = layoutPresets[preset] || THEME_PRESETS[preset];
       applyingPreset = true;
       if (factory) {
         const presetTheme = factory();
-        // Preserve layout and layoutVars — preset only changes colors
-        const { layout, layoutVars } = draft.value.theme;
+        const { layoutVars } = draft.value.theme;
         draft.value.theme = { ...presetTheme, preset, layout, layoutVars };
       } else {
         draft.value.theme.preset = preset;
       }
       setTimeout(() => { applyingPreset = false; }, 0);
     };
+
+    // Save/restore per-layout theme when switching layouts
+    let previousLayout = draft.value.theme.layout || "default";
+    watch(
+      () => draft.value.theme.layout,
+      (newLayout) => {
+        if (!newLayout || newLayout === previousLayout) return;
+        // Save current theme to old layout's storage
+        draft.value.layoutThemes[previousLayout] = { ...draft.value.theme, layout: previousLayout };
+        // Load saved theme for new layout (or create from defaults)
+        const saved = draft.value.layoutThemes[newLayout];
+        if (saved && saved.preset) {
+          draft.value.theme = { ...saved, layout: newLayout };
+        } else {
+          const presets = LAYOUT_PRESETS[newLayout] || LAYOUT_PRESETS.default;
+          draft.value.theme = { ...presets.light(), layout: newLayout };
+        }
+        previousLayout = newLayout;
+      },
+    );
 
     // Auto-switch to "custom" when user manually edits a theme value
     const themeColorKeys = [
