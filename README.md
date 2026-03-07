@@ -385,6 +385,7 @@ Inject custom JavaScript or HTML into your page via the CMS:
 |---|---|---|
 | `VITE_SITE_URL` | For SEO | Base URL for RSS feeds, OG meta, and absolute URLs |
 | `VITE_SCHEDULE_EXCLUDE_BUILD` | No | Strip expired/future scheduled content at build time |
+| `VITE_PRERENDER` | No | Enable Puppeteer pre-rendering at build time (off by default) |
 | `GITHUB_OWNER` | For sync | GitHub repo owner |
 | `GITHUB_REPO` | For sync | GitHub repo name |
 | `GITHUB_BRANCH` | No | GitHub branch (default: `main`) |
@@ -504,6 +505,22 @@ VITE_SITE_URL=https://yoursite.com
 If not set, URLs default to `http://localhost:8080`.
 
 ***
+
+### Pre-rendering (optional)
+
+By default, builds produce a standard SPA shell. To generate fully rendered static HTML for SEO and faster initial paint, enable Puppeteer pre-rendering:
+
+```bash
+VITE_PRERENDER=1 npm run build
+```
+
+This launches headless Chrome after the build, navigates each route, waits for the Vue app to finish rendering, and captures the full DOM into static HTML files. The SPA still hydrates on top for interactivity.
+
+Pre-rendered routes:
+- `/` (always)
+- Any layout route with a `prerender` field in its manifest
+
+Requires Puppeteer as a dev dependency (already installed). On CI, ensure a Chromium binary is available or set `PUPPETEER_SKIP_DOWNLOAD` to skip and fall back to the SPA shell.
 
 ### Static hosting (Vercel, Netlify, etc.)
 

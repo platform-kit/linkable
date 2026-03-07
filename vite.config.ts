@@ -844,6 +844,8 @@ const encryptTokenAtBuild = (token: string, password: string): string => {
 const prerenderBuildPlugin = () => ({
   name: "prerender",
   async closeBundle() {
+    if (!process.env.VITE_PRERENDER) return;
+
     const distDir = path.resolve(__dirname, "dist");
     const indexHtmlPath = path.join(distDir, "index.html");
     if (!fs.existsSync(indexHtmlPath)) return;
