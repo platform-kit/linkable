@@ -2000,7 +2000,9 @@ export default defineComponent({
       applyingPreset = true;
       if (factory) {
         const presetTheme = factory();
-        draft.value.theme = { ...presetTheme, preset };
+        // Preserve layout and layoutVars — preset only changes colors
+        const { layout, layoutVars } = draft.value.theme;
+        draft.value.theme = { ...presetTheme, preset, layout, layoutVars };
       } else {
         draft.value.theme.preset = preset;
       }
