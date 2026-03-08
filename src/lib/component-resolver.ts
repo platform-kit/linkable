@@ -170,6 +170,23 @@ export function useLayoutRoutes(
     registeredNames = names;
   };
 
+  const rematchCurrentLocationIfNeeded = async () => {
+    // Initial navigation can happen before dynamic layout routes are added.
+    // Wait for router readiness, then re-resolve current URL against the
+    // updated matcher so deep links like /about can render immediately.
+    await router.isReady();
+
+    const fullPath = router.currentRoute.value.fullPath;
+    const currentMatched = router.currentRoute.value.matched.length;
+    const resolvedMatched = router.resolve(fullPath).matched.length;
+
+    if (currentMatched === 0 && resolvedMatched > 0) {
+      void router.replace(fullPath).catch(() => {
+        // Ignore redundant-navigation and transient route-sync failures.
+      });
+    }
+  };
+
   watch(
     layout,
     (layoutName) => {
@@ -179,6 +196,7 @@ export function useLayoutRoutes(
       const routes = manifest?.routes ?? [];
       if (routes.length > 0) {
         addNewRoutes(routes);
+        void rematchCurrentLocationIfNeeded();
       }
       activeRoutes.value = routes;
     },

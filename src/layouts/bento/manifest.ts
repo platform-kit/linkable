@@ -1,4 +1,5 @@
 import type { LayoutManifest } from "../../lib/layout-manifest";
+import routes from "./routes-manifest";
 import type { FormKitSchemaNode } from "@formkit/core";
 import type { BioTheme } from "../../lib/model";
 import { newLink, newGalleryItem, newEmbed, newSocial } from "../../lib/model";
@@ -228,6 +229,7 @@ const manifest: LayoutManifest = {
     },
   ],
   cmsTabs: [],
+  routes,
 };
 
 export default manifest;

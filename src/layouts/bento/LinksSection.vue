@@ -125,7 +125,7 @@
                 v-if="selectedItem.type !== 'blog'"
                 :value="selectedItem.refId"
                 class="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-                @change="updateSelectedRef(($event.target as HTMLSelectElement).value)"
+                @change="updateSelectedRef($event.target.value)"
               >
                 <option value="">Select content…</option>
                 <option v-for="opt in refOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
@@ -135,7 +135,7 @@
                 :value="selectedItem.refId"
                 class="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                 placeholder="Blog post slug, e.g. my-first-post"
-                @input="updateSelectedRef(($event.target as HTMLInputElement).value)"
+                @input="updateSelectedRef($event.target.value)"
               />
             </div>
 
@@ -145,25 +145,25 @@
                 <label class="text-[10px] font-semibold text-[color:var(--color-ink-soft)]">X</label>
                 <input type="number" :value="selectedItem.col" :min="0" :max="gridColumns - 1"
                   class="w-full rounded-lg border border-black/10 px-2 py-1.5 text-center text-xs"
-                  @input="updateItemField('col', +($event.target as HTMLInputElement).value)" />
+                  @input="updateItemField('col', +$event.target.value)" />
               </div>
               <div class="grid gap-1">
                 <label class="text-[10px] font-semibold text-[color:var(--color-ink-soft)]">Y</label>
                 <input type="number" :value="selectedItem.row" :min="0" :max="20"
                   class="w-full rounded-lg border border-black/10 px-2 py-1.5 text-center text-xs"
-                  @input="updateItemField('row', +($event.target as HTMLInputElement).value)" />
+                  @input="updateItemField('row', +$event.target.value)" />
               </div>
               <div class="grid gap-1">
                 <label class="text-[10px] font-semibold text-[color:var(--color-ink-soft)]">W</label>
                 <input type="number" :value="selectedItem.colSpan" :min="1" :max="gridColumns"
                   class="w-full rounded-lg border border-black/10 px-2 py-1.5 text-center text-xs"
-                  @input="updateItemField('colSpan', +($event.target as HTMLInputElement).value)" />
+                  @input="updateItemField('colSpan', +$event.target.value)" />
               </div>
               <div class="grid gap-1">
                 <label class="text-[10px] font-semibold text-[color:var(--color-ink-soft)]">H</label>
                 <input type="number" :value="selectedItem.rowSpan" :min="1" :max="6"
                   class="w-full rounded-lg border border-black/10 px-2 py-1.5 text-center text-xs"
-                  @input="updateItemField('rowSpan', +($event.target as HTMLInputElement).value)" />
+                  @input="updateItemField('rowSpan', +$event.target.value)" />
               </div>
             </div>
           </div>
@@ -175,17 +175,17 @@
             <div class="grid gap-1.5">
               <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Thumbnail URL</label>
               <input :value="selectedItem.thumbnailUrl" class="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm" placeholder="https://…"
-                @input="updateItemField('thumbnailUrl', ($event.target as HTMLInputElement).value)" />
+                @input="updateItemField('thumbnailUrl', $event.target.value)" />
             </div>
             <div class="grid gap-1.5">
               <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Header Text</label>
               <input :value="selectedItem.headerText" class="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm" placeholder="e.g. Watch Demo"
-                @input="updateItemField('headerText', ($event.target as HTMLInputElement).value)" />
+                @input="updateItemField('headerText', $event.target.value)" />
             </div>
             <div class="grid gap-1.5">
               <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Button Text</label>
               <input :value="selectedItem.buttonText" class="w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm" placeholder="e.g. Open"
-                @input="updateItemField('buttonText', ($event.target as HTMLInputElement).value)" />
+                @input="updateItemField('buttonText', $event.target.value)" />
             </div>
           </div>
         </div>
@@ -272,6 +272,14 @@ const newId = () =>
   (globalThis.crypto?.randomUUID?.() ?? `id_${Math.random().toString(16).slice(2)}`)
     .replace(/[^a-zA-Z0-9_-]/g, "")
     .slice(0, 40);
+
+const layoutReady = ref(false);
+
+onMounted(async () => {
+  // Simulate async layout loading
+  await nextTick();
+  layoutReady.value = true;
+});
 
 export default defineComponent({
   name: "BentoLinksSection",
@@ -655,6 +663,7 @@ export default defineComponent({
       openEmbed,
       isUrlOrUrlString,
       extractUrl,
+      layoutReady,
     };
   },
 });

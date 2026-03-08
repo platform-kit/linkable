@@ -1,32 +1,20 @@
 import { createRouter, createWebHistory } from "vue-router";
+import IndexPage from "./pages/Index.vue";
 
-/**
- * Minimal router used purely for URL management.
- * App.vue watches the current route to load blog posts from /content/:slug.
- * No <router-view> is needed — the component is always App.vue.
- */
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
       path: "/",
       name: "home",
-      component: { render: () => null },
+      component: IndexPage,
     },
     {
-      path: "/content/:slug",
-      name: "blog-post",
-      component: { render: () => null },
-    },
-    {
-      path: "/newsletter/:id",
-      name: "newsletter-view",
-      component: { render: () => null },
-    },
-    {
-      path: "/confirmed",
-      name: "newsletter-confirmed",
-      component: { render: () => null },
+      // Deep links (e.g. /about) should still bootstrap the SPA.
+      // Layout-specific routing can then resolve inside the app.
+      path: "/:pathMatch(.*)*",
+      name: "spa-fallback",
+      component: IndexPage,
     },
   ],
 });

@@ -13,14 +13,19 @@ import App from "./App.vue";
 import router from "./router";
 import { formkitConfig } from "./lib/formkit-config";
 
-createApp(App)
-  .use(router)
-  .use(PrimeVue, {
-    ripple: true,
-    theme: {
-      preset: Aura,
-    },
-  })
-  .use(ToastService)
-  .use(formkitPlugin, defaultConfig(formkitConfig))
-  .mount("#app");
+const app = createApp(App);
+app.use(router);
+app.use(PrimeVue, {
+  ripple: true,
+  theme: {
+    preset: Aura,
+  },
+});
+app.use(ToastService);
+app.use(formkitPlugin, defaultConfig(formkitConfig));
+
+// Register PrimeVue tooltip directive globally
+import Tooltip from "primevue/tooltip";
+app.directive("tooltip", Tooltip);
+
+app.mount("#app");
