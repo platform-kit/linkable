@@ -15,7 +15,7 @@
       v-if="post.coverImage"
       :src="resolveUploadUrl(post.coverImage)"
       :alt="post.title"
-      class="mb-4 w-full rounded-2xl border border-[var(--color-border)] object-cover shadow-sm"
+        class="mb-4 w-full rounded-2xl object-cover shadow-sm"
       style="max-height: 320px"
     />
 

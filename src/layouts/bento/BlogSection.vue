@@ -16,7 +16,7 @@
           v-if="currentPost.coverImage"
           :src="currentPost.coverImage"
           alt=""
-          class="mb-4 w-full rounded-2xl border border-[var(--bento-card-border)] object-cover shadow-sm"
+          class="mb-4 w-full rounded-2xl object-cover shadow-sm"
           style="max-height: 320px"
         />
         <div v-if="currentPost.date" class="mb-2 text-[11px] font-medium uppercase tracking-widest text-[color:var(--color-brand)]">
@@ -30,6 +30,16 @@
           v-html="currentPost.html"
         />
       </div>
+
+      <!-- Edit article button -->
+      <button
+        v-if="canUseCms"
+        class="!fixed !top-4 !right-3 !z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-brand)] text-white shadow-lg hover:brightness-110 transition sm:!top-6 sm:!right-6"
+        title="Edit article"
+        @click="openBlogEditor"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
     </template>
 
     <!-- Newsletter detail view -->
@@ -52,7 +62,7 @@
             v-if="nlData.cover_image"
             :src="nlData.cover_image"
             alt=""
-            class="mb-4 w-full rounded-2xl border border-[var(--bento-card-border)] object-cover shadow-sm"
+            class="mb-4 w-full rounded-2xl object-cover shadow-sm"
             style="max-height: 320px"
           />
           <div v-if="nlData.sent_at" class="mb-2 text-[11px] font-medium uppercase tracking-widest text-[color:var(--color-brand)]">
@@ -64,11 +74,32 @@
           <div class="prose-content text-[color:var(--color-ink)]" v-html="nlData.body_html" />
         </article>
       </div>
+
+      <!-- Edit newsletter button -->
+      <button
+        v-if="canUseCms && nlData"
+        class="!fixed !top-4 !right-3 !z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-brand)] text-white shadow-lg hover:brightness-110 transition sm:!top-6 sm:!right-6"
+        title="Edit newsletter"
+        @click="openNlEditor"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
     </template>
 
     <!-- List view -->
     <template v-else>
-      <!-- Type filter + search -->
+      <!-- Search bar -->
+      <SearchBar
+        v-if="searchEnabled"
+        v-model="searchQuery"
+        placeholder="Search articles…"
+        :show-search="searchEnabled"
+        :tag-count="(availableTags.length || allTags.length) > 0 ? (availableTags.length || allTags.length) : null"
+        :selected-tag-count="selectedTags.length"
+        @filter-click="$emit('filter-click')"
+      />
+
+      <!-- Type filter -->
       <div class="mb-4 flex flex-wrap items-center gap-2 px-1">
         <button
           v-for="f in typeFilters"
@@ -80,14 +111,6 @@
           @click="activeTypeFilter = f.value"
         >
           {{ f.label }}
-        </button>
-
-        <button
-          v-if="searchEnabled && (availableTags.length || allTags.length)"
-          class="ml-auto text-xs font-medium text-[color:var(--color-brand)] hover:underline"
-          @click="$emit('filter-click')"
-        >
-          Filter
         </button>
       </div>
 
@@ -138,12 +161,31 @@
         No articles yet.
       </div>
     </template>
+
+    <!-- Editor drawers -->
+    <BlogEditorDrawer
+      v-if="canUseCms"
+      v-model:open="blogEditorOpen"
+      :post="currentPost"
+      :original-slug="currentPost?.slug || ''"
+      :all-tags="allBlogTags"
+      @saved="$emit('back')"
+    />
+    <NewsletterComposeDrawer
+      v-if="canUseCms"
+      v-model:open="nlEditorOpen"
+      :send-record="nlSendRecord"
+      @saved="onNlSaved"
+    />
   </section>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted, type PropType } from "vue";
+import { defineComponent, ref, computed, inject, onMounted, type PropType, type ComputedRef } from "vue";
 import type { BlogPost, BlogPostMeta } from "../../lib/blog";
+import SearchBar from "../../components/SearchBar.vue";
+import BlogEditorDrawer from "../../components/BlogEditorDrawer.vue";
+import NewsletterComposeDrawer from "../../components/NewsletterComposeDrawer.vue";
 export type { BlogSectionProps, BlogSectionEmits } from "../../lib/component-contracts";
 
 interface UnifiedItem {
@@ -173,6 +215,7 @@ const typeFilters = [
 
 export default defineComponent({
   name: "BentoBlogSection",
+  components: { SearchBar, BlogEditorDrawer, NewsletterComposeDrawer },
   props: {
     posts: { type: Array as PropType<BlogPostMeta[]>, required: true },
     currentPost: { type: Object as PropType<BlogPost | null>, default: null },
@@ -183,11 +226,15 @@ export default defineComponent({
   },
   emits: ["load-post", "back", "filter-click"],
   setup(props, { emit }) {
+    const canUseCms = inject<ComputedRef<boolean>>("canUseCms", computed(() => false));
+    const searchQuery = ref("");
     const activeTypeFilter = ref<"all" | "article" | "newsletter">("all");
     const newsletterSends = ref<NlSend[]>([]);
     const viewingNewsletter = ref<string | null>(null);
     const nlData = ref<NlSend | null>(null);
     const nlLoading = ref(false);
+    const blogEditorOpen = ref(false);
+    const nlEditorOpen = ref(false);
 
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "http://127.0.0.1:54321";
     const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
@@ -258,8 +305,15 @@ export default defineComponent({
     });
 
     const filteredItems = computed(() => {
-      if (activeTypeFilter.value === "all") return unifiedItems.value;
-      return unifiedItems.value.filter((i) => i.kind === activeTypeFilter.value);
+      let items = unifiedItems.value;
+      if (activeTypeFilter.value !== "all") {
+        items = items.filter((i) => i.kind === activeTypeFilter.value);
+      }
+      const q = searchQuery.value.trim().toLowerCase();
+      if (q) {
+        items = items.filter((i) => i.title.toLowerCase().includes(q) || i.excerpt.toLowerCase().includes(q));
+      }
+      return items;
     });
 
     const openItem = (item: UnifiedItem) => {
@@ -280,15 +334,58 @@ export default defineComponent({
       }
     };
 
+    const allBlogTags = computed(() => {
+      const tags = new Set<string>();
+      for (const p of props.posts) {
+        for (const t of p.tags ?? []) tags.add(t);
+      }
+      return [...tags];
+    });
+
+    const nlSendRecord = computed(() => {
+      const d = nlData.value;
+      if (!d) return null;
+      return {
+        id: d.id,
+        subject: d.subject,
+        cover_image: d.cover_image ?? "",
+        tags: [] as string[],
+        excerpt_html: "",
+        body_html: d.body_html ?? "",
+        status: "sent",
+        scheduled_at: null,
+        sent_at: d.sent_at,
+        recipient_count: 0,
+        created_at: d.sent_at ?? "",
+        updated_at: d.sent_at ?? "",
+      };
+    });
+
+    const openBlogEditor = () => { blogEditorOpen.value = true; };
+    const openNlEditor = () => { nlEditorOpen.value = true; };
+
+    const onNlSaved = () => {
+      if (viewingNewsletter.value) fetchNewsletterDetail(viewingNewsletter.value);
+    };
+
     return {
+      canUseCms,
+      searchQuery,
       typeFilters,
       activeTypeFilter,
       allTags,
+      allBlogTags,
       filteredItems,
       viewingNewsletter,
       nlData,
       nlLoading,
+      nlSendRecord,
+      blogEditorOpen,
+      nlEditorOpen,
       openItem,
+      openBlogEditor,
+      openNlEditor,
+      onNlSaved,
       formatDate,
     };
   },

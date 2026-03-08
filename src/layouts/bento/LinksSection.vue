@@ -1,5 +1,5 @@
 <template>
-  <section class="bento-all mx-auto w-full px-4" style="max-width: var(--bento-grid-width, 960px)">
+  <section class="bento-all w-full" :style="{ maxWidth: 'none', margin: `-${glpGap}px -${glpGap}px` }">
     <!-- Edit mode toolbar -->
     <div v-if="editing" class="mb-4 flex items-center justify-between rounded-2xl bg-white/80 px-4 py-2.5 shadow-sm backdrop-blur-sm ring-1 ring-black/5">
       <div class="flex items-center gap-3">

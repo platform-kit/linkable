@@ -1,26 +1,22 @@
 <template>
   <section
     class="bento-gallery mx-auto w-full"
-    style="width:calc(100% - 50px);max-width: var(--bento-grid-width, 960px); margin: 44px 25px"
+    style="max-width: var(--bento-grid-width, 960px)"
   >
     <!-- Search/filter bar -->
-    <div
-      v-if="searchEnabled && availableTags.length"
-      style="width:100%;background:none;border-radius:50px;"
-      class="mb-4 flex items-center justify-between px-1 w-full block"
-    >
-      <button        
-        class="text-sm bg-white py-3 px-5 rounded-full font-medium  text-gray-500"
-        @click="$emit('filter-click')"
-      >
-        Filter 
-        <i class="pi pi-cog" />
-      </button>
-    </div>
+    <SearchBar
+      v-if="searchEnabled"
+      v-model="searchQuery"
+      placeholder="Search gallery…"
+      :show-search="searchEnabled"
+      :tag-count="availableTags.length > 0 ? availableTags.length : null"
+      :selected-tag-count="selectedTags.length"
+      @filter-click="$emit('filter-click')"
+    />
 
     <!-- Auto-layout bento grid -->
     <div
-      v-if="items.length"
+      v-if="filteredItems.length"
       class="grid gap-[var(--bento-gap)]"
       :style="{
         gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
@@ -29,7 +25,7 @@
       }"
     >
       <button
-        v-for="(item, i) in items"
+        v-for="(item, i) in filteredItems"
         :key="item.id"
         type="button"
         class="bento-cell group overflow-hidden"
@@ -73,12 +69,14 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, type PropType } from 'vue';
+import { defineComponent, ref, computed, type PropType } from 'vue';
 import type { MasonryItem } from '../../components/MasonryGrid.vue';
+import SearchBar from '../../components/SearchBar.vue';
 export type { GallerySectionProps, GallerySectionEmits } from '../../lib/component-contracts';
 
 export default defineComponent({
   name: 'BentoGallerySection',
+  components: { SearchBar },
   props: {
     items: { type: Array as PropType<MasonryItem[]>, required: true },
     searchEnabled: { type: Boolean, default: false },
@@ -87,6 +85,7 @@ export default defineComponent({
   },
   emits: ['open-lightbox', 'open-video', 'filter-click'],
   setup(props) {
+    const searchQuery = ref('');
     const gridCols = computed(() => (props.items.length <= 2 ? 2 : 3));
 
     /**
@@ -142,7 +141,13 @@ export default defineComponent({
 
     const cellStyle = (index: number) => cellStyles.value[index] ?? {};
 
-    return { gridCols, cellStyle };
+    const filteredItems = computed(() => {
+      const q = searchQuery.value.trim().toLowerCase();
+      if (!q) return props.items;
+      return props.items.filter((i) => String(i.title || '').toLowerCase().includes(q));
+    });
+
+    return { searchQuery, gridCols, cellStyle, filteredItems };
   },
 });
 </script>

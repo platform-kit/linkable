@@ -28,7 +28,7 @@
         v-if="newsletter.cover_image"
         :src="newsletter.cover_image"
         :alt="newsletter.subject"
-        class="mb-4 w-full rounded-2xl border border-[var(--color-border)] object-cover shadow-sm"
+        class="mb-4 w-full rounded-2xl object-cover shadow-sm"
         style="max-height: 320px"
       />
       <div v-if="newsletter.sent_at" class="mb-2 text-[11px] font-medium uppercase tracking-widest text-[color:var(--color-ink-soft)]">

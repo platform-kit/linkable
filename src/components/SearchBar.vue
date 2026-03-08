@@ -24,9 +24,11 @@
       />
       <span v-if="!showSearch" class="min-w-0 flex-1" />
       <button
-        v-if="tagCount !== null"
         type="button"
-        class="relative shrink-0 rounded-lg p-1 text-[color:var(--color-ink-soft)] transition hover:text-[color:var(--color-brand)]"
+        :class="[
+          'relative shrink-0 rounded-lg p-1 text-[color:var(--color-ink-soft)] transition hover:text-[color:var(--color-brand)]',
+          tagCount === null ? 'opacity-0 pointer-events-none' : ''
+        ]"
         @click.stop="$emit('filter-click')"
       >
         <i class="pi pi-filter text-[13px]" />

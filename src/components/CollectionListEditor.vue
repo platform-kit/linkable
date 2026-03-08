@@ -57,6 +57,15 @@
           </div>
           <ToggleSwitch :modelValue="collection.enabled" @update:modelValue="updateMeta('enabled', $event)" />
         </div>
+        <div v-if="schema.searchable" class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
+          <div>
+            <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable search</div>
+            <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+              Show a search bar on the public page for this section.
+            </div>
+          </div>
+          <ToggleSwitch :modelValue="collection.searchEnabled" @update:modelValue="updateMeta('searchEnabled', $event)" />
+        </div>
       </div>
     </div>
 

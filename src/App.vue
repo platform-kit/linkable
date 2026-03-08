@@ -22,8 +22,8 @@
 
     <main
       v-if="!isOnLayoutRoute"
-      class="mx-auto w-full px-3 pb-24 pt-4 sm:px-4 sm:pb-10 sm:pt-6 d-block"
-      :style="{ maxWidth: 'var(--bento-grid-width, 740px)' }"
+      class="mx-auto w-full px-4 pb-24 pt-4 sm:pb-10 sm:pt-6 d-block"
+      :style="{ maxWidth: 'var(--bento-grid-width, 960px)' }"
     >
       <component
         :is="resolvedTabNav"

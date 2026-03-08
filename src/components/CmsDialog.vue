@@ -617,14 +617,28 @@
           <template v-for="cs in (activeManifest?.contentSchemas ?? [])" :key="cs.key">
             <div v-if="contentSubTab === cs.key" class="cms__subPanel">
               <!-- Custom editor component (resume, blog, newsletter, etc.) -->
-              <component
-                v-if="resolvedEditorComponents[cs.key]"
-                :is="resolvedEditorComponents[cs.key]"
-                :collection="draft.collections[cs.key]"
-                :model="draft"
-                @reauth="$emit('reauth')"
-                @blog-posts-updated="$emit('blog-posts-updated')"
-              />
+              <template v-if="resolvedEditorComponents[cs.key]">
+                <div v-if="cs.searchable && draft.collections[cs.key]" class="cms__card" style="margin-bottom: 10px">
+                  <div class="cms__form">
+                    <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
+                      <div>
+                        <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable search</div>
+                        <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+                          Show a search bar on the public page for this section.
+                        </div>
+                      </div>
+                      <ToggleSwitch :modelValue="draft.collections[cs.key].searchEnabled" @update:modelValue="updateCollectionMeta(cs.key, { ...draft.collections[cs.key], searchEnabled: $event })" />
+                    </div>
+                  </div>
+                </div>
+                <component
+                  :is="resolvedEditorComponents[cs.key]"
+                  :collection="draft.collections[cs.key]"
+                  :model="draft"
+                  @reauth="$emit('reauth')"
+                  @blog-posts-updated="$emit('blog-posts-updated')"
+                />
+              </template>
               <!-- Schema-driven list editor (links, gallery, embeds, etc.) -->
               <CollectionListEditor
                 v-else-if="cs.itemSchema && draft.collections[cs.key]"
