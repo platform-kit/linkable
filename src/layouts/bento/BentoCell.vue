@@ -142,9 +142,10 @@
   <!-- Embed cell: inline when no heading/button -->
   <div
     v-else-if="item.type === 'embed' && embedData && !item.headerText && !item.buttonText"
-    class="bento-cell overflow-hidden"
-    v-html="embedData.html"
-  />
+    class="bento-cell bento-cell--embed-inline overflow-hidden"
+  >
+    <div class="bento-embed-fill" v-html="embedHtml" />
+  </div>
 
   <!-- Embed cell (thumbnail + CTA) -->
   <button
@@ -202,6 +203,7 @@ import type { BentoGridItem } from "./manifest";
 import type { BioLink, BioModel, GalleryItem, EmbedItem, SocialLink } from "../../lib/model";
 import type { BlogPostMeta } from "../../lib/blog";
 import { icons as lucideIcons } from "lucide-vue-next";
+import { resolveEmbedHtml } from "../../components/EmbedEditorDrawer.vue";
 
 export default defineComponent({
   name: "BentoCell",
@@ -228,6 +230,7 @@ export default defineComponent({
     const embedData = computed(() =>
       props.item.type === "embed" ? props.embeds.find((e) => e.id === props.item.refId) ?? null : null,
     );
+    const embedHtml = computed(() => resolveEmbedHtml(embedData.value?.html ?? ""));
 
     const enabledSocials = computed<SocialLink[]>(() =>
       ((model?.value?.collections?.socials?.items ?? []) as any[]).filter((s) => s.enabled && s.url),
@@ -245,7 +248,7 @@ export default defineComponent({
       }
     };
 
-    return { model, linkData, galleryData, blogData, embedData, enabledSocials, getIcon, formatDate };
+    return { model, linkData, galleryData, blogData, embedData, embedHtml, enabledSocials, getIcon, formatDate };
   },
 });
 </script>
@@ -265,5 +268,25 @@ export default defineComponent({
 }
 .bento-cell:hover {
   transform: scale(var(--bento-hover-scale, 1.02));
+}
+
+.bento-cell--embed-inline .bento-embed-fill :deep(iframe),
+.bento-cell--embed-inline .bento-embed-fill :deep(embed),
+.bento-cell--embed-inline .bento-embed-fill :deep(object) {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0;
+}
+
+.bento-cell--embed-inline {
+  position: relative;
+}
+
+.bento-cell--embed-inline .bento-embed-fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 </style>

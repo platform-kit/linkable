@@ -10,40 +10,56 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, provide, computed } from "vue";
+import { defineComponent, ref, provide, computed, watch, type PropType } from "vue";
 import { defaultModel, type BioModel } from "../lib/model";
 import { useComponent } from "../lib/component-resolver";
 import { useRoute, useRouter } from "vue-router";
 
 export default defineComponent({
   name: "IndexPage",
-  setup() {
-    // Load the actual persisted model from public/data.json
-    const model = ref<BioModel>(defaultModel());
-    const loaded = ref(false);
-    fetch("/data.json")
-      .then((res) => {
-        if (!res.ok) {
-          console.error("Failed to fetch /data.json", res.status, res.statusText);
-          throw new Error("Fetch failed");
+  props: {
+    model: {
+      type: Object as PropType<BioModel>,
+      required: false,
+    },
+  },
+  setup(props: { model?: BioModel }) {
+    const model = ref<BioModel>(props.model ?? defaultModel());
+    const loaded = ref(!!props.model);
+
+    // Keep using App.vue's live model when provided so CMS edits are instant.
+    watch(
+      () => props.model,
+      (nextModel: BioModel | undefined) => {
+        if (nextModel) {
+          model.value = nextModel;
+          loaded.value = true;
         }
-        return res.json();
-      })
-      .then((data) => {
-        model.value = data;
-        loaded.value = true;
-        console.log("Loaded model:", data);
-        if (data?.theme?.layoutData?.grid) {
-          console.log("Grid data:", data.theme.layoutData.grid);
-        } else {
-          console.warn("No grid data found in model");
-        }
-      })
-      .catch((err) => {
-        loaded.value = true;
-        console.error("Model load error:", err);
-      });
+      },
+      { immediate: true },
+    );
+
+    // Fallback for standalone usage where parent doesn't pass a model.
+    if (!props.model) {
+      fetch("/data.json")
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`Failed to fetch /data.json: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then((data) => {
+          model.value = data;
+          loaded.value = true;
+        })
+        .catch((err) => {
+          loaded.value = true;
+          console.error("Model load error:", err);
+        });
+    }
+
     provide("bioModel", model);
+
     // Dynamically resolve the layout root component
     const activeLayout = computed(() => model.value.theme?.layout || "bento");
     const LayoutRoot = useComponent("Root", null, activeLayout);

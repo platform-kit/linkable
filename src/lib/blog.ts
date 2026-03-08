@@ -244,6 +244,85 @@ const DEV_BLOG_LIST = "/__blog-posts";
 const DEV_BLOG_POST = "/__blog-post";
 const PROD_BLOG_INDEX = "/blog/index.json";
 const PROD_BLOG_POST = "/blog"; // `/blog/<slug>.json`
+const PENDING_BLOG_KEY = "pending-blog-posts";
+
+type PendingBlogEntry = {
+  slug: string;
+  frontmatter?: Record<string, unknown>;
+  body?: string;
+  deleted?: boolean;
+};
+
+const readPendingBlogEntries = (): Record<string, PendingBlogEntry> => {
+  if (import.meta.env.DEV) return {};
+  try {
+    const raw = window.localStorage.getItem(PENDING_BLOG_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+    return parsed as Record<string, PendingBlogEntry>;
+  } catch {
+    return {};
+  }
+};
+
+const writePendingBlogEntries = (entries: Record<string, PendingBlogEntry>): void => {
+  if (import.meta.env.DEV) return;
+  try {
+    window.localStorage.setItem(PENDING_BLOG_KEY, JSON.stringify(entries));
+  } catch {
+    // ignore storage failures
+  }
+};
+
+const stagePendingBlogSave = (
+  slug: string,
+  frontmatter: Record<string, unknown>,
+  body: string,
+): void => {
+  const entries = readPendingBlogEntries();
+  entries[slug] = {
+    slug,
+    frontmatter,
+    body,
+    deleted: false,
+  };
+  writePendingBlogEntries(entries);
+};
+
+const stagePendingBlogDelete = (slug: string): void => {
+  const entries = readPendingBlogEntries();
+  entries[slug] = {
+    slug,
+    deleted: true,
+  };
+  writePendingBlogEntries(entries);
+};
+
+const applyPendingBlogEntries = (posts: BlogPostMeta[]): BlogPostMeta[] => {
+  const entries = readPendingBlogEntries();
+  if (Object.keys(entries).length === 0) return posts;
+
+  const bySlug = new Map<string, BlogPostMeta>();
+  for (const post of posts) {
+    bySlug.set(post.slug, post);
+  }
+
+  for (const [slug, entry] of Object.entries(entries)) {
+    if (entry.deleted) {
+      bySlug.delete(slug);
+      continue;
+    }
+    if (!entry.frontmatter) continue;
+    bySlug.set(slug, metaFromRaw(entry.frontmatter, slug));
+  }
+
+  return Array.from(bySlug.values()).sort((a, b) => {
+    const da = a.date ? new Date(a.date).getTime() : 0;
+    const db = b.date ? new Date(b.date).getTime() : 0;
+    return db - da;
+  });
+};
 
 /** Fetch list of blog post metadata. */
 export const fetchBlogPosts = async (): Promise<BlogPostMeta[]> => {
@@ -253,11 +332,26 @@ export const fetchBlogPosts = async (): Promise<BlogPostMeta[]> => {
     if (res.status === 404) return [];
     throw new Error(`Failed to fetch blog posts: ${res.status}`);
   }
-  return res.json();
+  const posts = (await res.json()) as BlogPostMeta[];
+  return applyPendingBlogEntries(posts);
 };
 
 /** Fetch a single blog post by slug. */
 export const fetchBlogPost = async (slug: string): Promise<BlogPost | null> => {
+  const pendingEntry = readPendingBlogEntries()[slug];
+  if (pendingEntry) {
+    if (pendingEntry.deleted) return null;
+    if (pendingEntry.frontmatter) {
+      const meta = metaFromRaw(pendingEntry.frontmatter, slug);
+      const content = pendingEntry.body ?? "";
+      return {
+        ...meta,
+        content,
+        html: renderMarkdown(content),
+      };
+    }
+  }
+
   if (import.meta.env.DEV) {
     const res = await fetch(`${DEV_BLOG_POST}?slug=${encodeURIComponent(slug)}`, {
       cache: "no-store",
@@ -286,6 +380,11 @@ export const saveBlogPost = async (
 ): Promise<void> => {
   const markdown = serializeFrontmatter(frontmatter, body);
 
+  // Stage for immediate frontend reads, even before commit/sync.
+  if (!import.meta.env.DEV) {
+    stagePendingBlogSave(slug, frontmatter, body);
+  }
+
   if (import.meta.env.DEV) {
     await fetch(DEV_BLOG_POST, {
       method: "POST",
@@ -301,6 +400,11 @@ export const saveBlogPost = async (
 
 /** Delete a blog post. In dev, removes from disk. In production, deletes from GitHub. */
 export const deleteBlogPost = async (slug: string): Promise<void> => {
+  // Stage deletion so list/detail reflect uncommitted removals immediately.
+  if (!import.meta.env.DEV) {
+    stagePendingBlogDelete(slug);
+  }
+
   if (import.meta.env.DEV) {
     await fetch(`${DEV_BLOG_POST}?slug=${encodeURIComponent(slug)}`, {
       method: "DELETE",

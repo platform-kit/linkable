@@ -47,7 +47,7 @@
       <div class="bento-card overflow-hidden p-3 sm:p-6">
         <button
           class="mb-4 flex items-center gap-1 text-xs font-medium text-[color:var(--color-ink-soft)] transition-colors hover:text-[color:var(--color-ink)]"
-          @click="viewingNewsletter = null"
+          @click="closeNewsletterDetail"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m15 18-6-6 6-6" />
@@ -181,7 +181,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, inject, onMounted, type PropType, type ComputedRef } from "vue";
+import { defineComponent, ref, computed, inject, onMounted, watch, type PropType, type ComputedRef } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import type { BlogPost, BlogPostMeta } from "../../lib/blog";
 import SearchBar from "../../components/SearchBar.vue";
 import BlogEditorDrawer from "../../components/BlogEditorDrawer.vue";
@@ -226,6 +227,8 @@ export default defineComponent({
   },
   emits: ["load-post", "back", "filter-click"],
   setup(props, { emit }) {
+    const route = useRoute();
+    const router = useRouter();
     const canUseCms = inject<ComputedRef<boolean>>("canUseCms", computed(() => false));
     const searchQuery = ref("");
     const activeTypeFilter = ref<"all" | "article" | "newsletter">("all");
@@ -268,7 +271,46 @@ export default defineComponent({
       }
     }
 
+    const openNewsletterDetail = async (id: string, pushRoute = true) => {
+      if (!id) return;
+      viewingNewsletter.value = id;
+      await fetchNewsletterDetail(id);
+      if (pushRoute && route.path !== `/newsletter/${encodeURIComponent(id)}`) {
+        router.push(`/newsletter/${encodeURIComponent(id)}`);
+      }
+    };
+
+    const closeNewsletterDetail = () => {
+      viewingNewsletter.value = null;
+      nlData.value = null;
+      if (route.path.startsWith("/newsletter/")) {
+        router.push("/blog");
+      }
+    };
+
+    const syncNewsletterFromRoute = async () => {
+      if (props.currentPost) return;
+      const path = route.path || "";
+      if (path.startsWith("/newsletter/")) {
+        const id = decodeURIComponent(path.slice("/newsletter/".length));
+        if (id) {
+          if (viewingNewsletter.value !== id) {
+            await openNewsletterDetail(id, false);
+          }
+          return;
+        }
+      }
+      viewingNewsletter.value = null;
+      nlData.value = null;
+    };
+
     onMounted(fetchNewsletterList);
+    onMounted(() => {
+      void syncNewsletterFromRoute();
+    });
+    watch(() => route.path, () => {
+      void syncNewsletterFromRoute();
+    });
 
     const allTags = computed(() => {
       const tags = new Set<string>();
@@ -320,8 +362,7 @@ export default defineComponent({
       if (item.kind === "article" && item.slug) {
         emit("load-post", item.slug);
       } else if (item.kind === "newsletter" && item.sendId) {
-        viewingNewsletter.value = item.sendId;
-        fetchNewsletterDetail(item.sendId);
+        void openNewsletterDetail(item.sendId);
       }
     };
 
@@ -376,6 +417,7 @@ export default defineComponent({
       allTags,
       allBlogTags,
       filteredItems,
+      closeNewsletterDetail,
       viewingNewsletter,
       nlData,
       nlLoading,

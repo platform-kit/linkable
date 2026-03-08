@@ -36,12 +36,14 @@
       />
       <BlogSection
         v-if="activeTab === 'blog'"
-        :posts="model.collections.blog?.items || []"
-        :currentPost="null"
+        :posts="blogPosts"
+        :currentPost="currentBlogPost"
         :label="model.collections.blog?.label || 'Articles'"
         :searchEnabled="model.collections.blog?.searchEnabled || false"
         :availableTags="[]"
         :selectedTags="[]"
+        @load-post="openBlogPost"
+        @back="goBackFromBlogPost"
       />
       <EmbedSection
         v-if="activeTab === 'embeds'"
@@ -60,6 +62,7 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
+import { fetchBlogPost, fetchBlogPosts } from "../../lib/blog";
 import ProfileHeader from "./ProfileHeader.vue";
 import TabNav from "./TabNav.vue";
 import LinksSection from "./LinksSection.vue";
@@ -98,9 +101,12 @@ export default defineComponent({
     else if (path === '/blog') initialTab = 'blog';
     else if (path === '/embeds') initialTab = 'embeds';
     else if (path === '/newsletter') initialTab = 'newsletter';
+    else if (path.startsWith('/newsletter/')) initialTab = 'blog';
     else if (path.startsWith('/content/')) initialTab = 'blog';
     return {
       activeTab: initialTab,
+      blogPosts: [] as any[],
+      currentBlogPost: null as any,
       tabs: [
         { key: 'links', label: 'All', icon: 'Link' },
         { key: 'resume', label: 'About Me', icon: 'FileText' },
@@ -111,9 +117,62 @@ export default defineComponent({
       ],
     };
   },
+  created() {
+    void this.loadBlogPosts();
+    void this.syncRouteState();
+  },
+  watch: {
+    route() {
+      void this.syncRouteState();
+    },
+  },
   methods: {
+    async loadBlogPosts() {
+      try {
+        this.blogPosts = await fetchBlogPosts();
+      } catch {
+        this.blogPosts = [];
+      }
+    },
+    async loadBlogPost(slug: string) {
+      try {
+        this.currentBlogPost = await fetchBlogPost(slug);
+      } catch {
+        this.currentBlogPost = null;
+      }
+    },
+    async syncRouteState() {
+      const path = this.route?.path || '/';
+      if (path.startsWith('/content/')) {
+        this.activeTab = 'blog';
+        const slug = decodeURIComponent(path.slice('/content/'.length));
+        if (slug) {
+          await this.loadBlogPost(slug);
+          return;
+        }
+      }
+      if (path.startsWith('/newsletter/')) {
+        this.activeTab = 'blog';
+        this.currentBlogPost = null;
+        return;
+      }
+      this.currentBlogPost = null;
+    },
+    openBlogPost(slug: string) {
+      if (!slug || !this.router) return;
+      void this.loadBlogPost(slug);
+      this.router.push(`/content/${encodeURIComponent(slug)}`);
+    },
+    goBackFromBlogPost() {
+      this.currentBlogPost = null;
+      if (!this.router) return;
+      this.router.push('/blog');
+    },
     onTabSwitch(tabKey: string) {
       this.activeTab = tabKey;
+      if (tabKey !== 'blog') {
+        this.currentBlogPost = null;
+      }
       // Navigate to correct route
       if (this.router) {
         if (tabKey === 'links') this.router.push('/');
