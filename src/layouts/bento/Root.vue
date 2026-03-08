@@ -21,6 +21,9 @@
         :searchEnabled="model.collections.links?.searchEnabled || false"
         :availableTags="[]"
         :selectedTags="[]"
+        @open-lightbox="openLightbox"
+        @open-video="openVideo"
+        @load-post="openBlogPost"
       />
       <ResumeSection
         v-if="activeTab === 'resume'"
@@ -33,6 +36,8 @@
         :availableTags="[]"
         :selectedTags="[]"
         :gridCols="model.theme.layoutData?.grid?.columns || 4"
+        @open-lightbox="openLightbox"
+        @open-video="openVideo"
       />
       <BlogSection
         v-if="activeTab === 'blog'"
@@ -55,14 +60,47 @@
         :availableTags="[]"
         :selectedTags="[]"
       />
+      <section
+        v-if="activeTab === 'confirmed'"
+        class="mx-auto flex w-full max-w-[var(--bento-grid-width,960px)] flex-col items-center justify-center px-6 py-16 text-center"
+      >
+        <div class="text-5xl">{{ confirmationIcon }}</div>
+        <h1 class="mt-4 text-2xl font-extrabold text-[color:var(--color-ink)] sm:text-3xl">
+          {{ confirmationTitle }}
+        </h1>
+        <p class="mt-3 max-w-xl text-sm leading-relaxed text-[color:var(--color-ink-soft)] sm:text-base">
+          {{ confirmationMessage }}
+        </p>
+        <button
+          class="mt-6 rounded-full bg-[var(--color-brand)] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
+          @click="onTabSwitch('links')"
+        >
+          Go Home
+        </button>
+      </section>
     </div>
     <PageFooter :showRss="true" />
+
+    <LightboxOverlay
+      :open="lightboxOpen"
+      :item="lightboxItem"
+      @close="closeLightbox"
+    />
+    <VideoOverlay
+      :open="videoOpen"
+      :video-items="videoItems"
+      :active-index="activeVideoIndex"
+      :active-item="activeVideoItem"
+      @close="closeVideo"
+      @set-ref="setVideoRef"
+    />
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
 import { fetchBlogPost, fetchBlogPosts } from "../../lib/blog";
+import type { GalleryItem } from "../../lib/model";
 import ProfileHeader from "./ProfileHeader.vue";
 import TabNav from "./TabNav.vue";
 import LinksSection from "./LinksSection.vue";
@@ -72,6 +110,8 @@ import BlogSection from "./BlogSection.vue";
 import EmbedSection from "./EmbedSection.vue";
 import NewsletterSection from "./NewsletterSection.vue";
 import PageFooter from "./PageFooter.vue";
+import LightboxOverlay from "../../components/LightboxOverlay.vue";
+import VideoOverlay from "../../components/VideoOverlay.vue";
 
 export default defineComponent({
   name: "Root",
@@ -91,6 +131,8 @@ export default defineComponent({
     EmbedSection,
     NewsletterSection,
     PageFooter,
+    LightboxOverlay,
+    VideoOverlay,
   },
   data() {
     // Determine initial tab from route
@@ -101,12 +143,54 @@ export default defineComponent({
     else if (path === '/blog') initialTab = 'blog';
     else if (path === '/embeds') initialTab = 'embeds';
     else if (path === '/newsletter') initialTab = 'newsletter';
+    else if (path === '/confirmed') initialTab = 'confirmed';
     else if (path.startsWith('/newsletter/')) initialTab = 'blog';
     else if (path.startsWith('/content/')) initialTab = 'blog';
+
+    const confirmationMap: Record<string, { icon: string; title: string; message: string }> = {
+      success: {
+        icon: '🎉',
+        title: "You're subscribed!",
+        message: "Your email has been confirmed. You'll now receive updates.",
+      },
+      expired: {
+        icon: '⏰',
+        title: 'Link Expired',
+        message: 'This confirmation link has expired. Please subscribe again to receive a new one.',
+      },
+      invalid: {
+        icon: '⚠️',
+        title: 'Invalid Link',
+        message: 'This confirmation link is invalid or missing required parameters.',
+      },
+      'not-found': {
+        icon: '🔍',
+        title: 'Not Found',
+        message: "We couldn't find a pending subscription for this email address.",
+      },
+      'already-confirmed': {
+        icon: '✅',
+        title: 'Already Confirmed',
+        message: "Your email address has already been confirmed. You're all set!",
+      },
+      error: {
+        icon: '❌',
+        title: 'Something went wrong',
+        message: "We couldn't confirm your subscription. Please try again later.",
+      },
+    };
+
     return {
       activeTab: initialTab,
       blogPosts: [] as any[],
       currentBlogPost: null as any,
+      lightboxOpen: false,
+      lightboxItem: null as GalleryItem | null,
+      videoOpen: false,
+      activeVideoIndex: null as number | null,
+      videoRefs: [] as any[],
+      confirmationStatus: '',
+      confirmationMap,
       tabs: [
         { key: 'links', label: 'All', icon: 'Link' },
         { key: 'resume', label: 'About Me', icon: 'FileText' },
@@ -156,12 +240,74 @@ export default defineComponent({
         this.currentBlogPost = null;
         return;
       }
+      if (path === '/confirmed') {
+        this.activeTab = 'confirmed';
+        this.currentBlogPost = null;
+        this.confirmationStatus = (this.route?.query?.status as string) || 'error';
+        return;
+      }
+      this.confirmationStatus = '';
       this.currentBlogPost = null;
     },
     openBlogPost(slug: string) {
       if (!slug || !this.router) return;
       void this.loadBlogPost(slug);
       this.router.push(`/content/${encodeURIComponent(slug)}`);
+    },
+    openLightbox(item: GalleryItem) {
+      this.lightboxItem = item;
+      this.lightboxOpen = true;
+    },
+    closeLightbox() {
+      this.lightboxOpen = false;
+      this.lightboxItem = null;
+    },
+    openVideo(item: GalleryItem) {
+      const indexById = this.videoItems.findIndex((v) => v.id === item.id);
+      const indexBySrc = this.videoItems.findIndex((v) => v.src === item.src);
+      const nextIndex = indexById >= 0 ? indexById : indexBySrc;
+      this.activeVideoIndex = nextIndex >= 0 ? nextIndex : 0;
+      this.videoOpen = this.videoItems.length > 0;
+      // Try immediately in the click call stack so browsers treat it as a user gesture.
+      this.startVideoAtIndex(this.activeVideoIndex);
+      this.tryStartActiveVideo();
+    },
+    startVideoAtIndex(index: number | null) {
+      if (index == null) return;
+      const active = this.videoRefs[index];
+      if (active?.restart) {
+        active.restart().catch(() => {
+          // No-op: player UI remains as fallback.
+        });
+        return;
+      }
+      if (active?.play) {
+        active.play().catch(() => {
+          // No-op: player UI remains as fallback.
+        });
+      }
+    },
+    tryStartActiveVideo() {
+      if (!this.videoOpen || this.activeVideoIndex == null) return;
+      this.$nextTick(() => {
+        this.startVideoAtIndex(this.activeVideoIndex);
+        // Some providers (e.g. Vimeo) initialize asynchronously after mount.
+        setTimeout(() => this.startVideoAtIndex(this.activeVideoIndex), 120);
+        setTimeout(() => this.startVideoAtIndex(this.activeVideoIndex), 350);
+      });
+    },
+    closeVideo() {
+      const active = this.activeVideoIndex != null ? this.videoRefs[this.activeVideoIndex] : null;
+      if (active?.pause) active.pause();
+      this.videoOpen = false;
+      this.activeVideoIndex = null;
+    },
+    setVideoRef(index: number, el: unknown) {
+      if (el) this.videoRefs[index] = el;
+      else delete this.videoRefs[index];
+      if (el && this.videoOpen && this.activeVideoIndex === index) {
+        this.tryStartActiveVideo();
+      }
     },
     goBackFromBlogPost() {
       this.currentBlogPost = null;
@@ -173,6 +319,9 @@ export default defineComponent({
       if (tabKey !== 'blog') {
         this.currentBlogPost = null;
       }
+      if (tabKey !== 'confirmed') {
+        this.confirmationStatus = '';
+      }
       // Navigate to correct route
       if (this.router) {
         if (tabKey === 'links') this.router.push('/');
@@ -182,6 +331,28 @@ export default defineComponent({
         else if (tabKey === 'embeds') this.router.push('/embeds');
         else if (tabKey === 'newsletter') this.router.push('/newsletter');
       }
+    },
+    confirmationInfo() {
+      return this.confirmationMap[this.confirmationStatus] || this.confirmationMap.error;
+    },
+  },
+  computed: {
+    videoItems(): GalleryItem[] {
+      const items = this.model?.collections?.gallery?.items || [];
+      return items.filter((item: GalleryItem) => item.enabled && item.type === 'video');
+    },
+    activeVideoItem(): GalleryItem | null {
+      if (this.activeVideoIndex == null) return null;
+      return this.videoItems[this.activeVideoIndex] || null;
+    },
+    confirmationIcon(): string {
+      return this.confirmationInfo().icon;
+    },
+    confirmationTitle(): string {
+      return this.confirmationInfo().title;
+    },
+    confirmationMessage(): string {
+      return this.confirmationInfo().message;
     },
   },
 });

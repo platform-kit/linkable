@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 31;
+export const CURRENT_SCHEMA_VERSION = 37;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -595,6 +595,364 @@ const migrations: Migration[] = [
         delete data.profile.bannerUrl;
       }
       data.schemaVersion = 31;
+      return data;
+    },
+  },
+  // ── v32: Add widgets collection for layout widgets ──
+  {
+    toVersion: 32,
+    migrate: (data: Record<string, any>) => {
+      if (!data.collections || typeof data.collections !== "object") {
+        data.collections = {};
+      }
+      const existing = data.collections.widgets;
+      data.collections.widgets = {
+        enabled: existing?.enabled ?? false,
+        label: existing?.label ?? "",
+        icon: existing?.icon ?? "",
+        searchEnabled: existing?.searchEnabled ?? false,
+        items: Array.isArray(existing?.items) ? existing.items : [],
+      };
+      data.schemaVersion = 32;
+      return data;
+    },
+  },
+  // ── v33: Add widget style/preset settings defaults ──
+  {
+    toVersion: 33,
+    migrate: (data: Record<string, any>) => {
+      const items = data.collections?.widgets?.items;
+      if (Array.isArray(items)) {
+        for (const w of items) {
+          if (!w || typeof w !== "object") continue;
+          w.textColor ??= "#ffffff";
+          w.backgroundColor ??= "";
+          w.buttonColor ??= "#ffffff";
+          w.buttonTextColor ??= "#0f172a";
+          w.textPresetSpeed ??= 1;
+          w.textPresetIntensity ??= 1;
+          w.backgroundPresetSpeed ??= 1;
+          w.backgroundPresetIntensity ??= 1;
+          w.backgroundPresetScale ??= 1;
+          w.pauseOnHover ??= false;
+        }
+      }
+      data.schemaVersion = 33;
+      return data;
+    },
+  },
+  // ── v34: Add full Vue Bits per-variant widget settings ──
+  {
+    toVersion: 34,
+    migrate: (data: Record<string, any>) => {
+      const items = data.collections?.widgets?.items;
+      if (Array.isArray(items)) {
+        for (const w of items) {
+          if (!w || typeof w !== "object") continue;
+          w.shinyDisabled ??= false;
+          w.shinySpeed ??= 2;
+          w.shinyDelay ??= 0;
+          w.shinySpread ??= 120;
+          w.shinyDirection ??= "left";
+          w.shinyYoyo ??= false;
+          w.shinyPauseOnHover ??= false;
+          w.shinyClassName ??= "";
+          w.shinyColor ??= "#b5b5b5";
+          w.shinyShineColor ??= "#ffffff";
+
+          w.gradientClassName ??= "";
+          w.gradientColors ??= "#27FF64,#27FF64,#A0FFBC";
+          w.gradientAnimationSpeed ??= 8;
+          w.gradientShowBorder ??= false;
+          w.gradientDirection ??= "horizontal";
+          w.gradientPauseOnHover ??= false;
+          w.gradientYoyo ??= true;
+
+          w.glitchClassName ??= "";
+          w.glitchSpeed ??= 0.5;
+          w.glitchEnableShadows ??= true;
+          w.glitchEnableOnHover ??= false;
+
+          w.blurClassName ??= "";
+          w.blurDelay ??= 200;
+          w.blurAnimateBy ??= "words";
+          w.blurDirection ??= "top";
+          w.blurThreshold ??= 0.1;
+          w.blurRootMargin ??= "0px";
+          w.blurStepDuration ??= 0.35;
+
+          w.splitClassName ??= "";
+          w.splitDelay ??= 50;
+          w.splitDuration ??= 1.25;
+          w.splitEase ??= "power3.out";
+          w.splitType ??= "chars";
+          w.splitThreshold ??= 0.1;
+          w.splitRootMargin ??= "-100px";
+          w.splitTag ??= "p";
+          w.splitTextAlign ??= "center";
+          w.splitFromJson ??= '{"opacity":0,"y":40}';
+          w.splitToJson ??= '{"opacity":1,"y":0}';
+
+          w.textTypeClassName ??= "";
+          w.textTypeShowCursor ??= true;
+          w.textTypeHideCursorWhileTyping ??= false;
+          w.textTypeCursorCharacter ??= "_";
+          w.textTypeCursorBlinkDuration ??= 0.5;
+          w.textTypeCursorClassName ??= "";
+          w.textTypeAs ??= "div";
+          w.textTypeTypingSpeed ??= 75;
+          w.textTypeInitialDelay ??= 0;
+          w.textTypePauseDuration ??= 1500;
+          w.textTypeDeletingSpeed ??= 50;
+          w.textTypeLoop ??= true;
+          w.textTypeTextList ??= "";
+          w.textTypeTextColors ??= "";
+          w.textTypeVariableSpeedEnabled ??= false;
+          w.textTypeVariableSpeedMin ??= 60;
+          w.textTypeVariableSpeedMax ??= 120;
+          w.textTypeStartOnVisible ??= false;
+          w.textTypeReverseMode ??= false;
+
+          w.rotatingTexts ??= "Build\\nSomething\\nMemorable";
+          w.rotatingTransitionJson ??= '{"type":"spring","damping":25,"stiffness":300}';
+          w.rotatingInitialJson ??= '{"y":"100%","opacity":0}';
+          w.rotatingAnimateJson ??= '{"y":0,"opacity":1}';
+          w.rotatingExitJson ??= '{"y":"-120%","opacity":0}';
+          w.rotatingAnimatePresenceMode ??= "wait";
+          w.rotatingAnimatePresenceInitial ??= false;
+          w.rotatingRotationInterval ??= 2000;
+          w.rotatingStaggerDuration ??= 0;
+          w.rotatingStaggerFrom ??= "first";
+          w.rotatingLoop ??= true;
+          w.rotatingAuto ??= true;
+          w.rotatingSplitBy ??= "characters";
+          w.rotatingMainClassName ??= "";
+          w.rotatingSplitLevelClassName ??= "";
+          w.rotatingElementLevelClassName ??= "";
+
+          w.variableLabel ??= "Hover me!";
+          w.variableFromFontVariationSettings ??= "'wght' 400, 'opsz' 9";
+          w.variableToFontVariationSettings ??= "'wght' 1000, 'opsz' 40";
+          w.variableRadius ??= 100;
+          w.variableFalloff ??= "linear";
+          w.variableClassName ??= "";
+          w.variableStyleJson ??= "{}";
+        }
+      }
+      data.schemaVersion = 34;
+      return data;
+    },
+  },
+  // ── v35: Add full per-background prop controls and blur animation JSON controls ──
+  {
+    toVersion: 35,
+    migrate: (data: Record<string, any>) => {
+      const items = data.collections?.widgets?.items;
+      if (Array.isArray(items)) {
+        for (const w of items) {
+          if (!w || typeof w !== "object") continue;
+
+          w.blurAnimationFromJson ??= '{"filter":"blur(10px)","opacity":0,"y":-50}';
+          w.blurAnimationToJson ??= '[{"filter":"blur(5px)","opacity":0.5,"y":5},{"filter":"blur(0px)","opacity":1,"y":0}]';
+
+          w.auroraColorStops ??= "#7cff67,#171D22,#7cff67";
+          w.auroraAmplitude ??= 1;
+          w.auroraBlend ??= 0.5;
+          w.auroraTime ??= 0;
+          w.auroraSpeed ??= 1;
+          w.auroraIntensity ??= 1;
+          w.auroraClassName ??= "";
+          w.auroraStyleJson ??= "{}";
+
+          w.colorBendsRotation ??= 45;
+          w.colorBendsSpeed ??= 0.2;
+          w.colorBendsColors ??= "";
+          w.colorBendsTransparent ??= true;
+          w.colorBendsAutoRotate ??= 0;
+          w.colorBendsScale ??= 1;
+          w.colorBendsFrequency ??= 1;
+          w.colorBendsWarpStrength ??= 1;
+          w.colorBendsMouseInfluence ??= 1;
+          w.colorBendsParallax ??= 0.5;
+          w.colorBendsNoise ??= 0.1;
+          w.colorBendsClassName ??= "";
+          w.colorBendsStyleJson ??= "{}";
+
+          w.darkVeilHueShift ??= 0;
+          w.darkVeilNoiseIntensity ??= 0;
+          w.darkVeilScanlineIntensity ??= 0;
+          w.darkVeilSpeed ??= 0.5;
+          w.darkVeilScanlineFrequency ??= 0;
+          w.darkVeilWarpAmount ??= 0;
+          w.darkVeilResolutionScale ??= 1;
+
+          w.dotGridDotSize ??= 16;
+          w.dotGridGap ??= 32;
+          w.dotGridBaseColor ??= "#27FF64";
+          w.dotGridActiveColor ??= "#27FF64";
+          w.dotGridProximity ??= 150;
+          w.dotGridSpeedTrigger ??= 100;
+          w.dotGridShockRadius ??= 250;
+          w.dotGridShockStrength ??= 5;
+          w.dotGridMaxSpeed ??= 5000;
+          w.dotGridResistance ??= 750;
+          w.dotGridReturnDuration ??= 1.5;
+          w.dotGridClassName ??= "";
+          w.dotGridStyleJson ??= "{}";
+
+          w.grainientTimeSpeed ??= 0.5;
+          w.grainientColorBalance ??= 0.6;
+          w.grainientWarpStrength ??= 0.25;
+          w.grainientWarpFrequency ??= 0.5;
+          w.grainientWarpSpeed ??= 0.25;
+          w.grainientWarpAmplitude ??= 0.2;
+          w.grainientBlendAngle ??= 45;
+          w.grainientBlendSoftness ??= 0.5;
+          w.grainientRotationAmount ??= 0;
+          w.grainientNoiseScale ??= 1;
+          w.grainientGrainAmount ??= 0.2;
+          w.grainientGrainScale ??= 1.5;
+          w.grainientGrainAnimated ??= true;
+          w.grainientContrast ??= 1;
+          w.grainientGamma ??= 1;
+          w.grainientSaturation ??= 1;
+          w.grainientCenterX ??= 0.5;
+          w.grainientCenterY ??= 0.5;
+          w.grainientZoom ??= 1;
+          w.grainientColor1 ??= "#ff7b7b";
+          w.grainientColor2 ??= "#7bb8ff";
+          w.grainientColor3 ??= "#7bffb0";
+          w.grainientClassName ??= "";
+
+          w.iridescenceColor ??= "1,1,1";
+          w.iridescenceSpeed ??= 1;
+          w.iridescenceAmplitude ??= 0.1;
+          w.iridescenceMouseReact ??= true;
+
+          w.lightningHue ??= 220;
+          w.lightningXOffset ??= 0;
+          w.lightningSpeed ??= 1;
+          w.lightningIntensity ??= 1;
+          w.lightningSize ??= 1;
+
+          w.liquidEtherMouseForce ??= 20;
+          w.liquidEtherCursorSize ??= 100;
+          w.liquidEtherIsViscous ??= true;
+          w.liquidEtherViscous ??= 30;
+          w.liquidEtherIterationsViscous ??= 32;
+          w.liquidEtherIterationsPoisson ??= 32;
+          w.liquidEtherDt ??= 0.016;
+          w.liquidEtherBFECC ??= true;
+          w.liquidEtherResolution ??= 1;
+          w.liquidEtherIsBounce ??= false;
+          w.liquidEtherColors ??= "#5227ff,#27c1ff,#7cff67";
+          w.liquidEtherStyleJson ??= "{}";
+          w.liquidEtherClassName ??= "";
+          w.liquidEtherAutoDemo ??= true;
+          w.liquidEtherAutoSpeed ??= 1;
+          w.liquidEtherAutoIntensity ??= 1;
+          w.liquidEtherTakeoverDuration ??= 0.4;
+          w.liquidEtherAutoResumeDelay ??= 1.5;
+          w.liquidEtherAutoRampDuration ??= 0.6;
+
+          w.orbHue ??= 0;
+          w.orbHoverIntensity ??= 0.2;
+          w.orbRotateOnHover ??= true;
+          w.orbForceHoverState ??= false;
+
+          w.particlesParticleCount ??= 200;
+          w.particlesParticleSpread ??= 8;
+          w.particlesSpeed ??= 0.1;
+          w.particlesParticleColors ??= "#ffffff,#cfe8ff,#9dd1ff";
+          w.particlesMoveParticlesOnHover ??= true;
+          w.particlesParticleHoverFactor ??= 1;
+          w.particlesAlphaParticles ??= true;
+          w.particlesParticleBaseSize ??= 100;
+          w.particlesSizeRandomness ??= 1;
+          w.particlesCameraDistance ??= 20;
+          w.particlesDisableRotation ??= false;
+          w.particlesClassName ??= "";
+
+          w.prismaticBurstIntensity ??= 2;
+          w.prismaticBurstSpeed ??= 0.5;
+          w.prismaticBurstAnimationType ??= "rotate3d";
+          w.prismaticBurstColors ??= "";
+          w.prismaticBurstDistort ??= 0;
+          w.prismaticBurstPaused ??= false;
+          w.prismaticBurstOffsetX ??= "0";
+          w.prismaticBurstOffsetY ??= "0";
+          w.prismaticBurstHoverDampness ??= 0;
+          w.prismaticBurstRayCount ??= 0;
+          w.prismaticBurstMixBlendMode ??= "lighten";
+
+          w.silkSpeed ??= 5;
+          w.silkScale ??= 1;
+          w.silkColor ??= "#ffffff";
+          w.silkNoiseIntensity ??= 1;
+          w.silkRotation ??= 0;
+          w.silkClassName ??= "";
+          w.silkStyleJson ??= "{}";
+        }
+      }
+      data.schemaVersion = 35;
+      return data;
+    },
+  },
+  // ── v36: Add widget font size control ──
+  {
+    toVersion: 36,
+    migrate: (data: Record<string, any>) => {
+      const items = data.collections?.widgets?.items;
+      if (Array.isArray(items)) {
+        for (const w of items) {
+          if (!w || typeof w !== "object") continue;
+          w.fontSize ??= 20;
+        }
+      }
+      data.schemaVersion = 36;
+      return data;
+    },
+  },
+  // ── v37: Add GUI color-picker fields for widget color arrays ──
+  {
+    toVersion: 37,
+    migrate: (data: Record<string, any>) => {
+      const items = data.collections?.widgets?.items;
+      if (Array.isArray(items)) {
+        for (const w of items) {
+          if (!w || typeof w !== "object") continue;
+          w.gradientColor1 ??= "#27FF64";
+          w.gradientColor2 ??= "#27FF64";
+          w.gradientColor3 ??= "#A0FFBC";
+
+          w.textTypeColor1 ??= "";
+          w.textTypeColor2 ??= "";
+          w.textTypeColor3 ??= "";
+
+          w.auroraColorStop1 ??= "#7cff67";
+          w.auroraColorStop2 ??= "#171D22";
+          w.auroraColorStop3 ??= "#7cff67";
+
+          w.colorBendsColor1 ??= "";
+          w.colorBendsColor2 ??= "";
+          w.colorBendsColor3 ??= "";
+
+          w.iridescenceBaseColor ??= "#ffffff";
+
+          w.liquidEtherColor1 ??= "#5227ff";
+          w.liquidEtherColor2 ??= "#27c1ff";
+          w.liquidEtherColor3 ??= "#7cff67";
+
+          w.particlesColor1 ??= "#ffffff";
+          w.particlesColor2 ??= "#cfe8ff";
+          w.particlesColor3 ??= "#9dd1ff";
+
+          w.prismaticBurstColor1 ??= "";
+          w.prismaticBurstColor2 ??= "";
+          w.prismaticBurstColor3 ??= "";
+        }
+      }
+      data.schemaVersion = 37;
       return data;
     },
   },

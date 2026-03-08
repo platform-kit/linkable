@@ -18,42 +18,48 @@ if (!existsSync(layoutsDir)) {
   process.exit(0);
 }
 
-const layouts = readdirSync(layoutsDir, { withFileTypes: true })
-  .filter((d) => d.isDirectory());
+const layouts = readdirSync(layoutsDir, { withFileTypes: true }).filter((d) => d.isDirectory());
 
-const depsToInstall = [];
+const layoutPaths = [];
 
 for (const layout of layouts) {
-  const pkgPath = join(layoutsDir, layout.name, "package.json");
+  const layoutPath = join(layoutsDir, layout.name);
+  const pkgPath = join(layoutPath, "package.json");
   if (!existsSync(pkgPath)) continue;
 
   const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
   const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  if (Object.keys(deps).length === 0) continue;
 
-  for (const [name, version] of Object.entries(deps)) {
-    // Check if already installed at root
-    const installedPath = join(process.cwd(), "node_modules", name, "package.json");
-    if (existsSync(installedPath)) {
-      continue;
+  let hasMissing = false;
+  for (const name of Object.keys(deps)) {
+    const localInstalledPath = join(layoutPath, "node_modules", name, "package.json");
+    if (!existsSync(localInstalledPath)) {
+      hasMissing = true;
+      break;
     }
-    depsToInstall.push(`${name}@${version}`);
+  }
+
+  if (hasMissing) {
+    layoutPaths.push(layoutPath);
   }
 }
 
-if (depsToInstall.length === 0) {
+if (layoutPaths.length === 0) {
   console.log("[layout-deps] All layout dependencies already installed.");
   process.exit(0);
 }
 
-console.log(`[layout-deps] Installing: ${depsToInstall.join(", ")}`);
+const runInstall = (cmd) => {
+  for (const layoutPath of layoutPaths) {
+    console.log(`[layout-deps] Installing deps in ${layoutPath}`);
+    execSync(cmd(layoutPath), { stdio: "inherit" });
+  }
+};
 
-// Detect available package manager — prefer pnpm, fall back to npm
-let pkgManager = "npm install";
 try {
-  execSync("pnpm --version", { stdio: "ignore" });
-  pkgManager = "pnpm add";
+  runInstall((layoutPath) => `npm install --prefix \"${layoutPath}\" --no-package-lock`);
 } catch {
-  // pnpm not available, use npm
+  execSync("pnpm --version", { stdio: "ignore" });
+  runInstall((layoutPath) => `pnpm install --dir \"${layoutPath}\"`);
 }
-
-execSync(`${pkgManager} ${depsToInstall.join(" ")}`, { stdio: "inherit" });

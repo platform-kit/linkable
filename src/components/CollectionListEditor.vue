@@ -125,6 +125,7 @@
       :modelValue="activeItem"
       :title="'Edit ' + (schema.label ? schema.label.replace(/s$/i, '') : 'item')"
       @update:modelValue="updateItem($event)"
+      @duplicate="duplicateItem"
       @delete="deleteItem"
     />
   </div>
@@ -142,6 +143,7 @@ import { icons as lucideIcons } from "lucide-vue-next";
 import CollectionItemDrawer from "./CollectionItemDrawer.vue";
 import type { ContentSchema } from "../lib/layout-manifest";
 import type { ContentCollection } from "../lib/model";
+import { newId } from "../lib/model";
 
 const FEATURED_ICONS = [
   "Link", "FileText", "Images", "Pencil", "Globe", "Star", "Heart",
@@ -204,6 +206,21 @@ export default defineComponent({
       activeItemId.value = "";
     };
 
+    const duplicateItem = () => {
+      if (!activeItem.value) return;
+      let cloned: Record<string, unknown>;
+      if (typeof globalThis.structuredClone === "function") {
+        cloned = globalThis.structuredClone(activeItem.value) as Record<string, unknown>;
+      } else {
+        cloned = JSON.parse(JSON.stringify(activeItem.value)) as Record<string, unknown>;
+      }
+      cloned.id = newId();
+      const nextItems = [cloned, ...props.items];
+      emit("update:items", nextItems);
+      activeItemId.value = String(cloned.id);
+      editorOpen.value = true;
+    };
+
     const updateMeta = (key: string, value: any) => {
       emit("update:collection", { ...props.collection, [key]: value });
     };
@@ -230,7 +247,7 @@ export default defineComponent({
     };
 
     return {
-      editorOpen, activeItem, activeSchema, openEditor, addItem, updateItem, deleteItem,
+      editorOpen, activeItem, activeSchema, openEditor, addItem, updateItem, duplicateItem, deleteItem,
       updateMeta, getLabel, getSublabel, getThumb,
       filteredIcons, searchIcons, getIconComponent,
     };

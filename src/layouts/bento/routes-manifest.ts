@@ -45,6 +45,12 @@ const routes: LayoutRoute[] = [
     icon: "Mail",
   },
   {
+    path: "/confirmed",
+    component: () => Promise.resolve({ default: Root }),
+    label: "Newsletter Confirmation",
+    icon: "CheckCircle",
+  },
+  {
     path: "/content/:slug",
     component: () => Promise.resolve({ default: Root }),
     label: "Blog Article",

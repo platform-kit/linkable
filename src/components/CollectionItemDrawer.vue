@@ -47,6 +47,16 @@
         <Button
           text
           rounded
+          severity="secondary"
+          size="small"
+          @click="$emit('duplicate')"
+        >
+          <i class="pi pi-copy mr-1" />
+          Duplicate
+        </Button>
+        <Button
+          text
+          rounded
           severity="danger"
           size="small"
           @click="$emit('delete')"
@@ -76,7 +86,7 @@ export default defineComponent({
     modelValue: { type: Object as PropType<Record<string, any>>, required: true },
     title: { type: String, default: "Edit item" },
   },
-  emits: ["update:open", "update:modelValue", "delete"],
+  emits: ["update:open", "update:modelValue", "duplicate", "delete"],
   setup(props, { emit }) {
     const expanded = ref(false);
     const visible = ref(props.open);

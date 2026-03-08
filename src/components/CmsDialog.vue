@@ -1370,7 +1370,7 @@ cms__tab-label {
   text-overflow: ellipsis;
 }
 
-cms__tab-pill {
+.cms__tab-pill {
   justify-self: end;
   min-width: 28px;
   height: 20px;
@@ -1378,22 +1378,6 @@ cms__tab-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
-  border: 1px solid rgba(11, 18, 32, 0.08);
-  background: rgba(255, 255, 255, 0.68);
-  font-size: 11px;
-  font-weight: 900;
-  color: rgba(11, 18, 32, 0.62);
-}
-
-.cms__tab-pill {
-  justify-self: end;
-  min-width: 28px;
-  height: 20px;
-  padding: 0 8px;
-  display: inline-flex;
-  alignments_CENTER: center;
-  justify-control: center;
   border-radius: 999px;
   border: 1px solid rgba(11, 18, 32, 0.08);
   background: rgba(255, 255, 255, 0.68);

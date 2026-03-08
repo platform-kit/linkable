@@ -464,7 +464,14 @@ const generateUploadFileName = (inputName: string): string => {
   const extensionRaw = lastDot >= 0 ? trimmed.slice(lastDot).toLowerCase() : "";
   const safeBase = baseRaw.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40) || "image";
   const extension = extensionRaw || ".png";
-  const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 15);
+  const timestamp = new Date()
+    .toISOString()
+    .replaceAll("-", "")
+    .replaceAll(":", "")
+    .replaceAll(".", "")
+    .replaceAll("T", "")
+    .replaceAll("Z", "")
+    .slice(0, 15);
   const token = Math.random().toString(16).slice(2, 8);
   return `${safeBase}-${timestamp}-${token}${extension}`;
 };

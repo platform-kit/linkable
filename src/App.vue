@@ -1273,10 +1273,6 @@ export default defineComponent({
       videoPlayerItem.value = null;
     };
 
-    // Expose lightbox/video openers for bento layout's LinksSection
-    (window as any).__bentoLightbox = openLightbox;
-    (window as any).__bentoVideo = openVideoPlayer;
-
     const initials = computed(() => {
       const name = (model.value.profile.displayName || "").trim();
       if (!name) return "LB";

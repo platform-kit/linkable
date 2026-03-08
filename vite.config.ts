@@ -163,7 +163,14 @@ const generateUploadFileName = (inputName: unknown): string => {
   // sanitize base: keep letters, numbers, dash, underscore and dot; replace others with '-'
   const safeBase = baseRaw.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 80) || "image";
   const extension = extensionRaw || ".png";
-  const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 15);
+  const timestamp = new Date()
+    .toISOString()
+    .replaceAll("-", "")
+    .replaceAll(":", "")
+    .replaceAll(".", "")
+    .replaceAll("T", "")
+    .replaceAll("Z", "")
+    .slice(0, 15);
   const token = Math.random().toString(16).slice(2, 8);
   return `${safeBase}-${timestamp}-${token}${extension}`;
 };

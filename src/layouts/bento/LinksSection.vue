@@ -78,6 +78,7 @@
           :item="getBentoItem(String(li.i))"
           :links="allLinks"
           :gallery-items="allGalleryItems"
+          :widgets="allWidgets"
           :blog-posts="allBlogPosts"
           :embeds="allEmbeds"
           :class="{ 'pointer-events-none': editing }"
@@ -253,11 +254,11 @@
 
 <script lang="ts">
 import { defineComponent, computed, inject, ref, watch, onMounted, onUnmounted, type PropType, type Ref, type ComputedRef } from "vue";
-import type { BioLink, BioModel, GalleryItem, EmbedItem } from "../../lib/model";
+import type { BioLink, BioModel, GalleryItem, EmbedItem, WidgetItem } from "../../lib/model";
 import type { BlogPostMeta } from "../../lib/blog";
 import type { BentoGridData, BentoGridItem } from "./manifest";
 import type { MasonryItem } from "../../components/MasonryGrid.vue";
-import { Link, Image, BookOpen, Code, User } from "lucide-vue-next";
+import { Link, Image, BookOpen, Code, User, Sparkles } from "lucide-vue-next";
 import { GridLayout, GridItem } from "grid-layout-plus";
 import BentoCell from "./BentoCell.vue";
 import Drawer from "primevue/drawer";
@@ -294,8 +295,8 @@ export default defineComponent({
     availableTags: { type: Array as PropType<string[]>, default: () => [] },
     selectedTags: { type: Array as PropType<string[]>, default: () => [] },
   },
-  emits: ["link-click", "filter-click"],
-  setup(props) {
+  emits: ["link-click", "filter-click", "open-lightbox", "open-video", "load-post"],
+  setup(props, { emit }) {
     const model = inject<Ref<BioModel>>("bioModel");
     const blogPosts = inject<Ref<BlogPostMeta[]>>("blogPosts", ref([]));
     const canUseCms = inject<ComputedRef<boolean>>("canUseCms", computed(() => false));
@@ -335,6 +336,10 @@ export default defineComponent({
     );
     const allEmbeds = computed<EmbedItem[]>(() =>
       ((model?.value?.collections?.embeds?.items as EmbedItem[]) ?? []).filter((e) => e.enabled),
+    );
+    // Keep all widgets available so staged/hidden widget refs still render in bento.
+    const allWidgets = computed<WidgetItem[]>(() =>
+      ((model?.value?.collections?.widgets?.items as WidgetItem[]) ?? []),
     );
 
     const activeEmbed = ref<EmbedItem | null>(null);
@@ -534,6 +539,7 @@ export default defineComponent({
       { type: "profile" as const, label: "Profile", icon: User },
       { type: "link" as const, label: "Link", icon: Link },
       { type: "gallery" as const, label: "Image/Video", icon: Image },
+      { type: "widget" as const, label: "Widget", icon: Sparkles },
       { type: "blog" as const, label: "Blog Post", icon: BookOpen },
       { type: "embed" as const, label: "Embed", icon: Code },
     ];
@@ -607,6 +613,8 @@ export default defineComponent({
           return ((m.collections.gallery?.items as any[]) || []).filter((g) => g.enabled).map((g) => ({ label: g.title || g.src, value: g.id }));
         case "embed":
           return ((m.collections.embeds?.items as any[]) || []).filter((e) => e.enabled).map((e) => ({ label: e.label, value: e.id }));
+        case "widget":
+          return ((m.collections.widgets?.items as any[]) || []).map((w) => ({ label: w.text || "Animated text", value: w.id }));
         default:
           return [];
       }
@@ -614,18 +622,15 @@ export default defineComponent({
 
     // ── View interactions ──
     const openLightbox = (item: GalleryItem | MasonryItem) => {
-      const win = window as any;
-      if (win.__bentoLightbox) win.__bentoLightbox(item);
+      emit("open-lightbox", item);
     };
 
     const openVideo = (item: GalleryItem | MasonryItem) => {
-      const win = window as any;
-      if (win.__bentoVideo) win.__bentoVideo(item);
+      emit("open-video", item);
     };
 
     const loadPost = (slug: string) => {
-      const win = window as any;
-      if (win.__bentoLoadPost) win.__bentoLoadPost(slug);
+      emit("load-post", slug);
     };
 
     const openEmbed = (id: string) => {
@@ -645,6 +650,7 @@ export default defineComponent({
       selectedItem,
       allLinks,
       allGalleryItems,
+      allWidgets,
       allBlogPosts,
       allEmbeds,
       activeEmbed,

@@ -139,6 +139,15 @@
     </div>
   </button>
 
+  <!-- Widget cell -->
+  <div
+    v-else-if="item.type === 'widget' && widgetData"
+    class="bento-cell overflow-hidden"
+    :style="widgetCellStyle"
+  >
+    <WidgetAnimatedTextCard :widget="widgetData" />
+  </div>
+
   <!-- Embed cell: inline when no heading/button -->
   <div
     v-else-if="item.type === 'embed' && embedData && !item.headerText && !item.buttonText"
@@ -200,17 +209,20 @@
 <script lang="ts">
 import { defineComponent, computed, inject, ref, type PropType, type Ref } from "vue";
 import type { BentoGridItem } from "./manifest";
-import type { BioLink, BioModel, GalleryItem, EmbedItem, SocialLink } from "../../lib/model";
+import type { BioLink, BioModel, GalleryItem, EmbedItem, SocialLink, WidgetItem } from "../../lib/model";
 import type { BlogPostMeta } from "../../lib/blog";
 import { icons as lucideIcons } from "lucide-vue-next";
 import { resolveEmbedHtml } from "../../components/EmbedEditorDrawer.vue";
+import WidgetAnimatedTextCard from "./WidgetAnimatedTextCard.vue";
 
 export default defineComponent({
   name: "BentoCell",
+  components: { WidgetAnimatedTextCard },
   props: {
     item: { type: Object as PropType<BentoGridItem>, required: true },
     links: { type: Array as PropType<BioLink[]>, default: () => [] },
     galleryItems: { type: Array as PropType<GalleryItem[]>, default: () => [] },
+    widgets: { type: Array as PropType<WidgetItem[]>, default: () => [] },
     blogPosts: { type: Array as PropType<BlogPostMeta[]>, default: () => [] },
     embeds: { type: Array as PropType<EmbedItem[]>, default: () => [] },
   },
@@ -224,6 +236,9 @@ export default defineComponent({
     const galleryData = computed(() =>
       props.item.type === "gallery" ? props.galleryItems.find((g) => g.id === props.item.refId) ?? null : null,
     );
+    const widgetData = computed(() =>
+      props.item.type === "widget" ? props.widgets.find((w) => w.id === props.item.refId) ?? null : null,
+    );
     const blogData = computed(() =>
       props.item.type === "blog" ? props.blogPosts.find((p) => p.slug === props.item.refId) ?? null : null,
     );
@@ -231,6 +246,13 @@ export default defineComponent({
       props.item.type === "embed" ? props.embeds.find((e) => e.id === props.item.refId) ?? null : null,
     );
     const embedHtml = computed(() => resolveEmbedHtml(embedData.value?.html ?? ""));
+    const widgetCellStyle = computed<Record<string, string>>(() => {
+      const bg = widgetData.value?.backgroundColor?.trim() ?? "";
+      if (!bg) return {};
+      return {
+        "--bento-card-bg": bg,
+      };
+    });
 
     const enabledSocials = computed<SocialLink[]>(() =>
       ((model?.value?.collections?.socials?.items ?? []) as any[]).filter((s) => s.enabled && s.url),
@@ -248,7 +270,7 @@ export default defineComponent({
       }
     };
 
-    return { model, linkData, galleryData, blogData, embedData, embedHtml, enabledSocials, getIcon, formatDate };
+    return { model, linkData, galleryData, widgetData, blogData, embedData, embedHtml, widgetCellStyle, enabledSocials, getIcon, formatDate };
   },
 });
 </script>
