@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 38,
+  "schemaVersion": 40,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -117,6 +117,13 @@
       "enabled": false,
       "label": "Newsletter",
       "icon": "Mail",
+      "searchEnabled": false,
+      "items": []
+    },
+    "voice": {
+      "enabled": false,
+      "label": "Voice",
+      "icon": "Microphone",
       "searchEnabled": false,
       "items": []
     }

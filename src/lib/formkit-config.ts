@@ -2,6 +2,7 @@ import type { DefaultConfigOptions } from "@formkit/vue";
 import { createInput } from "@formkit/vue";
 import ColorPickerInput from "../components/formkit/ColorPickerInput.vue";
 import ImageUploadInput from "../components/formkit/ImageUploadInput.vue";
+import AudioUploadInput from "../components/formkit/AudioUploadInput.vue";
 import TagListInput from "../components/formkit/TagListInput.vue";
 import IconSelectInput from "../components/formkit/IconSelectInput.vue";
 import GoogleFontPickerInput from "../components/formkit/GoogleFontPickerInput.vue";
@@ -21,6 +22,9 @@ const customInputs: DefaultConfigOptions["inputs"] = {
     props: ["placeholder"],
   }),
   imageUpload: createInput(ImageUploadInput, {
+    props: ["description"],
+  }),
+  audioUpload: createInput(AudioUploadInput, {
     props: ["description"],
   }),
   tagList: createInput(TagListInput, {

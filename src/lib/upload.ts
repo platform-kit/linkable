@@ -47,3 +47,19 @@ export const uploadImage = async (file: File): Promise<string> => {
 
   return addPendingUpload(file);
 };
+
+/**
+ * Upload a single file using the appropriate strategy for the
+ * current environment.  Returns the public URL/path of the uploaded file.
+ */
+export const uploadFile = async (file: File, type?: string): Promise<string> => {
+  if (isDev) {
+    return uploadViaDevServer(file);
+  }
+
+  if (!canUseGithubSync()) {
+    throw new Error("Configure GitHub sync to enable uploads.");
+  }
+
+  return addPendingUpload(file);
+};

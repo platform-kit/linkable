@@ -10,6 +10,8 @@
  *   GITHUB_BRANCH      – branch to pull from (default: main)
  *   GITHUB_DATA_PATH   – path to data.json inside the repo (default: data.json)
  *   GITHUB_UPLOADS_DIR – path to uploads folder inside the repo (default: uploads)
+ *   GITHUB_AUDIO_DIR    – path to audio folder inside the repo (default: audio)
+ *   GITHUB_BLOG_DIR     – path to blog folder inside the repo (default: blog)
  *
  * Usage:
  *   node scripts/import-from-github.mjs
@@ -71,6 +73,7 @@ const run = async () => {
   const branch = process.env.GITHUB_BRANCH?.trim() || "main";
   const dataPath = process.env.GITHUB_DATA_PATH?.trim() || "data.json";
   const uploadsDir = process.env.GITHUB_UPLOADS_DIR?.trim() || "uploads";
+  const audioDir = process.env.GITHUB_AUDIO_DIR?.trim() || "audio";
   const blogDir = process.env.GITHUB_BLOG_DIR?.trim() || "blog";
 
   if (!owner || !repo) {
@@ -185,6 +188,53 @@ const run = async () => {
     }
 
     console.log(`  ✔ ${count} blog post(s) → content/blog/`);
+  }
+
+  // ── 4. Fetch audio files ───────────────────────────────────────────
+
+  const audioUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${audioDir}?ref=${branch}`;
+  let audioFiles = [];
+  try {
+    const audioRes = await ghFetch(audioUrl, token);
+    audioFiles = await audioRes.json();
+    if (!Array.isArray(audioFiles)) audioFiles = [];
+  } catch (err) {
+    console.log(`  ⚠ No audio directory found at ${audioDir} — skipping.`);
+    audioFiles = [];
+  }
+
+  if (audioFiles.length === 0) {
+    console.log(`  ⏭ No audio files to import.`);
+  } else {
+    const localAudioDir = path.join(rootDir, "public", "blog", "audio");
+    mkdirSync(localAudioDir, { recursive: true });
+
+    let count = 0;
+    for (const file of audioFiles) {
+      if (file.type !== "file") continue;
+
+      // Use download_url (raw) to avoid the 1MB base64 limit of the Contents API
+      const rawUrl = file.download_url;
+      if (!rawUrl) {
+        console.log(`  ⚠ No download URL for ${file.name} — skipping.`);
+        continue;
+      }
+
+      const rawRes = await fetch(rawUrl, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!rawRes.ok) {
+        console.log(`  ⚠ Failed to download ${file.name} (${rawRes.status}) — skipping.`);
+        continue;
+      }
+
+      const buf = Buffer.from(await rawRes.arrayBuffer());
+      const dest = path.join(localAudioDir, file.name);
+      await writeFile(dest, buf);
+      count++;
+    }
+
+    console.log(`  ✔ ${count} audio file(s) → public/blog/audio/`);
   }
 
   console.log(`✅  Import complete.`);

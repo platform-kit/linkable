@@ -959,6 +959,7 @@ export const defaultModel = (): BioModel => ({
     embeds: { ...defaultCollection(true), label: "Embeds", icon: "Code" },
     widgets: defaultCollection(),
     newsletter: { ...defaultCollection(), label: "Newsletter", icon: "Mail" },
+    voice: { ...defaultCollection(), label: "Voice", icon: "Microphone" },
   },
   theme: defaultTheme(),
   layoutThemes: {

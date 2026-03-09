@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 39;
+export const CURRENT_SCHEMA_VERSION = 40;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -1000,6 +1000,26 @@ const migrations: Migration[] = [
         }
       }
       data.schemaVersion = 39;
+      return data;
+    },
+  },
+  {
+    toVersion: 40,
+    migrate: (data) => {
+      // v39 → v40: add voice collection for TTS audio upload
+      const collections = data.collections && typeof data.collections === "object"
+        ? (data.collections as Record<string, any>)
+        : {};
+      if (!collections.voice) {
+        collections.voice = {
+          enabled: false,
+          label: "Voice",
+          icon: "Microphone",
+          searchEnabled: false,
+          items: [],
+        };
+      }
+      data.schemaVersion = 40;
       return data;
     },
   },

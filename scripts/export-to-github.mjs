@@ -13,6 +13,8 @@
  *   GITHUB_BRANCH      – branch to push to (default: main)
  *   GITHUB_DATA_PATH   – path for data.json inside the repo (default: data.json)
  *   GITHUB_UPLOADS_DIR – path for uploads folder inside the repo (default: uploads)
+ *   GITHUB_AUDIO_DIR    – path for audio folder inside the repo (default: audio)
+ *   GITHUB_BLOG_DIR     – path for blog folder inside the repo (default: blog)
  *
  * Usage:
  *   node scripts/export-to-github.mjs
@@ -142,6 +144,7 @@ const run = async () => {
   const branch = process.env.GITHUB_BRANCH?.trim() || "main";
   const dataPath = process.env.GITHUB_DATA_PATH?.trim() || "data.json";
   const uploadsDir = process.env.GITHUB_UPLOADS_DIR?.trim() || "uploads";
+  const audioDir = process.env.GITHUB_AUDIO_DIR?.trim() || "audio";
   const blogDir = process.env.GITHUB_BLOG_DIR?.trim() || "blog";
 
   if (!owner || !repo) {
@@ -210,6 +213,19 @@ const run = async () => {
   const dataContent = readFileSync(cmsDataFile, "utf8");
   const dataBase64 = Buffer.from(dataContent).toString("base64");
 
+  // Get current sha if file exists
+  let dataSha = null;
+  try {
+    const currentDataUrl = `${API_BASE}/repos/${owner}/${repo}/contents/${dataPath}?ref=${branch}`;
+    const currentRes = await ghFetch(currentDataUrl, token);
+    if (currentRes.ok) {
+      const currentMeta = await currentRes.json();
+      dataSha = currentMeta.sha;
+    }
+  } catch (err) {
+    // File doesn't exist, no sha needed
+  }
+
   await putFile({
     owner,
     repo,
@@ -217,6 +233,7 @@ const run = async () => {
     token,
     repoPath: dataPath,
     content: dataBase64,
+    sha: dataSha,
     message: commitMsg,
   });
   console.log(`  ✔ cms-data.json → ${dataPath}`);
@@ -242,6 +259,19 @@ const run = async () => {
         const fileBase64 = fileContent.toString("base64");
         const repoPath = `${uploadsDir}/${file}`;
 
+        // Get current sha if file exists
+        let fileSha = null;
+        try {
+          const currentFileUrl = `${API_BASE}/repos/${owner}/${repo}/contents/${repoPath}?ref=${branch}`;
+          const currentRes = await ghFetch(currentFileUrl, token);
+          if (currentRes.ok) {
+            const currentMeta = await currentRes.json();
+            fileSha = currentMeta.sha;
+          }
+        } catch (err) {
+          // File doesn't exist, no sha needed
+        }
+
         await putFile({
           owner,
           repo,
@@ -249,6 +279,7 @@ const run = async () => {
           token,
           repoPath,
           content: fileBase64,
+          sha: fileSha,
           message: `${commitMsg} (upload ${file})`,
         });
         count++;
@@ -301,6 +332,19 @@ const run = async () => {
         const fileBase64 = fileContent.toString("base64");
         const repoPath = `${blogDir}/${file}`;
 
+        // Get current sha if file exists
+        let fileSha = null;
+        try {
+          const currentFileUrl = `${API_BASE}/repos/${owner}/${repo}/contents/${repoPath}?ref=${branch}`;
+          const currentRes = await ghFetch(currentFileUrl, token);
+          if (currentRes.ok) {
+            const currentMeta = await currentRes.json();
+            fileSha = currentMeta.sha;
+          }
+        } catch (err) {
+          // File doesn't exist, no sha needed
+        }
+
         await putFile({
           owner,
           repo,
@@ -308,6 +352,7 @@ const run = async () => {
           token,
           repoPath,
           content: fileBase64,
+          sha: fileSha,
           message: `${commitMsg} (blog: ${file})`,
         });
         count++;
@@ -336,6 +381,79 @@ const run = async () => {
         deleted++;
       }
       console.log(`  🗑 ${deleted} orphaned blog file(s) removed.`);
+    }
+  }
+
+  // ── 4. Push audio files ────────────────────────────────────────────
+
+  const localAudioDir = path.join(rootDir, "public", "blog", "audio");
+  if (!existsSync(localAudioDir)) {
+    console.log(`  ⏭ No public/blog/audio directory — skipping audio.`);
+  } else {
+    const files = readdirSync(localAudioDir).filter((f) => {
+      const full = path.join(localAudioDir, f);
+      return statSync(full).isFile() && !f.startsWith(".");
+    });
+
+    if (files.length === 0) {
+      console.log(`  ⏭ No audio files to push.`);
+    } else {
+      let count = 0;
+      for (const file of files) {
+        const filePath = path.join(localAudioDir, file);
+        const fileContent = readFileSync(filePath);
+        const fileBase64 = fileContent.toString("base64");
+        const repoPath = `${audioDir}/${file}`;
+
+        // Get current sha if file exists
+        let fileSha = null;
+        try {
+          const currentFileUrl = `${API_BASE}/repos/${owner}/${repo}/contents/${repoPath}?ref=${branch}`;
+          const currentRes = await ghFetch(currentFileUrl, token);
+          if (currentRes.ok) {
+            const currentMeta = await currentRes.json();
+            fileSha = currentMeta.sha;
+          }
+        } catch (err) {
+          // File doesn't exist, no sha needed
+        }
+
+        await putFile({
+          owner,
+          repo,
+          branch,
+          token,
+          repoPath,
+          content: fileBase64,
+          sha: fileSha,
+          message: `${commitMsg} (audio ${file})`,
+        });
+        count++;
+      }
+      console.log(`  ✔ ${count} audio file(s) → ${audioDir}/`);
+    }
+
+    // Delete remote audio files that no longer exist locally
+    const localAudioSet = new Set(files);
+    const remoteAudioFiles = await listRemoteDir({ owner, repo, branch, token, dirPath: audioDir });
+    const audioOrphans = remoteAudioFiles.filter((rf) => !localAudioSet.has(rf.name));
+
+    if (audioOrphans.length > 0) {
+      let deleted = 0;
+      for (const orphan of audioOrphans) {
+        const repoPath = `${audioDir}/${orphan.name}`;
+        await deleteFile({
+          owner,
+          repo,
+          branch,
+          token,
+          repoPath,
+          sha: orphan.sha,
+          message: `${commitMsg} (remove unused audio: ${orphan.name})`,
+        });
+        deleted++;
+      }
+      console.log(`  🗑 ${deleted} orphaned audio file(s) removed.`);
     }
   }
 

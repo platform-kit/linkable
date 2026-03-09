@@ -199,6 +199,27 @@ const runBuild = () => {
     writeFileSync(path.join(packageRoot, "cms-data.json"), dataContent);
     writeFileSync(path.join(packageRoot, "public", "data.json"), dataContent);
     console.log(`  ✔ Staged ${path.basename(sourceDataFile)}`);
+
+    // Extract voice file from CMS data
+    try {
+      const data = JSON.parse(dataContent);
+      const voiceItem = data.collections?.voice?.items?.[0];
+      if (voiceItem?.audioUrl) {
+        const audioUrl = voiceItem.audioUrl;
+        // If it's a relative path (uploaded file), copy it to voice.mp3
+        if (!audioUrl.startsWith('http') && audioUrl.startsWith('/uploads/')) {
+          const audioFilename = audioUrl.replace('/uploads/', '');
+          const sourceAudioPath = path.join(contentDir, "uploads", audioFilename);
+          const destVoicePath = path.join(contentDir, "voice.mp3");
+          if (existsSync(sourceAudioPath)) {
+            copyFileSync(sourceAudioPath, destVoicePath);
+            console.log(`  ✔ Extracted voice file from CMS data`);
+          }
+        }
+      }
+    } catch (err) {
+      // Ignore JSON parse errors or missing voice data
+    }
   } else {
     console.warn(`  ⚠ No data.json or cms-data.json found in ${contentDir} — using default content.`);
   }
@@ -342,6 +363,24 @@ const runBuild = () => {
         console.log(`  ✔ TTS audio generation complete`);
       } catch (err) {
         console.warn(`  ⚠ TTS generation failed — continuing without audio.`);
+      }
+    }
+  }
+
+  // ── 2e. Push updated content back to GitHub if TTS was run ────────
+  if (mergedEnv.GITHUB_OWNER && mergedEnv.GITHUB_REPO && mergedEnv.VITE_TTS_ENABLED) {
+    const exportScript = path.join(packageRoot, "scripts", "export-to-github.mjs");
+    if (existsSync(exportScript)) {
+      console.log(`\n  📤 Pushing updated content to GitHub…\n`);
+      try {
+        execSync(`node ${JSON.stringify(exportScript)}`, {
+          cwd: packageRoot,
+          env: mergedEnv,
+          stdio: "inherit",
+        });
+        console.log(`  ✔ Content pushed to GitHub`);
+      } catch (err) {
+        console.warn(`  ⚠ GitHub push failed — content may not be persisted.`);
       }
     }
   }
