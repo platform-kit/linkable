@@ -29,6 +29,7 @@
     <div class="space-y-4 p-2">
       <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] p-4 shadow-sm">
         <FormKit
+          :key="schemaKey"
           type="form"
           :actions="false"
           :value="modelValue"
@@ -83,6 +84,7 @@ export default defineComponent({
   props: {
     open: { type: Boolean, required: true },
     schema: { type: Array as PropType<FormKitSchemaNode[]>, required: true },
+    schemaKey: { type: String, default: "default" },
     modelValue: { type: Object as PropType<Record<string, any>>, required: true },
     title: { type: String, default: "Edit item" },
   },

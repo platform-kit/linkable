@@ -122,6 +122,7 @@
       :open="editorOpen"
       @update:open="editorOpen = $event"
       :schema="activeSchema"
+      :schema-key="activeSchemaKey"
       :modelValue="activeItem"
       :title="'Edit ' + (schema.label ? schema.label.replace(/s$/i, '') : 'item')"
       @update:modelValue="updateItem($event)"
@@ -175,6 +176,12 @@ export default defineComponent({
       if (!s) return null;
       if (typeof s === 'function') return activeItem.value ? s(activeItem.value) : null;
       return s;
+    });
+
+    const activeSchemaKey = computed(() => {
+      if (!activeItem.value) return 'empty';
+      const item = activeItem.value as Record<string, unknown>;
+      return `${item.textVariant ?? ''}|${item.backgroundVariant ?? ''}`;
     });
 
     const openEditor = (id: string) => {
@@ -247,7 +254,7 @@ export default defineComponent({
     };
 
     return {
-      editorOpen, activeItem, activeSchema, openEditor, addItem, updateItem, duplicateItem, deleteItem,
+      editorOpen, activeItem, activeSchema, activeSchemaKey, openEditor, addItem, updateItem, duplicateItem, deleteItem,
       updateMeta, getLabel, getSublabel, getThumb,
       filteredIcons, searchIcons, getIconComponent,
     };
