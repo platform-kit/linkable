@@ -41,9 +41,9 @@
 
 <script lang="ts">
 import { defineComponent, ref, computed, type PropType } from "vue";
-import type { BlogPostMeta, BlogPost } from "../lib/blog";
-export type { BlogSectionProps, BlogSectionEmits } from "../lib/component-contracts";
-import SearchBar from "../themes/bento/components/SearchBar.vue";
+import type { BlogPostMeta, BlogPost } from "@/lib/blog";
+export type { BlogSectionProps, BlogSectionEmits } from "@/lib/component-contracts";
+import SearchBar from "./SearchBar.vue";
 import BlogPostView from "./BlogPostView.vue";
 import BlogPostCard from "./BlogPostCard.vue";
 

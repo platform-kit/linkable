@@ -2,29 +2,29 @@
 /**
  * install-layout-deps.mjs
  *
- * Scans src/layouts/ for any layout directory containing a package.json,
+ * Scans src/themes/ for any theme directory containing a package.json,
  * and installs its dependencies into the root node_modules.
  *
- * This keeps layout-specific dependencies declared in their own package.json
+ * This keeps theme-specific dependencies declared in their own package.json
  * without needing a pnpm workspace setup.
  */
 import { readdirSync, existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { execSync } from "child_process";
 
-const layoutsDir = join(process.cwd(), "src", "layouts");
+const themesDir = join(process.cwd(), "src", "themes");
 
-if (!existsSync(layoutsDir)) {
+if (!existsSync(themesDir)) {
   process.exit(0);
 }
 
-const layouts = readdirSync(layoutsDir, { withFileTypes: true }).filter((d) => d.isDirectory());
+const themes = readdirSync(themesDir, { withFileTypes: true }).filter((d) => d.isDirectory());
 
-const layoutPaths = [];
+const themePaths = [];
 
-for (const layout of layouts) {
-  const layoutPath = join(layoutsDir, layout.name);
-  const pkgPath = join(layoutPath, "package.json");
+for (const theme of themes) {
+  const themePath = join(themesDir, theme.name);
+  const pkgPath = join(themePath, "package.json");
   if (!existsSync(pkgPath)) continue;
 
   const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
@@ -33,7 +33,7 @@ for (const layout of layouts) {
 
   let hasMissing = false;
   for (const name of Object.keys(deps)) {
-    const localInstalledPath = join(layoutPath, "node_modules", name, "package.json");
+    const localInstalledPath = join(themePath, "node_modules", name, "package.json");
     if (!existsSync(localInstalledPath)) {
       hasMissing = true;
       break;
@@ -41,19 +41,19 @@ for (const layout of layouts) {
   }
 
   if (hasMissing) {
-    layoutPaths.push(layoutPath);
+    themePaths.push(themePath);
   }
 }
 
-if (layoutPaths.length === 0) {
-  console.log("[layout-deps] All layout dependencies already installed.");
+if (themePaths.length === 0) {
+  console.log("[theme-deps] All theme dependencies already installed.");
   process.exit(0);
 }
 
 const runInstall = (cmd) => {
-  for (const layoutPath of layoutPaths) {
-    console.log(`[layout-deps] Installing deps in ${layoutPath}`);
-    execSync(cmd(layoutPath), { stdio: "inherit" });
+  for (const themePath of themePaths) {
+    console.log(`[theme-deps] Installing deps in ${themePath}`);
+    execSync(cmd(themePath), { stdio: "inherit" });
   }
 };
 

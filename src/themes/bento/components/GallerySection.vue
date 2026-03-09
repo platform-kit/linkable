@@ -38,9 +38,9 @@
 <script lang="ts">
 import { defineComponent, ref, computed, type PropType } from "vue";
 import type { MasonryItem } from "./MasonryGrid.vue";
-export type { GallerySectionProps, GallerySectionEmits } from "../lib/component-contracts";
-import SearchBar from "../themes/bento/components/SearchBar.vue";
-import MasonryGrid from "../themes/bento/components/MasonryGrid.vue";
+export type { GallerySectionProps, GallerySectionEmits } from "@/lib/component-contracts";
+import SearchBar from "./SearchBar.vue";
+import MasonryGrid from "./MasonryGrid.vue";
 import GalleryImageCard from "./GalleryImageCard.vue";
 import GalleryVideoCard from "./GalleryVideoCard.vue";
 

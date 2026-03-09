@@ -57,9 +57,9 @@ import { computed, defineComponent, onMounted, ref, type PropType } from "vue";
 import Button from "primevue/button";
 import Tag from "primevue/tag";
 import { useToast } from "primevue/usetoast";
-import BlogEditorDrawer from "../../themes/bento/components/BlogEditorDrawer.vue";
-import { fetchBlogPosts, fetchBlogPost, type BlogPostMeta, type BlogPost } from "../../lib/blog";
-import type { ContentCollection } from "../../lib/model";
+import BlogEditorDrawer from "../BlogEditorDrawer.vue";
+import { fetchBlogPosts, fetchBlogPost, type BlogPostMeta, type BlogPost } from "@/lib/blog";
+import type { ContentCollection } from "@/lib/model";
 
 export default defineComponent({
   name: "BlogCollectionEditor",

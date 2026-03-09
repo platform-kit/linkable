@@ -224,27 +224,27 @@ import Textarea from 'primevue/textarea';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 
-import CmsDialog from './components/CmsDialog.vue';
-import CollectionItemDrawer from './components/CollectionItemDrawer.vue';
-import GitCommitDialog from './components/GitCommitDialog.vue';
-import DefaultNewsletterViewPage from './components/NewsletterViewPage.vue';
-import { resolveEmbedHtml } from './components/EmbedEditorDrawer.vue';
-import type { MasonryItem } from './components/MasonryGrid.vue';
+import CmsDialog from './themes/bento/components/CmsDialog.vue';
+import CollectionItemDrawer from './themes/bento/components/CollectionItemDrawer.vue';
+import GitCommitDialog from './themes/bento/components/GitCommitDialog.vue';
+import DefaultNewsletterViewPage from './themes/bento/components/NewsletterViewPage.vue';
+import { resolveEmbedHtml } from './themes/bento/components/EmbedEditorDrawer.vue';
+import type { MasonryItem } from './themes/bento/components/MasonryGrid.vue';
 
 // Default user-facing components (overridable via src/overrides/)
-import DefaultProfileHeader from './components/ProfileHeader.vue';
-import DefaultTabNav from './components/TabNav.vue';
-import type { TabItem } from './components/TabNav.vue';
-import DefaultLinksSection from './components/LinksSection.vue';
-import DefaultResumeSection from './components/ResumeSection.vue';
-import DefaultGallerySection from './components/GallerySection.vue';
-import DefaultBlogSection from './components/BlogSection.vue';
-import DefaultEmbedSection from './components/EmbedSection.vue';
-import DefaultNewsletterSection from './components/NewsletterSection.vue';
-import DefaultLightboxOverlay from './components/LightboxOverlay.vue';
-import DefaultVideoOverlay from './components/VideoOverlay.vue';
-import DefaultPageFooter from './components/PageFooter.vue';
-import TagFilterDialog from './components/TagFilterDialog.vue';
+import DefaultProfileHeader from './themes/bento/components/ProfileHeader.vue';
+import DefaultTabNav from './themes/bento/components/TabNav.vue';
+import type { TabItem } from './themes/bento/components/TabNav.vue';
+import DefaultLinksSection from './themes/bento/components/LinksSection.vue';
+import DefaultResumeSection from './themes/bento/components/ResumeSection.vue';
+import DefaultGallerySection from './themes/bento/components/GallerySection.vue';
+import DefaultBlogSection from './themes/bento/components/BlogSection.vue';
+import DefaultEmbedSection from './themes/bento/components/EmbedSection.vue';
+import DefaultNewsletterSection from './themes/bento/components/NewsletterSection.vue';
+import DefaultLightboxOverlay from './themes/bento/components/LightboxOverlay.vue';
+import DefaultVideoOverlay from './themes/bento/components/VideoOverlay.vue';
+import DefaultPageFooter from './themes/bento/components/PageFooter.vue';
+import TagFilterDialog from './themes/bento/components/TagFilterDialog.vue';
 
 import { useComponent, useLayoutRoutes, isLayoutRoute, getLayoutManifest } from './lib/component-resolver';
 import { icons as lucideIcons } from 'lucide-vue-next';

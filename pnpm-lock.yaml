@@ -29,6 +29,9 @@ importers:
       '@formkit/zod':
         specifier: ^1.7.2
         version: 1.7.2(zod@3.25.76)
+      '@mediabunny/mp3-encoder':
+        specifier: ^1.38.1
+        version: 1.38.1(mediabunny@1.38.1)
       '@primevue/themes':
         specifier: ^4.5.4
         version: 4.5.4
@@ -107,6 +110,9 @@ importers:
       marked:
         specifier: ^17.0.3
         version: 17.0.3
+      mediabunny:
+        specifier: ^1.38.1
+        version: 1.38.1
       nodemailer:
         specifier: ^8.0.1
         version: 8.0.1
@@ -426,6 +432,11 @@ packages:
 
   '@juggle/resize-observer@3.4.0':
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
+
+  '@mediabunny/mp3-encoder@1.38.1':
+    resolution: {integrity: sha512-6Qcixfy2kDg9TXHLYv432QP3Ii3+RUZHp+pZ9bZ+o94cytsOcarEUzkeEh4i7/y73rqfaPXTK7DmPeBgKKm/Gw==}
+    peerDependencies:
+      mediabunny: ^1.0.0
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -788,6 +799,12 @@ packages:
 
   '@tootallnate/quickjs-emscripten@0.23.0':
     resolution: {integrity: sha512-C5Mc6rdnsaJDjO3UpGW/CQTHtCKaYlScZTly4JIu97Jxo/odCiH0ITnDXSJPTOrEKk/ycSZ0AOgTmkDtkOsvIA==}
+
+  '@types/dom-mediacapture-transform@0.1.11':
+    resolution: {integrity: sha512-Y2p+nGf1bF2XMttBnsVPHUWzRRZzqUoJAKmiP10b5umnO6DDrWI0BrGDJy1pOHoOULVmGSfFNkQrAlC5dcj6nQ==}
+
+  '@types/dom-webcodecs@0.1.13':
+    resolution: {integrity: sha512-O5hkiFIcjjszPIYyUSyvScyvrBoV3NOEEZx/pMlsu44TKzWNkLVBBxnxJz42in5n3QIolYOcBYFCPZZ0h8SkwQ==}
 
   '@types/estree@1.0.7':
     resolution: {integrity: sha512-w28IoSUCJpidD/TGviZwwMJckNESJZXFu7NBZ5YJ4mEUnNraUn9Pm8HSZm/jDF1pDWYKspWE7oVphigUPRakIQ==}
@@ -1505,6 +1522,9 @@ packages:
   media-captions@1.0.4:
     resolution: {integrity: sha512-cyDNmuZvvO4H27rcBq2Eudxo9IZRDCOX/I7VEyqbxsEiD2Ei7UYUhG/Sc5fvMZjmathgz3fEK7iAKqvpY+Ux1w==}
     engines: {node: '>=16'}
+
+  mediabunny@1.38.1:
+    resolution: {integrity: sha512-iqZjL21WG32qpdlONAyBBnmhLo4EvF+v4wnfe1rXEKT/7ogiYOZnQGL8TZi7QIFV71DSg7a64egFWUgf3oeSYA==}
 
   merge2@1.4.1:
     resolution: {integrity: sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==}
@@ -2365,6 +2385,10 @@ snapshots:
 
   '@juggle/resize-observer@3.4.0': {}
 
+  '@mediabunny/mp3-encoder@1.38.1(mediabunny@1.38.1)':
+    dependencies:
+      mediabunny: 1.38.1
+
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
       '@nodelib/fs.stat': 2.0.5
@@ -2727,6 +2751,12 @@ snapshots:
       '@tiptap/extension-floating-menu': 3.20.0(@floating-ui/dom@1.7.5)(@tiptap/core@3.20.0(@tiptap/pm@3.20.0))(@tiptap/pm@3.20.0)
 
   '@tootallnate/quickjs-emscripten@0.23.0': {}
+
+  '@types/dom-mediacapture-transform@0.1.11':
+    dependencies:
+      '@types/dom-webcodecs': 0.1.13
+
+  '@types/dom-webcodecs@0.1.13': {}
 
   '@types/estree@1.0.7': {}
 
@@ -3416,6 +3446,11 @@ snapshots:
   mdurl@2.0.0: {}
 
   media-captions@1.0.4: {}
+
+  mediabunny@1.38.1:
+    dependencies:
+      '@types/dom-mediacapture-transform': 0.1.11
+      '@types/dom-webcodecs': 0.1.13
 
   merge2@1.4.1: {}
 

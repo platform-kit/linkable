@@ -52,29 +52,29 @@ Whenever you add, rename, or remove a field on `BioModel`, `BioProfile`, `BioLin
 
 ***
 
-# Layout Dependencies
+# Theme Dependencies
 
-Each layout in `src/layouts/` may have its own `package.json` declaring layout-specific dependencies. These dependencies are **not** listed in the root `package.json` — they live exclusively in the layout's own `package.json`.
+Each theme in `src/themes/` may have its own `package.json` declaring theme-specific dependencies. These dependencies are **not** listed in the root `package.json` — they live exclusively in the theme's own `package.json`.
 
-## How layout dependencies are installed
+## How theme dependencies are installed
 
 `scripts/install-layout-deps.mjs` runs automatically before `dev` and `build`. It:
 
-1. Scans every directory under `src/layouts/` for a `package.json`.
-2. Collects all `dependencies` and `devDependencies` from each layout.
+1. Scans every directory under `src/themes/` for a `package.json`.
+2. Collects all `dependencies` and `devDependencies` from each theme.
 3. Skips any package already present in `node_modules/`.
 4. Installs missing packages via `pnpm add`.
 
-## Rules for layout dependencies
+## Rules for theme dependencies
 
-- **Never add a layout-specific dependency to the root `package.json`**. Declare it in `src/layouts/<layout>/package.json` instead.
+- **Never add a theme-specific dependency to the root `package.json`**. Declare it in `src/themes/<theme>/package.json` instead.
 - The install script handles installation — no pnpm workspaces or manual install steps needed.
-- If you create a new layout that needs extra packages, create a `package.json` in its directory (e.g. `src/layouts/newlayout/package.json`) with the dependencies. The script will discover and install them automatically.
-- Example (`src/layouts/bento/package.json`):
+- If you create a new theme that needs extra packages, create a `package.json` in its directory (e.g. `src/themes/newtheme/package.json`) with the dependencies. The script will discover and install them automatically.
+- Example (`src/themes/bento/package.json`):
 
   ```json
   {
-    "name": "@layouts/bento",
+    "name": "@themes/bento",
     "private": true,
     "dependencies": {
       "grid-layout-plus": "^1.1.1"

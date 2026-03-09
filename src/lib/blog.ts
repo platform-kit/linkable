@@ -109,6 +109,7 @@ export type BlogPostMeta = {
   tags: string[];
   publishDate: string; // ISO date — not visible before this date
   expirationDate: string; // ISO date — not visible after this date
+  audio?: string; // user-uploaded audio file URL
 };
 
 export type BlogPost = BlogPostMeta & {
@@ -230,6 +231,7 @@ export const metaFromRaw = (
     : [],
   publishDate: asString(raw.publishDate),
   expirationDate: asString(raw.expirationDate),
+  audio: asString(raw.audio),
 });
 
 export const renderMarkdown = (md: string): string => {

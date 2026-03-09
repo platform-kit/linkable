@@ -1,11 +1,11 @@
 import type { DefaultConfigOptions } from "@formkit/vue";
 import { createInput } from "@formkit/vue";
-import ColorPickerInput from "../components/formkit/ColorPickerInput.vue";
-import ImageUploadInput from "../components/formkit/ImageUploadInput.vue";
-import AudioUploadInput from "../components/formkit/AudioUploadInput.vue";
-import TagListInput from "../components/formkit/TagListInput.vue";
-import IconSelectInput from "../components/formkit/IconSelectInput.vue";
-import GoogleFontPickerInput from "../components/formkit/GoogleFontPickerInput.vue";
+import ColorPickerInput from "../themes/bento/components/formkit/ColorPickerInput.vue";
+import ImageUploadInput from "../themes/bento/components/formkit/ImageUploadInput.vue";
+import AudioUploadInput from "../themes/bento/components/formkit/AudioUploadInput.vue";
+import TagListInput from "../themes/bento/components/formkit/TagListInput.vue";
+import IconSelectInput from "../themes/bento/components/formkit/IconSelectInput.vue";
+import GoogleFontPickerInput from "../themes/bento/components/formkit/GoogleFontPickerInput.vue";
 
 /**
  * Custom FormKit inputs registered globally.

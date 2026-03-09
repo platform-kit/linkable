@@ -11,7 +11,7 @@
 
 import type { BioLink, SocialLink, ResumeData, GalleryItem } from "./model";
 import type { BlogPostMeta, BlogPost } from "./blog";
-import type { MasonryItem } from "../components/MasonryGrid.vue";
+import type { MasonryItem } from "../themes/bento/components/MasonryGrid.vue";
 
 /* ------------------------------------------------------------------ */
 /*  TabNav                                                             */

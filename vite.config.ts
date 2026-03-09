@@ -253,8 +253,10 @@ const cmsMiddlewarePlugin = () => ({
           // incoming filename argument may already be an object produced by busboy
           // containing { filename, encoding, mimeType }
           let orig = filename;
+          let mimeType = "";
           if (orig && typeof orig === "object" && typeof orig.filename === "string") {
             orig = orig.filename;
+            mimeType = orig.mimeType || "";
           }
 
           if (!orig || typeof orig !== "string") {
@@ -266,14 +268,44 @@ const cmsMiddlewarePlugin = () => ({
           }
 
           // If the filename already looks like a deterministic target (e.g.
-          // "avatar.jpg", "<uuid>.jpg") use it directly so re-uploads
+          // "avatar.jpg", "voice.mp3", "voice.wav") use it directly so re-uploads
           // overwrite the previous file instead of accumulating copies.
-          const isDeterministic = /^[a-zA-Z0-9_-]+\.jpg$/i.test(orig);
-          const safe = isDeterministic ? orig : generateUploadFileName(orig);
+          const isDeterministic = /^[a-zA-Z0-9_-]+\.(jpg|jpeg|png|gif|webp|mp3|wav|webm|m4a)$/i.test(orig);
+          const isAudio = mimeType.startsWith("audio/");
+          const baseName = isDeterministic ? orig.replace(/\.[^.]+$/, "") : generateUploadFileName(orig).replace(/\.[^.]+$/, "");
+          const ext = isAudio ? ".mp3" : (orig.includes(".") ? orig.slice(orig.lastIndexOf(".")) : ".bin");
+          const safe = baseName + ext;
           const outPath = path.join(uploadsDir, safe);
           const write = fs.createWriteStream(outPath);
           fileStream.pipe(write);
           returnedUrl = `/uploads/${safe}`;
+
+          // For audio files, convert to MP3 using ffmpeg
+          if (isAudio) {
+            write.on("finish", () => {
+              const mp3Path = outPath; // Already .mp3
+              // If input was not mp3, convert
+              if (!orig.toLowerCase().endsWith(".mp3")) {
+                const tempPath = outPath + ".temp";
+                fs.renameSync(outPath, tempPath);
+                try {
+                  const { spawnSync } = require("child_process");
+                  const result = spawnSync("ffmpeg", ["-y", "-i", tempPath, "-b:a", "128k", "-ac", "1", outPath], {
+                    stdio: "inherit"
+                  });
+                  if (result.status === 0) {
+                    fs.unlinkSync(tempPath);
+                  } else {
+                    // Conversion failed, keep original
+                    fs.renameSync(tempPath, outPath);
+                  }
+                } catch (err) {
+                  // ffmpeg not available, keep original
+                  fs.renameSync(tempPath, outPath);
+                }
+              }
+            });
+          }
         });
 
         bb.on("finish", () => {
@@ -515,7 +547,7 @@ const escapeXml = (s: string): string =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 
 /** Build an RSS XML string from published blog posts and site metadata. */
-const buildRssFeed = (posts: { slug: string; title: string; date: string; excerpt: string; html: string }[], siteModel: any): string => {
+const buildRssFeed = (posts: { slug: string; title: string; date: string; excerpt: string; html: string; audio?: string; audioUrl?: string }[], siteModel: any): string => {
   const siteTitle = escapeXml(siteModel?.profile?.displayName || "Blog");
   const siteDesc = escapeXml(siteModel?.profile?.tagline || "");
   // Use VITE_SITE_URL env var, or fall back to localhost
@@ -524,13 +556,15 @@ const buildRssFeed = (posts: { slug: string; title: string; date: string; excerp
   const items = posts.map((p) => {
     const pubDate = new Date(p.date).toUTCString();
     const link = `${siteUrl}/#blog/${encodeURIComponent(p.slug)}`;
+    const audioUrl = p.audio || p.audioUrl;
+    const enclosure = audioUrl ? `\n      <enclosure url="${escapeXml(siteUrl + audioUrl)}" type="audio/mpeg" length="0" />` : '';
     return `    <item>
       <title>${escapeXml(p.title)}</title>
       <link>${escapeXml(link)}</link>
       <guid isPermaLink="false">${escapeXml(p.slug)}</guid>
       <pubDate>${pubDate}</pubDate>
       <description>${escapeXml(p.excerpt || "")}</description>
-      <content:encoded><![CDATA[${p.html}]]></content:encoded>
+      <content:encoded><![CDATA[${p.html}]]></content:encoded>${enclosure}
     </item>`;
   });
 
@@ -592,52 +626,15 @@ const blogBuildPlugin = () => ({
       const postFile = path.join(publicBlogDir, `${meta.slug}.json`);
       if (fs.existsSync(postFile)) {
         const full = JSON.parse(fs.readFileSync(postFile, "utf8"));
-        return { ...meta, html: full.html || "" };
+        return { ...meta, html: full.html || "", audio: full.audio, audioUrl: full.audioUrl };
       }
-      return { ...meta, html: "" };
+      return { ...meta, html: "", audio: meta.audio, audioUrl: meta.audioUrl };
     });
     const rssXml = buildRssFeed(rssPosts, siteModel);
     fs.writeFileSync(path.resolve(__dirname, "public/rss.xml"), rssXml);
     console.log(`[blog-build] Generated RSS feed (${index.length} item(s))`);
 
     console.log(`[blog-build] Generated ${files.length} blog post(s) into public/blog/`);
-
-    // ── TTS audio generation ──────────────────────────────────────────
-    if (readEnvVar("VITE_TTS_ENABLED")) {
-      const ttsRunner = path.resolve(__dirname, "scripts", "run-tts.mjs");
-      if (fs.existsSync(ttsRunner)) {
-        console.log("[blog-build] Running TTS synthesis (this may take a while)…");
-        const result = spawnSync("node", [ttsRunner], {
-          cwd: __dirname,
-          env: process.env,
-          stdio: "inherit",
-        });
-        if (result.status !== 0) {
-          console.warn(`[blog-build] TTS script exited with code ${result.status} — continuing without audio.`);
-        }
-      } else {
-        console.warn("[blog-build] scripts/run-tts.mjs not found — skipping TTS.");
-      }
-
-      // Inject audioUrl into each post JSON if TTS audio was generated (mp3 preferred, wav fallback)
-      const audioDir = path.resolve(__dirname, "public", "blog", "audio");
-      for (const file of files) {
-        const slug = slugFromFilename(file);
-        const audioMp3 = path.join(audioDir, `${slug}.mp3`);
-        const audioWav = path.join(audioDir, `${slug}.wav`);
-        const postJsonPath = path.join(publicBlogDir, `${slug}.json`);
-        const audioUrl = fs.existsSync(audioMp3)
-          ? `/blog/audio/${slug}.mp3`
-          : fs.existsSync(audioWav)
-          ? `/blog/audio/${slug}.wav`
-          : null;
-        if (audioUrl && fs.existsSync(postJsonPath)) {
-          const post = JSON.parse(fs.readFileSync(postJsonPath, "utf8"));
-          post.audioUrl = audioUrl;
-          fs.writeFileSync(postJsonPath, JSON.stringify(post, null, 2));
-        }
-      }
-    }
   },
   /** After the full build, generate pre-rendered HTML for each blog post so
    *  crawlers (iMessage, Twitter, etc.) get post-specific OG meta tags. */
@@ -1119,6 +1116,11 @@ const prerenderBuildPlugin = () => ({
       });
 
       return {
+        resolve: {
+          alias: {
+            '@': path.resolve(__dirname, 'src'),
+          },
+        },
         server: {
           host: "::",
           port: 8080,

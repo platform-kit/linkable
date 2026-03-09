@@ -4,12 +4,12 @@
  * Resolution priority (highest → lowest):
  *   1. `src/overrides/user/<Name>.vue`     — content-repo custom override
  *   2. `src/overrides/<Name>.vue`          — core project override
- *   3. `src/layouts/<layout>/<Name>.vue`   — selected layout variant
+ *   3. `src/themes/<layout>/<Name>.vue`   — selected layout variant
  *   4. fallback (from `src/components/`)   — default layout
  *
- * User-provided layouts live under `src/layouts/user/<name>/` and are
+ * User-provided layouts live under `src/themes/user/<name>/` and are
  * discovered as layout name `user/<name>`.  They are staged from
- * `<content-repo>/layouts/` at build time and gitignored.
+ * `<content-repo>/themes/` at build time and gitignored.
  *
  * Usage in App.vue:
  *   const ProfileHeader = useComponent('ProfileHeader', DefaultProfileHeader, layout);
@@ -28,23 +28,23 @@ const overrideModules = import.meta.glob<{ default: Component }>(
 );
 
 const layoutModules = import.meta.glob<{ default: Component }>(
-  "../layouts/**/*.vue",
+  "../themes/**/*.vue",
 );
 
 const manifestModules = import.meta.glob<{ default: LayoutManifest }>(
-  "../layouts/**/manifest.ts",
+  "../themes/**/manifest.ts",
   { eager: true },
 );
 
 /**
  * List every layout name that ships at least one component override.
- * Always includes "default" even if no files exist under `src/layouts/default/`.
+ * Always includes "default" even if no files exist under `src/themes/default/`.
  */
 export function getAvailableLayouts(): string[] {
   const names = new Set<string>();
   for (const key of Object.keys(layoutModules)) {
-    // Matches both "../layouts/minimal/X.vue" and "../layouts/user/bento/X.vue"
-    const match = key.match(/^\.\.\/layouts\/((?:user\/)?[^/]+)\//);
+    // Matches both "../themes/minimal/X.vue" and "../themes/user/bento/X.vue"
+    const match = key.match(/^\.\.\/themes\/((?:user\/)?[^/]+)\//);
     if (match) names.add(match[1]);
   }
   return Array.from(names).sort();
@@ -93,7 +93,7 @@ export function useComponent(
     // 2. Layout variant (skip "default" — that's what fallback already is)
     const layoutName = layout.value;
     if (layoutName && layoutName !== "default") {
-      const layoutKey = `../layouts/${layoutName}/${name}.vue`;
+      const layoutKey = `../themes/${layoutName}/${name}.vue`;
       if (layoutModules[layoutKey]) {
         return defineAsyncComponent(layoutModules[layoutKey]);
       }
@@ -108,7 +108,7 @@ export function useComponent(
  * Get the variable manifest for a layout, or null if none exists.
  */
 export function getLayoutManifest(layoutName: string): LayoutManifest | null {
-  const key = `../layouts/${layoutName}/manifest.ts`;
+  const key = `../themes/${layoutName}/manifest.ts`;
   const mod = manifestModules[key];
   return mod?.default ?? null;
 }

@@ -13,7 +13,7 @@
  * The content directory should contain:
  *   data.json     — your Linkable CMS data
  *   uploads/      — (optional) uploaded images
- *   layouts/      — (optional) custom layouts (staged as user/<name>)
+ *   themes/      — (optional) custom themes (staged as user/<name>)
  *   overrides/    — (optional) global component overrides
  */
 
@@ -58,7 +58,7 @@ if (args.includes("--help") || args.includes("-h") || args.length === 0) {
   The content directory should contain:
     data.json     Your CMS content (exported from Linkable)
     uploads/      Optional folder with uploaded images
-    layouts/      Optional custom layouts (staged as user/<name>)
+    themes/      Optional custom themes (staged as user/<name>)
     overrides/    Optional global component overrides
 
   Examples:
@@ -199,27 +199,6 @@ const runBuild = () => {
     writeFileSync(path.join(packageRoot, "cms-data.json"), dataContent);
     writeFileSync(path.join(packageRoot, "public", "data.json"), dataContent);
     console.log(`  ✔ Staged ${path.basename(sourceDataFile)}`);
-
-    // Extract voice file from CMS data
-    try {
-      const data = JSON.parse(dataContent);
-      const voiceItem = data.collections?.voice?.items?.[0];
-      if (voiceItem?.audioUrl) {
-        const audioUrl = voiceItem.audioUrl;
-        // If it's a relative path (uploaded file), copy it to voice.mp3
-        if (!audioUrl.startsWith('http') && audioUrl.startsWith('/uploads/')) {
-          const audioFilename = audioUrl.replace('/uploads/', '');
-          const sourceAudioPath = path.join(contentDir, "uploads", audioFilename);
-          const destVoicePath = path.join(contentDir, "voice.mp3");
-          if (existsSync(sourceAudioPath)) {
-            copyFileSync(sourceAudioPath, destVoicePath);
-            console.log(`  ✔ Extracted voice file from CMS data`);
-          }
-        }
-      }
-    } catch (err) {
-      // Ignore JSON parse errors or missing voice data
-    }
   } else {
     console.warn(`  ⚠ No data.json or cms-data.json found in ${contentDir} — using default content.`);
   }
@@ -260,19 +239,19 @@ const runBuild = () => {
     console.log(`  ✔ Staged voice.mp3 for TTS`);
   }
 
-  // Copy layouts/ → src/layouts/user/ (user-provided theme overrides)
-  const userLayoutsDir = path.join(contentDir, "layouts");
-  const destUserLayouts = path.join(packageRoot, "src", "layouts", "user");
-  if (existsSync(userLayoutsDir) && statSync(userLayoutsDir).isDirectory()) {
-    // Clean any previous staged user layouts
-    if (existsSync(destUserLayouts)) {
-      rmSync(destUserLayouts, { recursive: true, force: true });
+  // Copy themes/ → src/themes/user/ (user-provided theme overrides)
+  const userThemesDir = path.join(contentDir, "themes");
+  const destUserThemes = path.join(packageRoot, "src", "themes", "user");
+  if (existsSync(userThemesDir) && statSync(userThemesDir).isDirectory()) {
+    // Clean any previous staged user themes
+    if (existsSync(destUserThemes)) {
+      rmSync(destUserThemes, { recursive: true, force: true });
     }
-    copyDirSync(userLayoutsDir, destUserLayouts);
-    const layoutNames = readdirSync(destUserLayouts).filter(
-      (f) => statSync(path.join(destUserLayouts, f)).isDirectory(),
+    copyDirSync(userThemesDir, destUserThemes);
+    const themeNames = readdirSync(destUserThemes).filter(
+      (f) => statSync(path.join(destUserThemes, f)).isDirectory(),
     );
-    console.log(`  ✔ Staged ${layoutNames.length} user layout(s): ${layoutNames.join(", ")}`);
+    console.log(`  ✔ Staged ${themeNames.length} user theme(s): ${themeNames.join(", ")}`);
   }
 
   // Copy overrides/ → src/overrides/user/ (user-provided component overrides)
@@ -408,13 +387,13 @@ const runBuild = () => {
   const viteCmd = existsSync(viteBin) ? viteBin : "npx vite";
   const buildCmd = `${viteCmd} build --outDir ${JSON.stringify(buildOutDir)}`;
 
-  /** Remove staged user layouts & overrides to keep the core tree clean. */
+  /** Remove staged user themes & overrides to keep the core tree clean. */
   const cleanupUserStaged = () => {
-    const userLayoutsPath = path.join(packageRoot, "src", "layouts", "user");
+    const userThemesPath = path.join(packageRoot, "src", "themes", "user");
     const userOverridesPath = path.join(packageRoot, "src", "overrides", "user");
     const userDepsMarker = path.join(packageRoot, ".user-deps.json");
-    if (existsSync(userLayoutsPath)) {
-      rmSync(userLayoutsPath, { recursive: true, force: true });
+    if (existsSync(userThemesPath)) {
+      rmSync(userThemesPath, { recursive: true, force: true });
     }
     if (existsSync(userOverridesPath)) {
       rmSync(userOverridesPath, { recursive: true, force: true });
