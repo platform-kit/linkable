@@ -135,8 +135,8 @@ import Textarea from "primevue/textarea";
 import { useToast } from "primevue/usetoast";
 import ResumeEditorDrawer from "../ResumeEditorDrawer.vue";
 import type { ContentCollection } from "@/lib/model";
-import type { ResumeData, EducationEntry, EmploymentEntry, AchievementEntry } from "@/lib/model";
-import { newEducation, newEmployment, newAchievement } from "@/lib/model";
+import type { ResumeData, EducationEntry, EmploymentEntry, AchievementEntry } from "@/themes/bento/resume-types";
+import { newEducation, newEmployment, newAchievement } from "@/themes/bento/resume-types";
 
 export default defineComponent({
   name: "ResumeCollectionEditor",

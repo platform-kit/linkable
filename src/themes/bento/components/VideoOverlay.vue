@@ -46,7 +46,7 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from "vue";
-import type { GalleryItem } from "@/lib/model";
+import type { GalleryItem } from "@/themes/bento/collection-types";
 export type { VideoOverlayProps, VideoOverlayEmits } from "@/lib/component-contracts";
 import VideoPlayer from "./VideoPlayer.vue";
 import { resolveUploadUrl } from "@/lib/github";

@@ -1,17 +1,18 @@
 #!/usr/bin/env node
 
 /**
- * Linkable CLI
+ * PlatformKit CLI
  *
  * Commands:
- *   npx linkable serve ./my-content        Serve using your content
- *   npx linkable build ./my-content        Build a static site with your content
- *   npx linkable deploy                    Deploy Supabase edge functions & migrations
- *   npx linkable ./my-content              Alias for serve (default)
- *   npx linkable --help                    Show help
+ *   npx platformkit serve ./my-content        Serve using your content
+ *   npx platformkit build ./my-content        Build a static site with your content
+ *   npx platformkit deploy                    Deploy Supabase edge functions & migrations
+ *   npx platformkit deploy ./my-content        Deploy using content repo's supabase/
+ *   npx platformkit ./my-content              Alias for serve (default)
+ *   npx platformkit --help                    Show help
  *
  * The content directory should contain:
- *   data.json     — your Linkable CMS data
+ *   data.json     — your PlatformKit CMS data
  *   uploads/      — (optional) uploaded images
  *   themes/      — (optional) custom themes (staged as user/<name>)
  *   overrides/    — (optional) global component overrides
@@ -42,31 +43,36 @@ const args = process.argv.slice(2);
 
 if (args.includes("--help") || args.includes("-h") || args.length === 0) {
   console.log(`
-  Linkable — design-forward link-in-bio sites
+  PlatformKit — design-forward link-in-bio sites
 
   Commands:
-    linkable serve <content-dir>     Serve your site locally
-    linkable build <content-dir>     Build a static site into ./dist
-    linkable deploy                  Deploy Supabase migrations & edge functions
+    platformkit serve <content-dir>     Serve your site locally
+    platformkit build <content-dir>     Build a static site into ./dist
+    platformkit deploy                  Deploy Supabase migrations & edge functions
+    platformkit deploy <content-dir>    Deploy using content repo's supabase/ directory
 
   Options:
-    --port, -p <port>    Port for serve (default: 3000)
+    --port, -p <port>    Port for serve (default: 8080)
     --out, -o <dir>      Output directory for build (default: ./dist)
     --project-ref        Supabase project ref for deploy
     --help, -h           Show this help
 
   The content directory should contain:
-    data.json     Your CMS content (exported from Linkable)
-    uploads/      Optional folder with uploaded images
-    themes/      Optional custom themes (staged as user/<name>)
-    overrides/    Optional global component overrides
+    data.json            Your CMS content (exported from PlatformKit)
+    uploads/             Optional folder with uploaded images
+    themes/              Optional custom themes (staged as user/<name>)
+    overrides/           Optional global component overrides
+    supabase/            Optional Supabase migrations & functions
+    tailwind.config.js   Optional Tailwind CSS extensions (merged with core)
+    vite.plugins.js      Optional Vite plugins / custom server middleware
+    platformkit.config.ts  Optional site/RSS/build configuration
 
   Examples:
-    npx linkable serve ./my-site
-    npx linkable build ./my-site
-    npx linkable build ./my-site --out ./public
-    npx linkable deploy --project-ref abcdefghijklmnop
-    npx linkable ./my-site                        (defaults to serve)
+    npx platformkit serve ./my-site
+    npx platformkit build ./my-site
+    npx platformkit build ./my-site --out ./public
+    npx platformkit deploy --project-ref abcdefghijklmnop
+    npx platformkit ./my-site                        (defaults to serve)
 `);
   process.exit(0);
 }
@@ -74,7 +80,7 @@ if (args.includes("--help") || args.includes("-h") || args.length === 0) {
 // Determine command
 let command = "serve"; // default
 let positionalArgs = [];
-let port = 3000;
+let port = 8080;
 let outDir = null;
 let projectRef = null;
 
@@ -169,10 +175,10 @@ const loadEnvFile = (dir) => {
 };
 
 const runBuild = () => {
-  console.log(`\n🔨  Building Linkable site…\n`);
+  console.log(`\n🔨  Building PlatformKit site…\n`);
 
   if (!contentDir) {
-    console.error("❌  Content directory required for build. Usage: linkable build <content-dir>");
+    console.error("❌  Content directory required for build. Usage: platformkit build <content-dir>");
     process.exit(1);
   }
 
@@ -264,6 +270,30 @@ const runBuild = () => {
     copyDirSync(userOverridesDir, destUserOverrides);
     const overrideFiles = readdirSync(destUserOverrides).filter((f) => f.endsWith(".vue"));
     console.log(`  ✔ Staged ${overrideFiles.length} user override(s)`);
+  }
+
+  // Copy tailwind.config.js → tailwind.user.config.js (user Tailwind extensions)
+  const userTailwindConfig = path.join(contentDir, "tailwind.config.js");
+  if (existsSync(userTailwindConfig)) {
+    copyFileSync(userTailwindConfig, path.join(packageRoot, "tailwind.user.config.js"));
+    console.log(`  ✔ Staged user tailwind.config.js`);
+  }
+
+  // Copy vite.plugins.js → vite.user.plugins.js (user Vite plugins / middleware)
+  const userVitePlugins = path.join(contentDir, "vite.plugins.js");
+  if (existsSync(userVitePlugins)) {
+    copyFileSync(userVitePlugins, path.join(packageRoot, "vite.user.plugins.js"));
+    console.log(`  ✔ Staged user vite.plugins.js`);
+  }
+
+  // Copy platformkit.config.{ts,js,mjs} → project root
+  for (const ext of ["ts", "js", "mjs"]) {
+    const userConfigFile = path.join(contentDir, `platformkit.config.${ext}`);
+    if (existsSync(userConfigFile)) {
+      copyFileSync(userConfigFile, path.join(packageRoot, `platformkit.config.${ext}`));
+      console.log(`  ✔ Staged platformkit.config.${ext}`);
+      break; // only stage the first one found
+    }
   }
 
   // Install content repo npm dependencies (if package.json exists)
@@ -428,7 +458,7 @@ const runServe = () => {
 
   if (!existsSync(distDir)) {
     console.error(
-      "❌  Built app not found. Run `linkable build` first, or `npm run build`."
+      "❌  Built app not found. Run `platformkit build` first, or `npm run build`."
     );
     process.exit(1);
   }
@@ -506,7 +536,7 @@ const runServe = () => {
   });
 
   server.listen(port, () => {
-    console.log(`\n  🔗 Linkable is running at http://localhost:${port}\n`);
+    console.log(`\n  🔗 PlatformKit is running at http://localhost:${port}\n`);
   });
 };
 
@@ -590,11 +620,23 @@ const runDeploy = async () => {
     }
   }
 
-  const supabaseDir = path.join(packageRoot, "supabase");
+  // Prefer user's content-repo supabase/ if it exists, else fall back to the package's own
+  const userSupabaseDir = contentDir ? path.join(contentDir, "supabase") : null;
+  const supabaseDir = (userSupabaseDir && existsSync(userSupabaseDir) && statSync(userSupabaseDir).isDirectory())
+    ? userSupabaseDir
+    : path.join(packageRoot, "supabase");
+
   if (!existsSync(supabaseDir)) {
-    console.error("❌  No supabase/ directory found in the project.");
+    console.error("❌  No supabase/ directory found in either the content repo or the project.");
     process.exit(1);
   }
+
+  if (supabaseDir !== path.join(packageRoot, "supabase")) {
+    console.log(`  ✔ Using supabase/ from content repo: ${supabaseDir}\n`);
+  }
+
+  // The supabase CLI expects to find supabase/ relative to cwd
+  const supabaseCwd = path.dirname(supabaseDir);
 
   // Resolve project ref from --project-ref flag, env var, or linked project
   const ref = projectRef
@@ -607,7 +649,7 @@ const runDeploy = async () => {
 
   // Check that supabase CLI is available
   try {
-    execSync("npx supabase --version", { cwd: packageRoot, stdio: "pipe" });
+    execSync("npx supabase --version", { cwd: supabaseCwd, stdio: "pipe" });
   } catch {
     console.error("❌  Supabase CLI not found. Install it with: npm i -D supabase");
     process.exit(1);
@@ -621,7 +663,7 @@ const runDeploy = async () => {
       console.log(`  🔗 Linking to Supabase project: ${ref}\n`);
       try {
         execSync(`npx supabase link --project-ref ${ref}`, {
-          cwd: packageRoot,
+          cwd: supabaseCwd,
           stdio: "inherit",
         });
       } catch {
@@ -648,7 +690,7 @@ const runDeploy = async () => {
     console.log(`  📦 Pushing ${migrationCount} migration(s) to remote database…\n`);
     try {
       execSync("npx supabase db push", {
-        cwd: packageRoot,
+        cwd: supabaseCwd,
         stdio: "inherit",
       });
       console.log(`\n  ✔ Database migrations applied\n`);
@@ -678,7 +720,7 @@ const runDeploy = async () => {
     try {
       execSync(`npx supabase db execute --remote`, {
         input: sql,
-        cwd: packageRoot,
+        cwd: supabaseCwd,
         stdio: ["pipe", "inherit", "inherit"],
       });
       console.log(`  ✔ Vault secrets synced\n`);
@@ -716,7 +758,7 @@ const runDeploy = async () => {
   // Deploy all functions at once
   try {
     execSync("npx supabase functions deploy", {
-      cwd: packageRoot,
+      cwd: supabaseCwd,
       stdio: "inherit",
     });
     console.log(`\n  ✔ All edge functions deployed\n`);
@@ -750,7 +792,7 @@ const runDeploy = async () => {
     const secretArgs = secretPairs.map(({ key, value }) => `'${key}=${value}'`).join(" ");
     try {
       execSync(`npx supabase secrets set ${secretArgs}`, {
-        cwd: packageRoot,
+        cwd: supabaseCwd,
         stdio: "inherit",
       });
       console.log(`\n  ✔ Edge function secrets updated\n`);

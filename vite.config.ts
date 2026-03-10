@@ -15,8 +15,48 @@ import {
   slugFromFilename,
   renderMarkdown,
 } from "./src/lib/blog";
+import type { PlatformKitConfig, RssFeedConfig } from "./src/lib/config";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// ── Load platformkit.config.js/.ts (optional) ───────────────────────
+const loadPlatformKitConfig = async (): Promise<PlatformKitConfig> => {
+  const names = ["platformkit.config.ts", "platformkit.config.js", "platformkit.config.mjs"];
+  for (const name of names) {
+    const configPath = path.resolve(__dirname, name);
+    if (!fs.existsSync(configPath)) continue;
+
+    if (name.endsWith(".ts")) {
+      // Transpile .ts → temp .mjs via esbuild (already a Vite dependency)
+      try {
+        const { transformSync } = await import("esbuild");
+        const code = fs.readFileSync(configPath, "utf-8");
+        const result = transformSync(code, { loader: "ts", format: "esm", target: "node18" });
+        const tmpPath = configPath + ".__tmp.mjs";
+        fs.writeFileSync(tmpPath, result.code);
+        try {
+          const mod = await import(`${tmpPath}?t=${Date.now()}`);
+          return mod.default ?? mod;
+        } finally {
+          try { fs.unlinkSync(tmpPath); } catch {}
+        }
+      } catch (err: any) {
+        console.warn(`[platformkit] Failed to load ${name}: ${err?.message}`);
+      }
+    } else {
+      try {
+        const mod = await import(`${configPath}?t=${Date.now()}`);
+        return mod.default ?? mod;
+      } catch (err: any) {
+        console.warn(`[platformkit] Failed to load ${name}: ${err?.message}`);
+      }
+    }
+  }
+  return {};
+};
+
+const pkConfig: PlatformKitConfig = await loadPlatformKitConfig();
+
 const dataFilePath = path.resolve(__dirname, "cms-data.json");
 const defaultDataFilePath = path.resolve(__dirname, "default-data.json");
 const publicDataFilePath = path.resolve(__dirname, "public/data.json");
@@ -189,8 +229,8 @@ const asResultPayload = (result?: GitCommandResult | null) =>
 
 /** Build a PWA manifest object from CMS data. */
 const buildManifest = (siteModel: any) => {
-  const name = siteModel?.profile?.displayName || "Linkable";
-  const description = siteModel?.profile?.tagline || "";
+  const name = pkConfig.site?.name || siteModel?.profile?.displayName || "PlatformKit";
+  const description = pkConfig.site?.tagline || siteModel?.profile?.tagline || "";
   const bg = siteModel?.theme?.bg || "#f5f7fb";
   const brand = siteModel?.theme?.colorBrand || "#3b82f6";
   const ogImage = siteModel?.profile?.ogImageUrl || "";
@@ -547,11 +587,21 @@ const escapeXml = (s: string): string =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 
 /** Build an RSS XML string from published blog posts and site metadata. */
-const buildRssFeed = (posts: { slug: string; title: string; date: string; excerpt: string; html: string; audio?: string; audioUrl?: string }[], siteModel: any): string => {
-  const siteTitle = escapeXml(siteModel?.profile?.displayName || "Blog");
-  const siteDesc = escapeXml(siteModel?.profile?.tagline || "");
+const buildRssFeed = (
+  posts: { slug: string; title: string; date: string; excerpt: string; html: string; audio?: string; audioUrl?: string }[],
+  siteModel: any,
+  feedCfg?: RssFeedConfig,
+): string => {
+  const siteTitle = escapeXml(
+    feedCfg?.title || pkConfig.site?.name || siteModel?.profile?.displayName || "Blog",
+  );
+  const siteDesc = escapeXml(
+    feedCfg?.description || pkConfig.site?.tagline || siteModel?.profile?.tagline || "",
+  );
+  const lang = feedCfg?.language || pkConfig.site?.language || "en";
+  const outputPath = feedCfg?.output || "rss.xml";
   // Use VITE_SITE_URL env var, or fall back to localhost
-  const siteUrl = (process.env.VITE_SITE_URL || "http://localhost:8080").replace(/\/$/, "");
+  const siteUrl = (pkConfig.site?.url || process.env.VITE_SITE_URL || "http://localhost:8080").replace(/\/$/, "");
 
   const items = posts.map((p) => {
     const pubDate = new Date(p.date).toUTCString();
@@ -574,9 +624,9 @@ const buildRssFeed = (posts: { slug: string; title: string; date: string; excerp
     <title>${siteTitle}</title>
     <link>${escapeXml(siteUrl)}</link>
     <description>${siteDesc}</description>
-    <language>en</language>
+    <language>${lang}</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <atom:link href="${escapeXml(siteUrl)}/rss.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="${escapeXml(siteUrl)}/${escapeXml(outputPath)}" rel="self" type="application/rss+xml" />
 ${items.join("\n")}
   </channel>
 </rss>`;
@@ -608,8 +658,8 @@ const blogBuildPlugin = () => ({
       fs.writeFileSync(path.join(publicBlogDir, `${slug}.json`), JSON.stringify(post, null, 2));
 
       if (postMeta.published) {
-        // When VITE_SCHEDULE_EXCLUDE_BUILD is set, exclude posts outside their schedule window
-        const excludeBySchedule = !!readEnvVar("VITE_SCHEDULE_EXCLUDE_BUILD");
+        // When scheduleExclude is set (via config or env), exclude posts outside their schedule window
+        const excludeBySchedule = pkConfig.build?.scheduleExclude || !!readEnvVar("VITE_SCHEDULE_EXCLUDE_BUILD");
         if (excludeBySchedule && !isScheduleVisibleNow(postMeta)) continue;
         index.push(postMeta);
       }
@@ -618,21 +668,69 @@ const blogBuildPlugin = () => ({
     index.sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0));
     fs.writeFileSync(path.join(publicBlogDir, "index.json"), JSON.stringify(index, null, 2));
 
-    // Generate RSS feed
-    const siteModel = fs.existsSync(dataFilePath)
-      ? JSON.parse(fs.readFileSync(dataFilePath, "utf8"))
-      : readDefaultModel();
-    const rssPosts = index.map((meta: any) => {
-      const postFile = path.join(publicBlogDir, `${meta.slug}.json`);
-      if (fs.existsSync(postFile)) {
-        const full = JSON.parse(fs.readFileSync(postFile, "utf8"));
-        return { ...meta, html: full.html || "", audio: full.audio, audioUrl: full.audioUrl };
+    // Generate RSS feed(s)
+    if (pkConfig.rss?.enabled !== false) {
+      const siteModel = fs.existsSync(dataFilePath)
+        ? JSON.parse(fs.readFileSync(dataFilePath, "utf8"))
+        : readDefaultModel();
+
+      // Hydrate each index entry with its full HTML for RSS <content:encoded>
+      const hydrateForRss = (meta: any) => {
+        const postFile = path.join(publicBlogDir, `${meta.slug}.json`);
+        if (fs.existsSync(postFile)) {
+          const full = JSON.parse(fs.readFileSync(postFile, "utf8"));
+          return { ...meta, html: full.html || "", audio: full.audio, audioUrl: full.audioUrl };
+        }
+        return { ...meta, html: "", audio: meta.audio, audioUrl: meta.audioUrl };
+      };
+
+      // Posts eligible for RSS: published + not excluded by `rss: false` frontmatter
+      const rssEligible = index.filter((m: any) => m.rss !== false);
+
+      // Determine feeds — use config feeds or a single default feed
+      const feedConfigs: RssFeedConfig[] =
+        pkConfig.rss?.feeds && pkConfig.rss.feeds.length > 0
+          ? pkConfig.rss.feeds
+          : [{ output: "rss.xml" }];
+
+      for (const feedCfg of feedConfigs) {
+        let feedPosts = rssEligible;
+
+        // Apply path regex filter
+        if (feedCfg.pathFilter) {
+          const pathRe = new RegExp(feedCfg.pathFilter);
+          feedPosts = feedPosts.filter((m: any) => pathRe.test(m.slug));
+        }
+
+        // Apply content regex filter (match against raw markdown body)
+        if (feedCfg.contentFilter) {
+          const contentRe = new RegExp(feedCfg.contentFilter);
+          feedPosts = feedPosts.filter((m: any) => {
+            const postFile = path.join(blogContentDir, `${m.slug}.md`);
+            if (!fs.existsSync(postFile)) return false;
+            const raw = fs.readFileSync(postFile, "utf8");
+            return contentRe.test(raw);
+          });
+        }
+
+        // Apply tag filter
+        if (feedCfg.tags && feedCfg.tags.length > 0) {
+          const tagSet = new Set(feedCfg.tags.map((t: string) => t.toLowerCase()));
+          feedPosts = feedPosts.filter((m: any) =>
+            Array.isArray(m.tags) && m.tags.some((t: string) => tagSet.has(t.toLowerCase())),
+          );
+        }
+
+        const rssPosts = feedPosts.map(hydrateForRss);
+        const rssXml = buildRssFeed(rssPosts, siteModel, feedCfg);
+        const outputFile = feedCfg.output || "rss.xml";
+        const outputPath = path.resolve(__dirname, "public", outputFile);
+        const outputDir = path.dirname(outputPath);
+        if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+        fs.writeFileSync(outputPath, rssXml);
+        console.log(`[blog-build] Generated RSS feed ${outputFile} (${rssPosts.length} item(s))`);
       }
-      return { ...meta, html: "", audio: meta.audio, audioUrl: meta.audioUrl };
-    });
-    const rssXml = buildRssFeed(rssPosts, siteModel);
-    fs.writeFileSync(path.resolve(__dirname, "public/rss.xml"), rssXml);
-    console.log(`[blog-build] Generated RSS feed (${index.length} item(s))`);
+    }
 
     console.log(`[blog-build] Generated ${files.length} blog post(s) into public/blog/`);
   },
@@ -720,8 +818,11 @@ const blogBuildPlugin = () => ({
   },
 });
 
-/** Resolve VITE_SITE_URL from process.env, .env files, or manual parse. */
+/** Resolve site URL from platformkit config, process.env, .env files, or manual parse. */
 const resolveSiteUrl = (): string => {
+  // 0. platformkit.config site.url
+  if (pkConfig.site?.url) return pkConfig.site.url.replace(/\/$/, "");
+
   // 1. Explicit env var (set by host platform or shell)
   if (process.env.VITE_SITE_URL) return process.env.VITE_SITE_URL.replace(/\/$/, "");
 
@@ -803,6 +904,27 @@ const ogMetaPlugin = () => {
       order: "pre" as const,
       handler(html: string) {
         const model = getModel();
+        const p = model?.profile;
+
+        // Replace hardcoded <title> and <meta name="description"> with CMS values
+        if (p?.displayName) {
+          html = html.replace(/<title>[^<]*<\/title>/, `<title>${p.displayName}</title>`);
+        }
+        if (p?.tagline) {
+          const escAttr = (s: string) =>
+            s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          html = html.replace(
+            /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/,
+            `<meta name="description" content="${escAttr(p.tagline)}" />`,
+          );
+        }
+        if (p?.faviconUrl) {
+          html = html.replace(
+            /<link\s+id="__platformkit-apple-touch"\s+rel="apple-touch-icon"\s+href="[^"]*"\s*\/?>/,
+            `<link id="__platformkit-apple-touch" rel="apple-touch-icon" href="${p.faviconUrl}" />`,
+          );
+        }
+
         const tags = buildOgTags(model);
         if (!tags) return html;
         // Inject OG tags right before </head>
@@ -834,7 +956,7 @@ const manifestBuildPlugin = () => ({
 const scheduleBuildPlugin = () => ({
   name: "schedule-build",
   buildStart() {
-    if (!readEnvVar("VITE_SCHEDULE_EXCLUDE_BUILD")) return;
+    if (!pkConfig.build?.scheduleExclude && !readEnvVar("VITE_SCHEDULE_EXCLUDE_BUILD")) return;
     if (!fs.existsSync(publicDataFilePath)) return;
 
     const raw = JSON.parse(fs.readFileSync(publicDataFilePath, "utf8"));
@@ -1115,6 +1237,21 @@ const prerenderBuildPlugin = () => ({
         },
       });
 
+    // ── User plugins: load from content repo's vite.plugins.js ──
+    const userPluginsPath = path.resolve(__dirname, "vite.user.plugins.js");
+    let userPlugins: any[] = [];
+    if (fs.existsSync(userPluginsPath)) {
+      try {
+        const requireCJS2 = createRequire(import.meta.url);
+        const plugins = requireCJS2(userPluginsPath);
+        const resolved = plugins?.default ?? plugins;
+        userPlugins = Array.isArray(resolved) ? resolved : resolved ? [resolved] : [];
+        console.log(`[user-plugins] Loaded ${userPlugins.length} user plugin(s)`);
+      } catch (err: any) {
+        console.warn(`[user-plugins] Failed to load vite.user.plugins.js: ${err?.message}`);
+      }
+    }
+
       return {
         resolve: {
           alias: {
@@ -1122,8 +1259,8 @@ const prerenderBuildPlugin = () => ({
           },
         },
         server: {
-          host: "::",
-          port: 8080,
+          host: pkConfig.server?.host || "::",
+          port: pkConfig.server?.port || 8080,
           fs: {
             allow: [
               __dirname,
@@ -1133,6 +1270,7 @@ const prerenderBuildPlugin = () => ({
         },
         plugins: [
           userDepsPlugin(),
+          ...userPlugins,
           cmsMiddlewarePlugin(),
           blogBuildPlugin(),
           scheduleBuildPlugin(),

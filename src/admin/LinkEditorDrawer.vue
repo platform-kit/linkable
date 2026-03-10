@@ -150,7 +150,7 @@ import MultiSelect from "primevue/multiselect";
 import ToggleSwitch from "primevue/toggleswitch";
 
 import ImageUploadField from "./ImageUploadField.vue";
-import type { BioLink } from "@/lib/model";
+import type { BioLink } from "@/themes/bento/collection-types";
 
 export default defineComponent({
   name: "LinkEditorDrawer",

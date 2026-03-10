@@ -5,7 +5,7 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from "vue";
-import type { SocialLink } from "../../lib/model";
+import type { SocialLink } from "./collection-types";
 export type { ProfileHeaderProps, ProfileHeaderEmits } from "../../lib/component-contracts";
 
 export default defineComponent({

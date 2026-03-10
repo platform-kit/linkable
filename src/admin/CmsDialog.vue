@@ -203,7 +203,7 @@
 
                     <div class="grid gap-2">
                       <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Repository</label>
-                      <InputText :model-value="githubForm.repo" placeholder="e.g. linkable" disabled />
+                      <InputText :model-value="githubForm.repo" placeholder="e.g. platformkit" disabled />
                     </div>
 
                     <div class="grid gap-2">
@@ -233,12 +233,12 @@
 
                     <div class="grid gap-2">
                       <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Committer name</label>
-                      <InputText :model-value="githubForm.committerName" placeholder="Linkable CMS" disabled />
+                      <InputText :model-value="githubForm.committerName" placeholder="PlatformKit CMS" disabled />
                     </div>
 
                     <div class="grid gap-2">
                       <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Committer email</label>
-                      <InputText :model-value="githubForm.committerEmail" placeholder="cms@linkable.local" disabled />
+                      <InputText :model-value="githubForm.committerEmail" placeholder="cms@platformkit.local" disabled />
                     </div>
 
                   </div>

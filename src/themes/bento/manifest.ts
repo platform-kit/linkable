@@ -2,7 +2,7 @@ import type { LayoutManifest } from "../../lib/layout-manifest";
 import routes from "./routes-manifest";
 import type { FormKitSchemaNode } from "@formkit/core";
 import type { BioTheme } from "../../lib/model";
-import { newLink, newGalleryItem, newEmbed, newSocial, newWidget } from "../../lib/model";
+import { newLink, newGalleryItem, newEmbed, newSocial, newWidget } from "./collection-types";
 
 /* ── Theme presets ──────────────────────────────────────────────── */
 
@@ -579,12 +579,12 @@ const manifest: LayoutManifest = {
     {
       key: "resume", label: "Resume", icon: "FileText",
       defaultEnabled: false, searchable: false, singleton: true,
-      editorComponent: () => import("./components/editors/ResumeCollectionEditor.vue"),
+      editorComponent: () => import("../../admin/editors/ResumeCollectionEditor.vue"),
     },
     {
       key: "blog", label: "Blog", icon: "BookOpen",
       defaultEnabled: false, searchable: true, external: true,
-      editorComponent: () => import("./components/editors/BlogCollectionEditor.vue"),
+      editorComponent: () => import("../../admin/editors/BlogCollectionEditor.vue"),
     },
     {
       key: "embeds", label: "Embeds", icon: "Code",
@@ -605,7 +605,7 @@ const manifest: LayoutManifest = {
     {
       key: "newsletter", label: "Newsletter", icon: "Newspaper",
       defaultEnabled: false, searchable: true, external: true,
-      editorComponent: () => import("./components/editors/NewsletterCollectionEditor.vue"),
+      editorComponent: () => import("../../admin/editors/NewsletterCollectionEditor.vue"),
     },
   ],
   schema: [

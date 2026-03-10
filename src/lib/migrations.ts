@@ -1,5 +1,5 @@
 /**
- * Schema migration pipeline for Linkable content JSON.
+ * Schema migration pipeline for PlatformKit content JSON.
  *
  * HOW IT WORKS
  * ────────────
@@ -1065,7 +1065,7 @@ export const migrateToLatest = (data: unknown): Record<string, any> => {
       m.migrate(obj);
       version = m.toVersion;
     } catch (err) {
-      console.warn(`[Linkable] Migration to v${m.toVersion} failed:`, err);
+      console.warn(`[PlatformKit] Migration to v${m.toVersion} failed:`, err);
       // Stop migrating on failure — sanitizeModel will fill in defaults
       break;
     }

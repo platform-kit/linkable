@@ -177,7 +177,7 @@ const run = async () => {
       body: JSON.stringify({
         name: repo,
         private: true,
-        description: "Linkable content repo (auto-created by npm run push)",
+        description: "PlatformKit content repo (auto-created by npm run push)",
         auto_init: true, // creates an initial commit so we can push files
       }),
     });

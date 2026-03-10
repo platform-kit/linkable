@@ -44,7 +44,7 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from "vue";
-import type { BioLink } from "@/lib/model";
+import type { BioLink } from "@/themes/bento/collection-types";
 import { resolveUploadUrl } from "@/lib/github";
 
 export default defineComponent({

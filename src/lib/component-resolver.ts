@@ -2,17 +2,12 @@
  * Component override & layout resolver.
  *
  * Resolution priority (highest → lowest):
- *   1. `src/overrides/user/<Name>.vue`     — content-repo custom override
- *   2. `src/overrides/<Name>.vue`          — core project override
- *   3. `src/themes/<layout>/<Name>.vue`   — selected layout variant
- *   4. fallback (from `src/components/`)   — default layout
+ *   1. `src/overrides/<Name>.vue`          — user override
+ *   2. `src/themes/<layout>/<Name>.vue`   — active theme variant
+ *   3. fallback                            — default component
  *
- * User-provided layouts live under `src/themes/user/<name>/` and are
- * discovered as layout name `user/<name>`.  They are staged from
- * `<content-repo>/themes/` at build time and gitignored.
- *
- * Usage in App.vue:
- *   const ProfileHeader = useComponent('ProfileHeader', DefaultProfileHeader, layout);
+ * User-provided themes live under `src/themes/user/<name>/` and are
+ * discovered as layout name `user/<name>`.
  *
  * `layout` is a Ref<string> (e.g. `computed(() => model.theme.layout)`).
  * When the value changes the resolved component updates reactively.
@@ -24,7 +19,7 @@ import { THEME_PRESETS } from "./model";
 import type { Router } from "vue-router";
 
 const overrideModules = import.meta.glob<{ default: Component }>(
-  "../overrides/**/*.vue",
+  "../overrides/*.vue",
 );
 
 const layoutModules = import.meta.glob<{ default: Component }>(
@@ -64,11 +59,6 @@ export function useComponent(
 ): Component {
   // If no layout ref supplied, behave like the old static resolver
   if (!layout) {
-    // Check user override first, then core override
-    const userOverrideKey = `../overrides/user/${name}.vue`;
-    if (overrideModules[userOverrideKey]) {
-      return defineAsyncComponent(overrideModules[userOverrideKey]);
-    }
     const overrideKey = `../overrides/${name}.vue`;
     if (overrideModules[overrideKey]) {
       return defineAsyncComponent(overrideModules[overrideKey]);
@@ -78,19 +68,13 @@ export function useComponent(
 
   // Reactive: re-resolve whenever layout changes
   return computed(() => {
-    // 1. User override (content-repo) wins first
-    const userOverrideKey = `../overrides/user/${name}.vue`;
-    if (overrideModules[userOverrideKey]) {
-      return defineAsyncComponent(overrideModules[userOverrideKey]);
-    }
-
-    // 2. Core override
+    // 1. User override wins first
     const overrideKey = `../overrides/${name}.vue`;
     if (overrideModules[overrideKey]) {
       return defineAsyncComponent(overrideModules[overrideKey]);
     }
 
-    // 2. Layout variant (skip "default" — that's what fallback already is)
+    // 2. Theme variant (skip "default" — that's what fallback already is)
     const layoutName = layout.value;
     if (layoutName && layoutName !== "default") {
       const layoutKey = `../themes/${layoutName}/${name}.vue`;
@@ -99,7 +83,7 @@ export function useComponent(
       }
     }
 
-    // 3. Fallback (default component)
+    // 3. Fallback
     return fallback;
   }) as unknown as Component;
 }

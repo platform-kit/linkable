@@ -50,7 +50,7 @@ Open-source link-in-bio alternative — feature roadmap and implementation statu
 
 ## Platform / Framework Gaps
 
-Features needed to make Linkable a fully-fledged static site generation framework.
+Features needed to make PlatformKit a fully-fledged static site generation framework.
 
 | #  | Feature                            | Status | Description                                                                                                                                                                                              |
 | -- | ---------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -62,7 +62,7 @@ Features needed to make Linkable a fully-fledged static site generation framewor
 
 ## Commerce & SaaS Platform
 
-Features needed to make Linkable a full-stack SaaS / e-commerce starter (à la Laravel Spark).
+Features needed to make PlatformKit a full-stack SaaS / e-commerce starter (à la Laravel Spark).
 
 ### Authentication & User Management
 
@@ -108,7 +108,7 @@ Features needed to make Linkable a full-stack SaaS / e-commerce starter (à la L
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Vue SPA (Linkable)                                          │
+│  Vue SPA (PlatformKit)                                          │
 │                                                              │
 │  Composables                        Components               │
 │  ├── useAuth()         ← session    ├── <AuthForm>           │
@@ -201,11 +201,11 @@ Stripe fires webhook: customer.subscription.deleted
 
 ### Extensibility Design Principles
 
-The commerce layer must follow the same principles as the rest of Linkable: **optional, composable, and overridable**.
+The commerce layer must follow the same principles as the rest of PlatformKit: **optional, composable, and overridable**.
 
 1. **Auth is opt-in** — `useAuth()` is a composable, not injected globally. Layouts and routes that don't need auth never import it. The link-in-bio page works exactly as before with zero auth overhead.
 2. **Permissions are data-driven** — New permissions are rows in a database table, not code changes. Site owners add permissions in the admin UI or directly in Supabase. Layout developers reference permissions by slug string (`can('access:pro')`), not by importing constants.
-3. **Stripe products live in Stripe** — The product catalog is managed entirely in the Stripe dashboard. Linkable syncs products to Supabase via webhooks. No hardcoded product IDs, no CMS product editor required (though one can be added later).
+3. **Stripe products live in Stripe** — The product catalog is managed entirely in the Stripe dashboard. PlatformKit syncs products to Supabase via webhooks. No hardcoded product IDs, no CMS product editor required (though one can be added later).
 4. **Route guards use declarative meta** — Layout manifests declare `meta: { requiresAuth: true }` or `meta: { requiresPermission: 'access:pro' }`. The guard system reads these and handles redirects automatically. No imperative guard code in individual routes.
 5. **Components use slots for customization** — `<PermissionGate>` has a default slot (authorized content) and a `#fallback` slot (upgrade prompt). `<AuthForm>` has slots for header, footer, and social login buttons. Layouts control the look and feel without forking components.
 6. **Edge functions are modular** — Each Stripe operation is a separate edge function. Developers can replace the checkout flow, add custom webhook handlers, or extend the permission engine without touching unrelated functions.

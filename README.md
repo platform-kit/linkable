@@ -1,4 +1,4 @@
-# Linkable
+# PlatformKit
 
 A design-forward, open-source link-in-bio page with a built-in CMS. Built with Vue 3, PrimeVue, and Tailwind CSS.
 
@@ -38,8 +38,8 @@ A design-forward, open-source link-in-bio page with a built-in CMS. Built with V
 ### Option 1: Clone and develop
 
 ```bash
-git clone https://github.com/platform-kit/linkable.git
-cd linkable
+git clone https://github.com/platform-kit/platformkit.git
+cd platformkit
 npm install
 npm run dev
 ```
@@ -51,39 +51,39 @@ Open `http://localhost:5173` and click the **CMS** button (bottom-right) to edit
 If you already have a content directory with `data.json` and an optional `uploads/` folder:
 
 ```bash
-npx github:platform-kit/linkable serve ./my-content
+npx github:platform-kit/platformkit serve ./my-content
 ```
 
 ### Option 3: Build a static site with npx
 
-Build a deployable `dist/` folder using your own content — no need to clone the Linkable repo:
+Build a deployable `dist/` folder using your own content — no need to clone the PlatformKit repo:
 
 ```bash
-npx github:platform-kit/linkable build ./my-content
+npx github:platform-kit/platformkit build ./my-content
 ```
 
 Output to a custom directory:
 
 ```bash
-npx github:platform-kit/linkable build ./my-content --out ./public
+npx github:platform-kit/platformkit build ./my-content --out ./public
 ```
 
 This is ideal for deploying on Vercel, Netlify, or any static host. Create a content repo with your `data.json` and `uploads/`, then set the build command to:
 
 ```bash
-npx github:platform-kit/linkable build .
+npx github:platform-kit/platformkit build .
 ```
 
 ### Deploying on Vercel with a personal content repo
 
-You don't need to fork or clone the Linkable codebase. Instead, connect your **content repo** to Vercel and use the npx build command to pull the app at build time.
+You don't need to fork or clone the PlatformKit codebase. Instead, connect your **content repo** to Vercel and use the npx build command to pull the app at build time.
 
 **1. Create a content repo**
 
 Push your content with `npm run push` (this auto-creates the repo if needed). The repo will contain:
 
 ```
-my-linkable-site/
+my-platformkit-site/
 ├── data.json        ← your CMS content
 └── uploads/         ← your uploaded images
     ├── avatar.png
@@ -97,14 +97,14 @@ my-linkable-site/
 
 | Setting              | Value                                      |
 | -------------------- | ------------------------------------------ |
-| **Build Command**    | `npx github:platform-kit/linkable build .` |
+| **Build Command**    | `npx github:platform-kit/platformkit build .` |
 | **Output Directory** | `dist`                                     |
 | **Install Command**  | _(leave blank)_                            |
 
 **3. Deploy**
 
 Vercel will run the build command, which:
-1. Installs the Linkable package from GitHub (pre-built app included)
+1. Installs the PlatformKit package from GitHub (pre-built app included)
 2. Copies it to `dist/`
 3. Injects your `data.json` and `uploads/` into the output
 4. Vercel deploys `dist/` to the edge
@@ -116,10 +116,10 @@ Whenever you push changes to your content repo (new links, updated bio, etc.), V
 ### CLI Reference
 
 ```
-linkable serve <content-dir>           Serve your site locally
-linkable build <content-dir>           Build a static site into ./dist
-linkable deploy                        Deploy Supabase migrations & edge functions
-linkable --help                        Show help
+platformkit serve <content-dir>           Serve your site locally
+platformkit build <content-dir>           Build a static site into ./dist
+platformkit deploy                        Deploy Supabase migrations & edge functions
+platformkit --help                        Show help
 
 Options:
   --port, -p <port>    Port for serve (default: 3000)
@@ -192,7 +192,7 @@ On first run, `default-data.json` is automatically copied to `cms-data.json` and
 
 ## GitHub Content Sync
 
-Store your personal content in a private GitHub repo, separate from the Linkable codebase.
+Store your personal content in a private GitHub repo, separate from the PlatformKit codebase.
 
 ### Setup
 
@@ -201,7 +201,7 @@ Store your personal content in a private GitHub repo, separate from the Linkable
 
 ```env
 GITHUB_OWNER=your-username
-GITHUB_REPO=my-linkable-content
+GITHUB_REPO=my-platformkit-content
 GITHUB_TOKEN=ghp_xxxxxxxxxxxx
 GITHUB_BRANCH=main
 ```
@@ -391,8 +391,8 @@ Inject custom JavaScript or HTML into your page via the CMS:
 | `GITHUB_BRANCH`               | No           | GitHub branch (default: `main`)                               |
 | `GITHUB_TOKEN`                | For sync     | GitHub personal access token                                  |
 | `CMS_PASSWORD`                | For CMS lock | Password for encrypting the GitHub token in the build         |
-| `SUPABASE_ACCESS_TOKEN`       | For deploy   | Supabase personal access token (for `linkable deploy` in CI)  |
-| `SUPABASE_PROJECT_REF`        | For deploy   | Supabase project ref ID (for `linkable deploy` in CI)         |
+| `SUPABASE_ACCESS_TOKEN`       | For deploy   | Supabase personal access token (for `platformkit deploy` in CI)  |
+| `SUPABASE_PROJECT_REF`        | For deploy   | Supabase project ref ID (for `platformkit deploy` in CI)         |
 
 ***
 
@@ -566,20 +566,20 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 Deploy database migrations and all edge functions to your remote Supabase project:
 
 ```bash
-npx github:platform-kit/linkable deploy --project-ref <your-project-ref>
+npx github:platform-kit/platformkit deploy --project-ref <your-project-ref>
 ```
 
 Or set the ref as an environment variable:
 
 ```bash
 export SUPABASE_PROJECT_REF=abcdefghijklmnop
-npx github:platform-kit/linkable deploy
+npx github:platform-kit/platformkit deploy
 ```
 
 If you've already linked the project (`npx supabase link`), the ref is auto-detected and no flag is needed:
 
 ```bash
-npx github:platform-kit/linkable deploy
+npx github:platform-kit/platformkit deploy
 ```
 
 There is also a convenience npm script:
@@ -599,7 +599,7 @@ npm run deploy:supabase
 To build the static site and deploy Supabase in sequence:
 
 ```bash
-npx github:platform-kit/linkable build . && npx github:platform-kit/linkable deploy --project-ref <your-project-ref>
+npx github:platform-kit/platformkit build . && npx github:platform-kit/platformkit deploy --project-ref <your-project-ref>
 ```
 
 Or, if you're developing locally in a cloned repo:
@@ -862,7 +862,7 @@ Add Vue components alongside the manifest to override specific sections (e.g. `P
 ### Building with user themes
 
 ```bash
-npx linkable build ./my-content
+npx platformkit build ./my-content
 ```
 
 The CLI detects `layouts/` and `overrides/` in the content directory and stages them automatically. No extra flags needed.
@@ -888,7 +888,7 @@ my-content/
 
 ```json
 {
-  "name": "my-linkable-content",
+  "name": "my-platformkit-content",
   "private": true,
   "dependencies": {
     "chart.js": "^4.0.0",
@@ -899,7 +899,7 @@ my-content/
 
 **How it works:**
 
-1. During `linkable build ./my-content`, the CLI detects `package.json` in the content directory
+1. During `platformkit build ./my-content`, the CLI detects `package.json` in the content directory
 2. `npm install --production` runs inside the content directory
 3. A `.user-deps.json` marker file is written to the project root with the path to the content repo's `node_modules`
 4. A Vite plugin (`user-deps`) intercepts bare imports that exist in the content repo's `node_modules` and resolves them from there

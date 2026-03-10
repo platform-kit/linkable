@@ -269,8 +269,8 @@ import {
 import { useRoute, useRouter } from 'vue-router';
 import type { BlogPost, BlogPostMeta } from '../../lib/blog';
 import SearchBar from './components/SearchBar.vue';
-import BlogEditorDrawer from './components/BlogEditorDrawer.vue';
-import NewsletterComposeDrawer from './components/NewsletterComposeDrawer.vue';
+import BlogEditorDrawer from '../../admin/BlogEditorDrawer.vue';
+import NewsletterComposeDrawer from '../../admin/NewsletterComposeDrawer.vue';
 import AudioPlayer from './components/AudioPlayer.vue';
 export type { BlogSectionProps, BlogSectionEmits } from '../../lib/component-contracts';
 

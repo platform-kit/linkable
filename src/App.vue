@@ -29,8 +29,8 @@
       v-model:open="cmsOpen"
       :model="model"
       :initial-tab="cmsInitialTab"
-      :initial-embed-id="activeTab.startsWith('embed-') ? activeTab.slice(6) : ''"
-      :initial-blog-slug="activeTab === 'blog' && currentBlogPost ? currentBlogPost.slug : ''"
+      :initial-embed-id="''"
+      :initial-blog-slug="''"
       :initial-content-sub-tab="cmsTargetSubTab"
       :initial-item-id="cmsTargetItemId"
       :nav-trigger="cmsNavTrigger"
@@ -109,36 +109,6 @@
     <GitCommitDialog v-if="unsynced" v-model:open="gitDialogOpen" @commit="performCommit" />
 
     <Toast />
-
-    <!-- Tag filter dialogs -->
-    <TagFilterDialog
-      :open="linkTagFilterOpen"
-      :tags="availableLinkTags"
-      :selected-tags="selectedLinkTags"
-      @update:open="linkTagFilterOpen = $event"
-      @update:selected-tags="selectedLinkTags = $event"
-    />
-    <TagFilterDialog
-      :open="galleryTagFilterOpen"
-      :tags="availableGalleryTags"
-      :selected-tags="selectedGalleryTags"
-      @update:open="galleryTagFilterOpen = $event"
-      @update:selected-tags="selectedGalleryTags = $event"
-    />
-    <TagFilterDialog
-      :open="blogTagFilterOpen"
-      :tags="availableBlogTags"
-      :selected-tags="selectedBlogTags"
-      @update:open="blogTagFilterOpen = $event"
-      @update:selected-tags="selectedBlogTags = $event"
-    />
-    <TagFilterDialog
-      :open="newsletterTagFilterOpen"
-      :tags="availableNewsletterTags"
-      :selected-tags="selectedNewsletterTags"
-      @update:open="newsletterTagFilterOpen = $event"
-      @update:selected-tags="selectedNewsletterTags = $event"
-    />
 
     <!-- Floating CMS button -->
     <Transition name="cms-slide-right">
@@ -224,33 +194,15 @@ import Textarea from 'primevue/textarea';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 
-import CmsDialog from './themes/bento/components/CmsDialog.vue';
-import CollectionItemDrawer from './themes/bento/components/CollectionItemDrawer.vue';
-import GitCommitDialog from './themes/bento/components/GitCommitDialog.vue';
-import DefaultNewsletterViewPage from './themes/bento/components/NewsletterViewPage.vue';
-import { resolveEmbedHtml } from './themes/bento/components/EmbedEditorDrawer.vue';
-import type { MasonryItem } from './themes/bento/components/MasonryGrid.vue';
+import CmsDialog from './admin/CmsDialog.vue';
+import CollectionItemDrawer from './admin/CollectionItemDrawer.vue';
+import GitCommitDialog from './admin/GitCommitDialog.vue';
 
-// Default user-facing components (overridable via src/overrides/)
-import DefaultProfileHeader from './themes/bento/components/ProfileHeader.vue';
-import DefaultTabNav from './themes/bento/components/TabNav.vue';
-import type { TabItem } from './themes/bento/components/TabNav.vue';
-import DefaultLinksSection from './themes/bento/components/LinksSection.vue';
-import DefaultResumeSection from './themes/bento/components/ResumeSection.vue';
-import DefaultGallerySection from './themes/bento/components/GallerySection.vue';
-import DefaultBlogSection from './themes/bento/components/BlogSection.vue';
-import DefaultEmbedSection from './themes/bento/components/EmbedSection.vue';
-import DefaultNewsletterSection from './themes/bento/components/NewsletterSection.vue';
-import DefaultLightboxOverlay from './themes/bento/components/LightboxOverlay.vue';
-import DefaultVideoOverlay from './themes/bento/components/VideoOverlay.vue';
-import DefaultPageFooter from './themes/bento/components/PageFooter.vue';
-import TagFilterDialog from './themes/bento/components/TagFilterDialog.vue';
-
-import { useComponent, useLayoutRoutes, isLayoutRoute, getLayoutManifest } from './lib/component-resolver';
-import { icons as lucideIcons } from 'lucide-vue-next';
+import { getLayoutManifest } from './lib/component-resolver';
+import { useLayoutRoutes } from './lib/component-resolver';
 import { defaultModel, type BioModel, sanitizeModel, stableStringify } from './lib/model';
 import { fetchModel, persistModel, getStagedData, clearStagedData } from './lib/persistence';
-import { fetchBlogPosts, fetchBlogPost, type BlogPostMeta, type BlogPost } from './lib/blog';
+import { fetchBlogPosts, type BlogPostMeta } from './lib/blog';
 import {
   GITHUB_SYNC_EVENT,
   canUseGithubSync,
@@ -262,12 +214,10 @@ import {
   isTokenUnlocked,
   unlockToken,
   clearSessionToken,
-  resolveUploadUrl,
   type GithubSettings,
 } from './lib/github';
 import { setCmsPassword, clearCmsPassword } from './lib/cms-auth';
-import { isScheduleVisible } from './lib/scheduling';
-import { trackPageview, trackClick, isAnalyticsEnabled } from './lib/analytics';
+import { trackPageview } from './lib/analytics';
 
 export default defineComponent({
   name: 'App',
@@ -280,7 +230,6 @@ export default defineComponent({
     CmsDialog,
     CollectionItemDrawer,
     GitCommitDialog,
-    TagFilterDialog,
   },
   setup() {
     const isDev = import.meta.env.DEV;
@@ -288,43 +237,13 @@ export default defineComponent({
     const route = useRoute();
     const router = useRouter();
 
-    // ── Override-aware component resolution ──────────────────────────
+    // ── Model & Layout ─────────────────────────────────────────────
     const model = ref<BioModel>(defaultModel());
     provide('bioModel', model);
     const activeLayout = computed(() => model.value.theme.layout || 'default');
 
-    const resolvedProfileHeader = useComponent('ProfileHeader', DefaultProfileHeader, activeLayout);
-    const resolvedTabNav = useComponent('TabNav', DefaultTabNav, activeLayout);
-    const resolvedLinksSection = useComponent('LinksSection', DefaultLinksSection, activeLayout);
-    const resolvedResumeSection = useComponent('ResumeSection', DefaultResumeSection, activeLayout);
-    const resolvedGallerySection = useComponent(
-      'GallerySection',
-      DefaultGallerySection,
-      activeLayout,
-    );
-    const resolvedBlogSection = useComponent('BlogSection', DefaultBlogSection, activeLayout);
-    const resolvedEmbedSection = useComponent('EmbedSection', DefaultEmbedSection, activeLayout);
-    const resolvedNewsletterSection = useComponent(
-      'NewsletterSection',
-      DefaultNewsletterSection,
-      activeLayout,
-    );
-    const resolvedNewsletterViewPage = useComponent(
-      'NewsletterViewPage',
-      DefaultNewsletterViewPage,
-      activeLayout,
-    );
-    const resolvedLightboxOverlay = useComponent(
-      'LightboxOverlay',
-      DefaultLightboxOverlay,
-      activeLayout,
-    );
-    const resolvedVideoOverlay = useComponent('VideoOverlay', DefaultVideoOverlay, activeLayout);
-    const resolvedPageFooter = useComponent('PageFooter', DefaultPageFooter, activeLayout);
-
     // ── Layout-contributed routes ────────────────────────────────────
     const layoutRoutes = useLayoutRoutes(router, activeLayout);
-    const isOnLayoutRoute = computed(() => isLayoutRoute(route));
 
     const modelLoaded = ref(false);
     const suppressPersist = ref(true);
@@ -348,24 +267,10 @@ export default defineComponent({
 
     let keydownListener: ((e: KeyboardEvent) => void) | null = null;
 
-    const applyHashTab = () => {
+    const applyHashCms = () => {
       if (typeof window === 'undefined') return;
       const hash = window.location.hash.toLowerCase();
-      if (hash === '#links' && enabledLinks.value.length > 0) {
-        activeTab.value = 'links';
-      } else if (hash === '#resume' && resumeHasContent.value) {
-        activeTab.value = 'resume';
-      } else if (hash === '#gallery' && galleryHasContent.value) {
-        activeTab.value = 'gallery';
-      } else if (hash === '#blog' && blogHasContent.value) {
-        activeTab.value = 'blog';
-      } else if (hash === '#newsletter' && model.value.collections.newsletter.enabled) {
-        activeTab.value = 'newsletter';
-      } else if (hash.startsWith('#embed-')) {
-        const embedId = window.location.hash.slice(1); // preserve case for ID
-        const found = enabledEmbeds.value.find((e) => `embed-${e.id}` === embedId);
-        if (found) activeTab.value = embedId;
-      } else if (hash === '#cms') {
+      if (hash === '#cms') {
         cmsBtnVisible.value = true;
         localStorage.setItem('cms-button-visible', 'true');
       }
@@ -381,7 +286,7 @@ export default defineComponent({
         cmsBtnVisible.value = storedCmsVisible || hashCms;
 
         // Listen for hash changes
-        window.addEventListener('hashchange', applyHashTab);
+        window.addEventListener('hashchange', applyHashCms);
         // kick off unsynced flag if there's pending JSON or uploads stored
         if (localStorage.getItem('pending-cms') || localStorage.getItem('pending-uploads')) {
           unsynced.value = true;
@@ -413,40 +318,11 @@ export default defineComponent({
         document.dispatchEvent(new Event('app-rendered'));
       });
 
-      // Set default tab from model settings
-      const dt = (model.value.theme.layoutData as Record<string, unknown>)?.defaultTab as
-        | string
-        | undefined;
-      if (dt) {
-        activeTab.value = dt;
-      }
-
-      // Load blog posts
+      // Load blog posts (for CMS panel)
       await loadBlogPosts();
 
-      // Apply hash-based tab after model is available
-      applyHashTab();
-
-      // Handle route-based blog post navigation (e.g. /content/:slug)
-      if (route.name === 'blog-post' && route.params.slug) {
-        const slug = route.params.slug as string;
-        activeTab.value = 'blog';
-        await loadBlogPost(slug, false);
-      }
-
-      // Handle route-based newsletter view (e.g. /newsletter/:id)
-      if (route.name === 'newsletter-view' && route.params.id) {
-        activeTab.value = 'newsletter';
-        newsletterViewId.value = route.params.id as string;
-        newsletterViewSid.value = (route.query.sid as string) || '';
-        newsletterViewToken.value = (route.query.token as string) || '';
-      }
-
-      // Handle newsletter confirmation page (e.g. /confirmed?status=success)
-      if (route.name === 'newsletter-confirmed') {
-        activeTab.value = 'newsletter';
-        confirmationStatus.value = (route.query.status as string) || 'error';
-      }
+      // Handle #cms hash
+      applyHashCms();
 
       setTimeout(() => {
         suppressPersist.value = false;
@@ -461,7 +337,7 @@ export default defineComponent({
     onBeforeUnmount(() => {
       if (typeof window !== 'undefined') {
         window.removeEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
-        window.removeEventListener('hashchange', applyHashTab);
+        window.removeEventListener('hashchange', applyHashCms);
         if (keydownListener) {
           window.removeEventListener('keydown', keydownListener);
         }
@@ -473,30 +349,10 @@ export default defineComponent({
       _bodyContainer.remove();
     });
 
-    // Watch route changes for browser back/forward
-    watch(
-      () => route.name,
-      (name) => {
-        if (name === 'blog-post' && route.params.slug) {
-          activeTab.value = 'blog';
-          loadBlogPost(route.params.slug as string, false);
-        } else if (name === 'newsletter-view' && route.params.id) {
-          activeTab.value = 'newsletter';
-          newsletterViewId.value = route.params.id as string;
-          newsletterViewSid.value = (route.query.sid as string) || '';
-          newsletterViewToken.value = (route.query.token as string) || '';
-        } else if (name === 'newsletter-confirmed') {
-          activeTab.value = 'newsletter';
-          confirmationStatus.value = (route.query.status as string) || 'error';
-        } else if (name === 'home') {
-          if (currentBlogPost.value) currentBlogPost.value = null;
-          newsletterViewId.value = '';
-          confirmationStatus.value = '';
-        }
-        // Track pageview on route change
-        trackPageview();
-      },
-    );
+    // Track pageview on route changes
+    watch(() => route.name, () => {
+      trackPageview();
+    });
 
     // Apply theme CSS variables reactively
     watchEffect(() => {
@@ -561,11 +417,11 @@ export default defineComponent({
       const p = model.value.profile;
 
       // Favicon
-      let faviconLink = document.querySelector<HTMLLinkElement>('link#__linkable-favicon');
+      let faviconLink = document.querySelector<HTMLLinkElement>('link#__platformkit-favicon');
       if (p.faviconUrl) {
         if (!faviconLink) {
           faviconLink = document.createElement('link');
-          faviconLink.id = '__linkable-favicon';
+          faviconLink.id = '__platformkit-favicon';
           faviconLink.rel = 'icon';
           document.head.appendChild(faviconLink);
         }
@@ -576,11 +432,11 @@ export default defineComponent({
 
       // Apple touch icon — only use favicon if explicitly set by the user
       const touchSrc = p.faviconUrl;
-      let touchLink = document.querySelector<HTMLLinkElement>('link#__linkable-apple-touch');
+      let touchLink = document.querySelector<HTMLLinkElement>('link#__platformkit-apple-touch');
       if (touchSrc) {
         if (!touchLink) {
           touchLink = document.createElement('link');
-          touchLink.id = '__linkable-apple-touch';
+          touchLink.id = '__platformkit-apple-touch';
           touchLink.rel = 'apple-touch-icon';
           document.head.appendChild(touchLink);
         }
@@ -667,9 +523,9 @@ export default defineComponent({
 
     // Inject custom user scripts into <head> and before </body>
     const _headContainer = document.createElement('div');
-    _headContainer.id = '__linkable-head-scripts';
+    _headContainer.id = '__platformkit-head-scripts';
     const _bodyContainer = document.createElement('div');
-    _bodyContainer.id = '__linkable-body-scripts';
+    _bodyContainer.id = '__platformkit-body-scripts';
 
     const injectScripts = (container: HTMLElement, html: string, parent: HTMLElement) => {
       // Remove old container if present
@@ -834,11 +690,6 @@ export default defineComponent({
       cmsPasswordOpen.value = true;
     };
 
-    const toggleCmsButton = () => {
-      cmsBtnVisible.value = !cmsBtnVisible.value;
-      localStorage.setItem('cms-button-visible', cmsBtnVisible.value ? 'true' : 'false');
-    };
-
     const performCommit = async (message: string) => {
       if (!message.trim()) return;
 
@@ -863,7 +714,7 @@ export default defineComponent({
           const settings = loadGithubSettings();
           const token = getPlaintextToken();
 
-          console.warn('[Linkable commit]', {
+          console.warn('[PlatformKit commit]', {
             owner: settings.owner,
             repo: settings.repo,
             branch: settings.branch,
@@ -919,311 +770,9 @@ export default defineComponent({
       }
     };
 
-    const enabledLinks = computed(() =>
-      (model.value.collections.links.items as any[]).filter(
-        (l) => l.enabled && isScheduleVisible(l),
-      ),
-    );
-    const enabledSocials = computed(() =>
-      ((model.value.collections.socials?.items as any[]) ?? []).filter(
-        (s: any) => s.enabled && s.url,
-      ),
-    );
-
-    // ── Search state ─────────────────────────────────────────────────
-    const searchLinksQuery = ref('');
-    const searchGalleryQuery = ref('');
-    const searchBlogQuery = ref('');
-    const selectedLinkTags = ref<string[]>([]);
-    const selectedGalleryTags = ref<string[]>([]);
-    const selectedBlogTags = ref<string[]>([]);
-    const linkTagFilterOpen = ref(false);
-    const galleryTagFilterOpen = ref(false);
-    const blogTagFilterOpen = ref(false);
-    const searchNewsletterQuery = ref('');
-    const selectedNewsletterTags = ref<string[]>([]);
-    const newsletterTagFilterOpen = ref(false);
-    const availableNewsletterTags = ref<string[]>([]);
-
-    const filteredLinks = computed(() => {
-      const q = searchLinksQuery.value.trim().toLowerCase();
-      const tags = selectedLinkTags.value;
-      let source = enabledLinks.value;
-      if (q) {
-        source = source.filter(
-          (l) =>
-            l.title.toLowerCase().includes(q) ||
-            l.subtitle.toLowerCase().includes(q) ||
-            l.url.toLowerCase().includes(q) ||
-            l.tags?.some((t: string) => t.toLowerCase().includes(q)),
-        );
-      }
-      if (tags.length > 0) {
-        source = source.filter((l) => l.tags && tags.some((t: string) => l.tags.includes(t)));
-      }
-      return source;
-    });
-
-    const availableLinkTags = computed(() => {
-      const tagSet = new Set<string>();
-      for (const l of enabledLinks.value) {
-        if (l.tags) l.tags.forEach((t: string) => tagSet.add(t));
-      }
-      return [...tagSet].sort();
-    });
-
-    const toggleLinkTag = (tag: string) => {
-      const idx = selectedLinkTags.value.indexOf(tag);
-      if (idx >= 0) selectedLinkTags.value.splice(idx, 1);
-      else selectedLinkTags.value.push(tag);
-    };
-
-    const activeTab = ref<string>('links');
-
-    const cmsInitialTab = computed(() => {
-      const contentTabs = ['links', 'embeds', 'resume', 'gallery', 'blog'];
-      if (contentTabs.includes(activeTab.value)) return activeTab.value;
-      if (activeTab.value.startsWith('embed-')) return 'embeds';
-      if (activeTab.value === 'newsletter') return 'newsletter';
-      return 'site';
-    });
-
-    const switchTab = (tab: string) => {
-      activeTab.value = tab;
-      // Clear newsletter view when switching away
-      if (newsletterViewId.value && tab !== 'newsletter') {
-        newsletterViewId.value = '';
-        router.push('/');
-      }
-      if (typeof window !== 'undefined' && !newsletterViewId.value) {
-        history.replaceState(null, '', `#${tab}`);
-      }
-    };
-
-    const resumeHasContent = computed(() => {
-      const rc = model.value.collections.resume;
-      if (!rc || !rc.enabled) return false;
-      const r = rc.items[0] as any;
-      if (!r) return false;
-      return !!(
-        r.bio?.trim() ||
-        r.education?.length ||
-        r.employment?.length ||
-        r.skills?.length ||
-        r.achievements?.length
-      );
-    });
-
-    // Resume singleton data for display
-    const resumeDataForDisplay = computed(() => {
-      const rc = model.value.collections.resume;
-      if (!rc)
-        return {
-          enabled: false,
-          bio: '',
-          education: [],
-          employment: [],
-          skills: [],
-          achievements: [],
-        };
-      const data = (rc.items[0] as any) ?? {};
-      return {
-        enabled: rc.enabled,
-        bio: data.bio ?? '',
-        education: data.education ?? [],
-        employment: data.employment ?? [],
-        skills: data.skills ?? [],
-        achievements: data.achievements ?? [],
-      };
-    });
-
-    const enabledGalleryItems = computed(() => {
-      const g = model.value.collections.gallery;
-      if (!g || !g.enabled) return [];
-      return (g.items as any[]).filter(
-        (item) => item.enabled && item.src && isScheduleVisible(item),
-      );
-    });
-
-    const availableGalleryTags = computed(() => {
-      const g = model.value.collections.gallery;
-      if (!g || !g.enabled) return [];
-      const tagSet = new Set<string>();
-      for (const item of g.items as any[]) {
-        if (item.enabled && item.tags) item.tags.forEach((t: string) => tagSet.add(t));
-      }
-      return [...tagSet].sort();
-    });
-
-    const toggleGalleryTag = (tag: string) => {
-      const idx = selectedGalleryTags.value.indexOf(tag);
-      if (idx >= 0) selectedGalleryTags.value.splice(idx, 1);
-      else selectedGalleryTags.value.push(tag);
-    };
-
-    /** Gallery items shaped for MasonryGrid layout */
-    const masonryItems = computed<MasonryItem[]>(() => {
-      const q = searchGalleryQuery.value.trim().toLowerCase();
-      const tags = selectedGalleryTags.value;
-      let source = enabledGalleryItems.value;
-      if (q) {
-        source = source.filter(
-          (item) =>
-            item.title.toLowerCase().includes(q) || item.description.toLowerCase().includes(q),
-        );
-      }
-      if (tags.length > 0) {
-        source = source.filter((item) => item.tags && tags.some((t) => item.tags.includes(t)));
-      }
-      return source.map((item) => ({
-        ...item,
-        height: item.type === 'video' ? 300 : 400,
-      }));
-    });
-
-    const galleryHasContent = computed(() => enabledGalleryItems.value.length > 0);
-
-    // ── Blog ─────────────────────────────────────────────────────────
+    // ── Blog posts (for CMS panel) ──────────────────────────────────
     const blogPosts = ref<BlogPostMeta[]>([]);
     provide('blogPosts', blogPosts);
-    const currentBlogPost = ref<BlogPost | null>(null);
-
-    // Newsletter view state (driven by /newsletter/:id route)
-    const newsletterViewId = ref('');
-    const newsletterViewSid = ref('');
-    const newsletterViewToken = ref('');
-
-    // Newsletter confirmation state (driven by /confirmed?status=... route)
-    const confirmationStatus = ref('');
-
-    const confirmationMap: Record<
-      string,
-      { icon: string; title: string; message: string; error?: boolean }
-    > = {
-      success: {
-        icon: '🎉',
-        title: "You're subscribed!",
-        message: "Your email has been confirmed. You'll now receive updates.",
-      },
-      expired: {
-        icon: '⏰',
-        title: 'Link Expired',
-        message: 'This confirmation link has expired. Please subscribe again to receive a new one.',
-        error: true,
-      },
-      invalid: {
-        icon: '⚠️',
-        title: 'Invalid Link',
-        message: 'This confirmation link is invalid or missing required parameters.',
-        error: true,
-      },
-      'not-found': {
-        icon: '🔍',
-        title: 'Not Found',
-        message: "We couldn't find a pending subscription for this email address.",
-        error: true,
-      },
-      'already-confirmed': {
-        icon: '✅',
-        title: 'Already Confirmed',
-        message: "Your email address has already been confirmed. You're all set!",
-      },
-      error: {
-        icon: '❌',
-        title: 'Something went wrong',
-        message: "We couldn't confirm your subscription. Please try again later.",
-        error: true,
-      },
-    };
-
-    const confirmationInfo = computed(
-      () => confirmationMap[confirmationStatus.value] || confirmationMap.error,
-    );
-    const confirmationIcon = computed(() => confirmationInfo.value.icon);
-    const confirmationTitle = computed(() => confirmationInfo.value.title);
-    const confirmationMessage = computed(() => confirmationInfo.value.message);
-    const confirmationIsError = computed(() => !!confirmationInfo.value.error);
-
-    function goBackFromNewsletter() {
-      newsletterViewId.value = '';
-      router.push('/');
-    }
-
-    function viewNewsletter(id: string) {
-      router.push(`/newsletter/${id}`);
-    }
-
-    const blogHasContent = computed(() => {
-      const b = model.value.collections.blog;
-      if (!b || !b.enabled) return false;
-      return blogPosts.value.filter((p) => p.published).length > 0;
-    });
-
-    // ── Embeds ───────────────────────────────────────────────────────
-    const enabledEmbeds = computed(() =>
-      (model.value.collections.embeds.items as any[]).filter(
-        (e) => e.enabled && e.html.trim() && isScheduleVisible(e),
-      ),
-    );
-
-    const activeEmbedItem = computed(() => {
-      const tab = activeTab.value;
-      if (!tab.startsWith('embed-')) return null;
-      const id = tab.slice(6);
-      return enabledEmbeds.value.find((e) => e.id === id) ?? null;
-    });
-
-    const activeEmbedHtml = computed(() => {
-      const item = activeEmbedItem.value;
-      if (!item) return '';
-      return resolveEmbedHtml(item.html);
-    });
-
-    const publishedBlogPosts = computed(() =>
-      blogPosts.value.filter((p) => p.published && isScheduleVisible(p)),
-    );
-
-    const availableBlogTags = computed(() => {
-      const tagSet = new Set<string>();
-      for (const p of publishedBlogPosts.value) {
-        if (p.tags) p.tags.forEach((t) => tagSet.add(t));
-      }
-      return [...tagSet].sort();
-    });
-
-    const toggleBlogTag = (tag: string) => {
-      const idx = selectedBlogTags.value.indexOf(tag);
-      if (idx >= 0) selectedBlogTags.value.splice(idx, 1);
-      else selectedBlogTags.value.push(tag);
-    };
-
-    const toggleNewsletterTag = (tag: string) => {
-      const idx = selectedNewsletterTags.value.indexOf(tag);
-      if (idx >= 0) selectedNewsletterTags.value.splice(idx, 1);
-      else selectedNewsletterTags.value.push(tag);
-    };
-
-    const onNewsletterTagsLoaded = (tags: string[]) => {
-      availableNewsletterTags.value = tags;
-    };
-
-    const filteredBlogPosts = computed(() => {
-      const q = searchBlogQuery.value.trim().toLowerCase();
-      const tags = selectedBlogTags.value;
-      let source = publishedBlogPosts.value;
-      if (q) {
-        source = source.filter(
-          (p) =>
-            p.title.toLowerCase().includes(q) ||
-            p.excerpt?.toLowerCase().includes(q) ||
-            p.tags?.some((t) => t.toLowerCase().includes(q)),
-        );
-      }
-      if (tags.length > 0) {
-        source = source.filter((p) => p.tags && tags.some((t) => p.tags!.includes(t)));
-      }
-      return source;
-    });
 
     const loadBlogPosts = async () => {
       try {
@@ -1233,278 +782,18 @@ export default defineComponent({
       }
     };
 
-    const loadBlogPost = async (slug: string, pushRoute = true) => {
-      try {
-        currentBlogPost.value = await fetchBlogPost(slug);
-        if (pushRoute && router) {
-          router.push({ name: 'blog-post', params: { slug } });
-        }
-      } catch {
-        toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Could not load post.',
-          life: 2600,
-        });
-      }
-    };
-
-    const goBackFromBlogPost = () => {
-      currentBlogPost.value = null;
-      if (router) {
-        router.push('/');
-      }
-    };
-
-    const formatDate = (dateStr: string) => {
-      try {
-        return new Date(dateStr).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        });
-      } catch {
-        return dateStr;
-      }
-    };
-
-    // Show tabs when 2+ content sections have content
-    const contentSections = computed(() => {
-      let count = 0;
-      if (enabledLinks.value.length > 0) count++;
-      if (resumeHasContent.value) count++;
-      if (galleryHasContent.value) count++;
-      if (blogHasContent.value) count++;
-      count += enabledEmbeds.value.length;
-      if (model.value.collections.newsletter.enabled) count++;
-      return count;
+    // Derive CMS initial tab from route
+    const cmsInitialTab = computed(() => {
+      const path = route.path;
+      if (path.startsWith('/content/')) return 'blog';
+      if (path.startsWith('/newsletter/')) return 'newsletter';
+      if (path === '/about') return 'resume';
+      if (path === '/gallery') return 'gallery';
+      if (path === '/blog') return 'blog';
+      if (path === '/embeds') return 'embeds';
+      if (path === '/newsletter') return 'newsletter';
+      return 'site';
     });
-
-    const showTabs = computed(() => contentSections.value >= 2);
-
-    const tabItems = computed<TabItem[]>(() => {
-      const items: TabItem[] = [];
-      if (enabledLinks.value.length > 0) {
-        items.push({
-          key: 'links',
-          label: model.value.collections.links.label || 'Links',
-          icon: model.value.collections.links.icon || 'Link',
-        });
-      }
-      if (galleryHasContent.value) {
-        items.push({
-          key: 'gallery',
-          label: model.value.collections.gallery.label || 'Gallery',
-          icon: model.value.collections.gallery.icon || 'Images',
-        });
-      }
-      if (blogHasContent.value) {
-        items.push({
-          key: 'blog',
-          label: model.value.collections.blog.label || 'Blog',
-          icon: model.value.collections.blog.icon || 'Pencil',
-        });
-      }
-      if (resumeHasContent.value) {
-        items.push({
-          key: 'resume',
-          label: model.value.collections.resume.label || 'Resume',
-          icon: model.value.collections.resume.icon || 'FileText',
-        });
-      }
-      for (const embed of enabledEmbeds.value) {
-        items.push({ key: 'embed-' + embed.id, label: embed.label, icon: embed.icon });
-      }
-      if (model.value.collections.newsletter.enabled) {
-        items.push({
-          key: 'newsletter',
-          label: model.value.collections.newsletter.label || 'Newsletter',
-          icon: model.value.collections.newsletter.icon || 'Mail',
-        });
-      }
-      return items;
-    });
-
-    const handleTabSwitch = (tab: string) => {
-      if (tab === 'blog') goBackFromBlogPost();
-      switchTab(tab);
-    };
-
-    const showLinksSection = computed(() => {
-      if (activeEmbedItem.value) return false;
-      if (showTabs.value) return activeTab.value === 'links';
-      return (
-        enabledLinks.value.length > 0 ||
-        (!resumeHasContent.value && !galleryHasContent.value && !blogHasContent.value)
-      );
-    });
-
-    const showResumeSection = computed(() => {
-      if (!resumeHasContent.value) return false;
-      if (activeEmbedItem.value) return false;
-      if (showTabs.value) return activeTab.value === 'resume';
-      return true;
-    });
-
-    const showGallerySection = computed(() => {
-      if (!galleryHasContent.value) return false;
-      if (activeEmbedItem.value) return false;
-      if (showTabs.value) return activeTab.value === 'gallery';
-      return true;
-    });
-
-    const showBlogSection = computed(() => {
-      if (!blogHasContent.value) return false;
-      if (activeEmbedItem.value) return false;
-      if (showTabs.value) return activeTab.value === 'blog';
-      return true;
-    });
-
-    const showNewsletterSection = computed(() => {
-      if (!model.value.collections.newsletter.enabled) return false;
-      if (activeEmbedItem.value) return false;
-      if (showTabs.value) return activeTab.value === 'newsletter';
-      return true;
-    });
-
-    // Lightbox state
-    const lightboxOpen = ref(false);
-    const lightboxItem = ref<any>(null);
-
-    const openLightbox = (item: any) => {
-      lightboxItem.value = item;
-      lightboxOpen.value = true;
-    };
-
-    const closeLightbox = () => {
-      lightboxOpen.value = false;
-      lightboxItem.value = null;
-    };
-
-    // Video player state — pre-loaded players
-    const videoGalleryItems = computed(() =>
-      enabledGalleryItems.value.filter((i: any) => i.type === 'video'),
-    );
-
-    const videoPlayerRefs = ref<Record<number, any>>({});
-    const setVideoPlayerRef = (idx: number, el: any) => {
-      if (el) videoPlayerRefs.value[idx] = el;
-      else delete videoPlayerRefs.value[idx];
-    };
-
-    const videoPlayerOpen = ref(false);
-    const activeVideoIdx = ref<number | null>(null);
-    const videoPlayerItem = ref<any>(null);
-
-    const openVideoPlayer = (item: any) => {
-      // Find the index in the pre-loaded pool
-      const idx = videoGalleryItems.value.findIndex((v: any) => v.src === item.src);
-      videoPlayerItem.value = item;
-      activeVideoIdx.value = idx >= 0 ? idx : null;
-      videoPlayerOpen.value = true;
-
-      // Seek to start and play — async-safe; waits for provider readiness
-      if (idx >= 0) {
-        const playerComp = videoPlayerRefs.value[idx];
-        if (playerComp?.restart) {
-          playerComp.restart().catch(() => {
-            // swallow — user can tap the built-in play button as fallback
-          });
-        } else if (playerComp?.play) {
-          playerComp.play().catch(() => {});
-        }
-      }
-    };
-
-    const closeVideoPlayer = () => {
-      // Pause the active player so it doesn't keep playing in the background
-      if (activeVideoIdx.value !== null) {
-        const playerComp = videoPlayerRefs.value[activeVideoIdx.value];
-        if (playerComp?.pause) {
-          playerComp.pause();
-        }
-      }
-      videoPlayerOpen.value = false;
-      activeVideoIdx.value = null;
-      videoPlayerItem.value = null;
-    };
-
-    const initials = computed(() => {
-      const name = (model.value.profile.displayName || '').trim();
-      if (!name) return 'LB';
-      const parts = name.split(/\s+/).slice(0, 2);
-      return parts.map((p) => (p[0] || '').toUpperCase()).join('');
-    });
-
-    const avatarErrored = ref(false);
-    const avatarSrc = computed(() => {
-      const u = ((model.value.theme.layoutData as Record<string, any>).avatarUrl || '').trim();
-      if (!u) return '';
-      if (avatarErrored.value) return '';
-      return resolveUploadUrl(u);
-    });
-
-    watch(
-      () => (model.value.theme.layoutData as Record<string, any>).avatarUrl,
-      () => {
-        avatarErrored.value = false;
-      },
-    );
-
-    const onAvatarError = () => {
-      avatarErrored.value = true;
-    };
-
-    const bannerErrored = ref(false);
-    const bannerSrc = computed(() => {
-      const u = ((model.value.theme.layoutData as Record<string, any>).bannerUrl || '').trim();
-      if (!u) return '';
-      if (bannerErrored.value) return '';
-      return resolveUploadUrl(u);
-    });
-
-    watch(
-      () => (model.value.theme.layoutData as Record<string, any>).bannerUrl,
-      () => {
-        bannerErrored.value = false;
-      },
-    );
-
-    const onBannerError = () => {
-      bannerErrored.value = true;
-    };
-
-    watchEffect(() => {
-      const name = (model.value.profile.displayName || '').trim();
-      const tagline = (model.value.profile.tagline || '').trim();
-      if (name && tagline) {
-        document.title = `${name} — ${tagline}`;
-      } else if (name) {
-        document.title = name;
-      } else {
-        document.title = 'Linkable';
-      }
-    });
-
-    /** Detect email-like URLs: contains @ and . (e.g. "foo@bar.com") */
-    const isEmailUrl = (url: string) => {
-      if (!url) return false;
-      if (url.startsWith('mailto:')) return true;
-      return url.includes('@') && url.includes('.');
-    };
-
-    const socialHref = (s: { url: string }) => {
-      if (isEmailUrl(s.url) && !s.url.startsWith('mailto:')) {
-        return 'mailto:' + s.url;
-      }
-      return s.url;
-    };
-
-    const resolveSocialIcon = (name: string) => {
-      return (
-        (lucideIcons as Record<string, any>)[name] ?? (lucideIcons as Record<string, any>)['Globe']
-      );
-    };
 
     const exportJson = async () => {
       const json = stableStringify(model.value);
@@ -1648,7 +937,6 @@ export default defineComponent({
       submitCmsPassword,
       handleCmsLock,
       handleCmsReauth,
-      cmsBtnVisible,
       previewMode,
       cmsTargetSubTab,
       cmsTargetItemId,
@@ -1662,43 +950,8 @@ export default defineComponent({
       updateItemEditorItem,
       deleteItemEditorItem,
       duplicateItemEditorItem,
-      enabledLinks,
-      enabledSocials,
-      activeTab,
       cmsInitialTab,
-      resumeHasContent,
-      resumeDataForDisplay,
-      galleryHasContent,
-      enabledGalleryItems,
-      masonryItems,
-      showTabs,
-      showLinksSection,
-      showResumeSection,
-      showGallerySection,
-      lightboxOpen,
-      lightboxItem,
-      openLightbox,
-      closeLightbox,
-      videoPlayerOpen,
-      videoPlayerItem,
-      videoGalleryItems,
-      videoPlayerRefs,
-      setVideoPlayerRef,
-      activeVideoIdx,
-      openVideoPlayer,
-      closeVideoPlayer,
-      initials,
-      avatarSrc,
-      onAvatarError,
-      bannerSrc,
-      onBannerError,
-      exportJson,
-      importOpen,
-      importText,
-      applyImport,
-      updateModel,
       canUseCms,
-      toggleCmsButton,
       gitDialogOpen,
       performCommit,
       syncStatusText,
@@ -1706,60 +959,12 @@ export default defineComponent({
       syncIndicatorClass,
       togglePreviewMode,
       unsynced,
-      resolveUploadUrl,
-      blogHasContent,
-      enabledEmbeds,
-      activeEmbedItem,
-      activeEmbedHtml,
-      blogPosts,
-      publishedBlogPosts,
-      currentBlogPost,
-      loadBlogPost,
       loadBlogPosts,
-      goBackFromBlogPost,
-      showBlogSection,
-      showNewsletterSection,
-      newsletterViewId,
-      newsletterViewSid,
-      newsletterViewToken,
-      goBackFromNewsletter,
-      viewNewsletter,
-      confirmationStatus,
-      confirmationIcon,
-      confirmationTitle,
-      confirmationMessage,
-      confirmationIsError,
-      selectedLinkTags,
-      selectedGalleryTags,
-      selectedBlogTags,
-      availableLinkTags,
-      availableGalleryTags,
-      availableBlogTags,
-      linkTagFilterOpen,
-      galleryTagFilterOpen,
-      blogTagFilterOpen,
-      selectedNewsletterTags,
-      availableNewsletterTags,
-      newsletterTagFilterOpen,
-      onNewsletterTagsLoaded,
-      trackClick,
-      // Resolved overridable components
-      resolvedProfileHeader,
-      resolvedTabNav,
-      resolvedLinksSection,
-      resolvedResumeSection,
-      resolvedGallerySection,
-      resolvedBlogSection,
-      resolvedEmbedSection,
-      resolvedNewsletterSection,
-      resolvedNewsletterViewPage,
-      resolvedLightboxOverlay,
-      resolvedVideoOverlay,
-      resolvedPageFooter,
-      layoutRoutes,
-      isOnLayoutRoute,
-      tabItems,
-      handleTabSwitch,
+      exportJson,
+      importOpen,
+      importText,
+      applyImport,
+      updateModel,
     };
   },
 });

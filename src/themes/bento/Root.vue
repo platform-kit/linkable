@@ -100,7 +100,7 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 import { fetchBlogPost, fetchBlogPosts } from "../../lib/blog";
-import type { GalleryItem } from "../../lib/model";
+import type { GalleryItem } from "./collection-types";
 import ProfileHeader from "./ProfileHeader.vue";
 import TabNav from "./TabNav.vue";
 import LinksSection from "./LinksSection.vue";

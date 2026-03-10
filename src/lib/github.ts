@@ -28,8 +28,8 @@ const DEFAULT_SETTINGS: GithubSettings = {
   staticDataPath: "",
   uploadsDir: "uploads",
   blogDir: "blog",
-  committerName: "Linkable CMS",
-  committerEmail: "cms@linkable.local",
+  committerName: "PlatformKit CMS",
+  committerEmail: "cms@platformkit.local",
 };
 
 const API_BASE = "https://api.github.com";
@@ -45,8 +45,8 @@ const normalizeSettings = (input?: Partial<GithubSettings>): GithubSettings => (
   staticDataPath: input?.staticDataPath?.trim() ?? "",
   uploadsDir: input?.uploadsDir?.trim() || "uploads",
   blogDir: input?.blogDir?.trim() || "blog",
-  committerName: input?.committerName?.trim() || "Linkable CMS",
-  committerEmail: input?.committerEmail?.trim() || "cms@linkable.local",
+  committerName: input?.committerName?.trim() || "PlatformKit CMS",
+  committerEmail: input?.committerEmail?.trim() || "cms@platformkit.local",
 });
 
 const dispatchSyncEvent = () => {
@@ -325,7 +325,7 @@ const commitBase64Content = async (
   }
 
   if (import.meta.env.DEV) {
-    console.warn("[Linkable] PUT", url, { branch: body.branch, sha: existing?.sha ?? "(new file)" });
+    console.warn("[PlatformKit] PUT", url, { branch: body.branch, sha: existing?.sha ?? "(new file)" });
   }
 
   const response = await fetch(url, {
@@ -335,7 +335,7 @@ const commitBase64Content = async (
   });
 
   if (import.meta.env.DEV) {
-    console.warn("[Linkable] response", response.status, response.statusText);
+    console.warn("[PlatformKit] response", response.status, response.statusText);
   }
 
   if (!response.ok) {

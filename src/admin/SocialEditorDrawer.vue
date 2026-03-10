@@ -118,7 +118,7 @@ import InputText from "primevue/inputtext";
 import ToggleSwitch from "primevue/toggleswitch";
 import { icons } from "lucide-vue-next";
 
-import type { SocialLink } from "@/lib/model";
+import type { SocialLink } from "@/themes/bento/collection-types";
 
 /** Social-media icons shown first (before the user types anything). */
 const FEATURED_ICONS = [

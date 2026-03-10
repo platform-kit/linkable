@@ -136,7 +136,7 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from "vue";
-import type { ResumeData } from "../../lib/model";
+import type { ResumeData } from "./resume-types";
 export type { ResumeSectionProps } from "../../lib/component-contracts";
 
 export default defineComponent({

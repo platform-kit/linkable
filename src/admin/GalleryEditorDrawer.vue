@@ -225,7 +225,7 @@ import ToggleSwitch from "primevue/toggleswitch";
 import { useToast } from "primevue/usetoast";
 
 import ImageUploadField from "./ImageUploadField.vue";
-import type { GalleryItem, GalleryItemType } from "@/lib/model";
+import type { GalleryItem, GalleryItemType } from "@/themes/bento/collection-types";
 
 export default defineComponent({
   name: "GalleryEditorDrawer",

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 40,
   "profile": {
-    "displayName": "Linkable",
+    "displayName": "PlatformKit",
     "tagline": "Design-forward links. Clean, fast, yours.",
     "faviconUrl": "",
     "ogImageUrl": ""
@@ -16,14 +16,14 @@
         {
           "id": "social-instagram",
           "icon": "Instagram",
-          "label": "@linkable",
+          "label": "@platformkit",
           "url": "https://instagram.com",
           "enabled": true
         },
         {
           "id": "social-github",
           "icon": "Github",
-          "label": "github.com/linkable",
+          "label": "github.com/platformkit",
           "url": "https://github.com",
           "enabled": false
         }

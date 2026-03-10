@@ -218,7 +218,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, defineAsyncComponent, ref, watchEffect, onMounted, onUnmounted, type PropType } from "vue";
-import type { WidgetItem } from "../../lib/model";
+import type { WidgetItem } from "./collection-types";
 
 // Text components — lazy so GSAP/animation libs don't block initial parse
 const ShinyTextBits = defineAsyncComponent(() => import("./widgets/vuebits/ShinyTextBits.vue"));

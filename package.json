@@ -1,10 +1,10 @@
 {
-  "name": "linkable",
+  "name": "platformkit",
   "version": "0.0.0",
   "private": false,
   "type": "module",
   "bin": {
-    "linkable": "./bin/cli.mjs"
+    "platformkit": "./bin/cli.mjs"
   },
   "files": [
     "bin/",
@@ -24,7 +24,7 @@
     "components.json"
   ],
   "scripts": {
-    "dev": "node scripts/install-layout-deps.mjs && vite",
+    "dev": "clear; kill -9 $(lsof -t -i:8080); node scripts/install-layout-deps.mjs && vite --port 8080 --strictPort",
     "build": "node scripts/install-layout-deps.mjs && node scripts/import-from-github.mjs && node scripts/export-data.mjs && vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",

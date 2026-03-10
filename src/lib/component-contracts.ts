@@ -9,9 +9,16 @@
  *   import type { ProfileHeaderProps, ProfileHeaderEmits } from "../lib/component-contracts";
  */
 
-import type { BioLink, SocialLink, ResumeData, GalleryItem } from "./model";
+import type { BioLink, SocialLink, GalleryItem } from "../themes/bento/collection-types";
+import type { ResumeData } from "../themes/bento/resume-types";
 import type { BlogPostMeta, BlogPost } from "./blog";
-import type { MasonryItem } from "../themes/bento/components/MasonryGrid.vue";
+
+export interface MasonryItem {
+  id: string;
+  /** Height hint for layout calculation — aspect ratio numerator (will be divided by 2) */
+  height: number;
+  [key: string]: unknown;
+}
 
 /* ------------------------------------------------------------------ */
 /*  TabNav                                                             */

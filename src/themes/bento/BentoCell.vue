@@ -212,10 +212,11 @@
 <script lang="ts">
 import { defineComponent, computed, inject, ref, watchEffect, type PropType, type Ref } from "vue";
 import type { BentoGridItem } from "./manifest";
-import type { BioLink, BioModel, GalleryItem, EmbedItem, SocialLink, WidgetItem } from "../../lib/model";
+import type { BioModel } from "../../lib/model";
+import type { BioLink, GalleryItem, EmbedItem, SocialLink, WidgetItem } from "./collection-types";
 import type { BlogPostMeta } from "../../lib/blog";
 import { icons as lucideIcons } from "lucide-vue-next";
-import { resolveEmbedHtml } from "./components/EmbedEditorDrawer.vue";
+import { resolveEmbedHtml } from "../../lib/utils";
 import WidgetAnimatedTextCard from "./WidgetAnimatedTextCard.vue";
 
 export default defineComponent({

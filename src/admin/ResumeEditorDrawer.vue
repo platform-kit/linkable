@@ -129,7 +129,7 @@ import Drawer from "primevue/drawer";
 import InputText from "primevue/inputtext";
 import Textarea from "primevue/textarea";
 
-import type { EducationEntry, EmploymentEntry, AchievementEntry } from "@/lib/model";
+import type { EducationEntry, EmploymentEntry, AchievementEntry } from "@/themes/bento/resume-types";
 
 export default defineComponent({
   name: "ResumeEditorDrawer",
