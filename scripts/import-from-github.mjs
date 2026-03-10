@@ -83,13 +83,12 @@ const run = async () => {
     return;
   }
 
-  console.log(`📥  Importing from ${owner}/${repo} (branch: ${branch})…`);
-      const branch = process.env.GITHUB_BRANCH?.trim() || "main";  
-      const dataPath = process.env.GITHUB_DATA_PATH?.trim() || "data.json";  
-      const uploadsDir = process.env.GITHUB_UPLOADS_DIR?.trim() || "uploads";  
-      const audioDir = process.env.GITHUB_AUDIO_DIR?.trim() || "audio";  
-      const blogDir = process.env.GITHUB_BLOG_DIR?.trim() || "blog";  
-  const dataMeta = await dataRes.json();
+    console.log(`📥  Importing from ${owner}/${repo} (branch: ${branch})…`);
+
+    // Fetch data.json from GitHub
+    const dataUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${dataPath}?ref=${branch}`;
+    const dataRes = await ghFetch(dataUrl, token);
+    const dataMeta = await dataRes.json();
 
   if (!dataMeta.content) {
     throw new Error(`Could not read ${dataPath} from repo — file may not exist.`);
@@ -154,42 +153,41 @@ const run = async () => {
     console.log(`  ✔ ${count} uploaded file(s) → public/content/uploads/`);
   }
 
-  // ── 3. Fetch blog posts (markdown files) ───────────────────────────
-
-  const blogUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${blogDir}?ref=${branch}`;
-  let blogFiles = [];
-  try {
-    const blogRes = await ghFetch(blogUrl, token);
-    blogFiles = await blogRes.json();
-    if (!Array.isArray(blogFiles)) blogFiles = [];
-  } catch (err) {
-    console.log(`  ⚠ No blog directory found at ${blogDir} — skipping.`);
-    blogFiles = [];
-  }
-
-  if (blogFiles.length === 0) {
-    console.log(`  ⏭ No blog posts to import.`);
-  } else {
-    const localBlogDir = path.join(rootDir, "content", "blog");
-    mkdirSync(localBlogDir, { recursive: true });
-
-    let count = 0;
-    for (const file of blogFiles) {
-      if (file.type !== "file" || !file.name.endsWith(".md")) continue;
-
-      const fileRes = await ghFetch(file.url, token);
-      const fileMeta = await fileRes.json();
-
-      if (!fileMeta.content) continue;
-
-      const content = Buffer.from(fileMeta.content, "base64").toString("utf8");
-      const dest = path.join(localBlogDir, file.name);
-      await writeFile(dest, content);
-      count++;
+  // ── 3. Recursively fetch all files from /content ──────────────────
+  const fetchContentRecursive = async (repoPath, localPath) => {
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${repoPath}?ref=${branch}`;
+    let items = [];
+    try {
+      const res = await ghFetch(url, token);
+      items = await res.json();
+      if (!Array.isArray(items)) items = [];
+    } catch (err) {
+      return;
     }
+    for (const item of items) {
+      if (item.type === "file") {
+        // Use download_url for raw files
+        const rawUrl = item.download_url;
+        if (!rawUrl) continue;
+        const rawRes = await fetch(rawUrl, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!rawRes.ok) continue;
+        const buf = Buffer.from(await rawRes.arrayBuffer());
+        const dest = path.join(localPath, item.name);
+        mkdirSync(path.dirname(dest), { recursive: true });
+        await writeFile(dest, buf);
+      } else if (item.type === "dir") {
+        const subLocal = path.join(localPath, item.name);
+        await fetchContentRecursive(`${repoPath}/${item.name}`, subLocal);
+      }
+    }
+  };
 
-    console.log(`  ✔ ${count} blog post(s) → content/blog/`);
-  }
+  const repoContentDir = "content";
+  const localContentDir = path.join(rootDir, "content");
+  await fetchContentRecursive(repoContentDir, localContentDir);
+  console.log(`  ✔ All content files imported recursively → content/`);
 
   // ── 4. Fetch audio files ───────────────────────────────────────────
 
