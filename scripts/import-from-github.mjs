@@ -84,11 +84,11 @@ const run = async () => {
   }
 
   console.log(`📥  Importing from ${owner}/${repo} (branch: ${branch})…`);
-
-  // ── 1. Fetch data.json ─────────────────────────────────────────────
-
-  const rawUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${dataPath}?ref=${branch}`;
-  const dataRes = await ghFetch(rawUrl, token);
+      const branch = process.env.GITHUB_BRANCH?.trim() || "main";  
+      const dataPath = process.env.GITHUB_DATA_PATH?.trim() || "data.json";  
+      const uploadsDir = process.env.GITHUB_UPLOADS_DIR?.trim() || "uploads";  
+      const audioDir = process.env.GITHUB_AUDIO_DIR?.trim() || "audio";  
+      const blogDir = process.env.GITHUB_BLOG_DIR?.trim() || "blog";  
   const dataMeta = await dataRes.json();
 
   if (!dataMeta.content) {
