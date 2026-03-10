@@ -2,51 +2,61 @@
 /**
  * install-layout-deps.mjs
  *
- * Scans src/themes/ for any theme directory containing a package.json,
- * and installs its dependencies into the root node_modules.
+ * Scans src/themes/ and src/overrides/ for directories containing a
+ * package.json, and installs their dependencies into local node_modules.
  *
- * This keeps theme-specific dependencies declared in their own package.json
- * without needing a pnpm workspace setup.
+ * This keeps theme- and user-specific dependencies declared in their own
+ * package.json without needing a pnpm workspace setup.
  */
 import { readdirSync, existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { execSync } from "child_process";
 
-const themesDir = join(process.cwd(), "src", "themes");
+const root = process.cwd();
+const themesDir = join(root, "src", "themes");
+const overridesDir = join(root, "src", "overrides");
 
-if (!existsSync(themesDir)) {
-  process.exit(0);
-}
+/** Collect dirs that have a package.json with missing deps. */
+function collectDirsWithMissingDeps(dirs) {
+  const result = [];
+  for (const dir of dirs) {
+    const pkgPath = join(dir, "package.json");
+    if (!existsSync(pkgPath)) continue;
 
-const themes = readdirSync(themesDir, { withFileTypes: true }).filter((d) => d.isDirectory());
+    const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+    if (Object.keys(deps).length === 0) continue;
 
-const themePaths = [];
+    let hasMissing = false;
+    for (const name of Object.keys(deps)) {
+      const localInstalledPath = join(dir, "node_modules", name, "package.json");
+      if (!existsSync(localInstalledPath)) {
+        hasMissing = true;
+        break;
+      }
+    }
 
-for (const theme of themes) {
-  const themePath = join(themesDir, theme.name);
-  const pkgPath = join(themePath, "package.json");
-  if (!existsSync(pkgPath)) continue;
-
-  const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
-  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-  if (Object.keys(deps).length === 0) continue;
-
-  let hasMissing = false;
-  for (const name of Object.keys(deps)) {
-    const localInstalledPath = join(themePath, "node_modules", name, "package.json");
-    if (!existsSync(localInstalledPath)) {
-      hasMissing = true;
-      break;
+    if (hasMissing) {
+      result.push(dir);
     }
   }
-
-  if (hasMissing) {
-    themePaths.push(themePath);
-  }
+  return result;
 }
 
+// Theme directories
+const themeDirs = existsSync(themesDir)
+  ? readdirSync(themesDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => join(themesDir, d.name))
+  : [];
+
+// User overrides directory
+const overrideDirs = existsSync(overridesDir) ? [overridesDir] : [];
+
+const themePaths = collectDirsWithMissingDeps([...themeDirs, ...overrideDirs]);
+
 if (themePaths.length === 0) {
-  console.log("[theme-deps] All theme dependencies already installed.");
+  console.log("[theme-deps] All theme/override dependencies already installed.");
   process.exit(0);
 }
 

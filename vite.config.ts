@@ -18,8 +18,10 @@ import {
   renderMarkdown,
   hljs,
 } from "./src/lib/blog";
-import type { PlatformKitConfig, RssFeedConfig } from "./src/lib/config";
+import type { PlatformKitConfig, RssFeedConfig, ContentCollectionConfig } from "./src/lib/config";
 import type { ContentCollectionDef } from "./src/lib/layout-manifest";
+import { migrateCollectionItem } from "./src/lib/collection-migrations";
+import type { CollectionMigrationConfig } from "./src/lib/collection-migrations";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -111,19 +113,20 @@ const userViteConfig = await loadUserViteConfig();
 
 const dataFilePath = path.resolve(__dirname, "cms-data.json");
 const defaultDataFilePath = path.resolve(__dirname, "default-data.json");
-const publicDataFilePath = path.resolve(__dirname, "public/data.json");
+const publicDataFilePath = path.resolve(__dirname, "public/content/data.json");
 const blogContentDir = path.resolve(__dirname, pkConfig.paths?.blogContent || "content/blog");
 
 // ── File-based content collection definitions ───────────────────────
 const collectionDefs: ContentCollectionDef[] = Object.entries(pkConfig.contentCollections ?? {}).map(
   ([key, cfg]) => ({
     key,
-    label: key.charAt(0).toUpperCase() + key.slice(1),
+    label: cfg.label ?? key.charAt(0).toUpperCase() + key.slice(1),
     directory: cfg.directory,
     format: cfg.format ?? "markdown",
     slugField: cfg.slugField ?? "title",
     sortField: cfg.sortField,
     sortOrder: cfg.sortOrder ?? "desc",
+    version: cfg.version ?? 0,
   }),
 );
 
@@ -174,6 +177,36 @@ const writeCollectionFile = (
   }
 };
 
+/** Build a CollectionMigrationConfig from a collection key's config. */
+const getMigrationConfig = (key: string): CollectionMigrationConfig | null => {
+  const cfg = (pkConfig.contentCollections ?? {})[key];
+  if (!cfg) return null;
+  const version = cfg.version ?? 0;
+  if (version === 0 && !cfg.fieldRenames && !cfg.fieldDefaults && !cfg.migrations?.length) return null;
+  return {
+    version,
+    fieldRenames: cfg.fieldRenames ?? {},
+    fieldDefaults: cfg.fieldDefaults ?? {},
+    migrations: [...(cfg.migrations ?? [])].sort((a, b) => a.toVersion - b.toVersion),
+  };
+};
+
+/** Apply collection migrations to an item, optionally writing back to disk if changed. */
+const migrateItem = (
+  item: Record<string, unknown>,
+  migrationConfig: CollectionMigrationConfig,
+  filePath?: string,
+  format?: "markdown" | "json" | "yaml",
+  body?: string,
+): Record<string, unknown> => {
+  const { item: migrated, changed } = migrateCollectionItem(item, migrationConfig);
+  if (changed && filePath && format) {
+    const { slug: _s, html: _h, content: _c, ...dataToWrite } = migrated;
+    writeCollectionFile(filePath, format, dataToWrite, body);
+  }
+  return migrated;
+};
+
 /** Check if a schedulable item is currently visible based on its dates. */
 const isScheduleVisibleNow = (item: { publishDate?: string; expirationDate?: string }): boolean => {
   const today = new Date().toISOString().slice(0, 10);
@@ -205,6 +238,10 @@ const ensureSeedData = () => {
   }
 
   if (!fs.existsSync(publicDataFilePath)) {
+    const publicContentDir = path.dirname(publicDataFilePath);
+    if (!fs.existsSync(publicContentDir)) {
+      fs.mkdirSync(publicContentDir, { recursive: true });
+    }
     fs.writeFileSync(publicDataFilePath, payload);
   }
 };
@@ -427,7 +464,7 @@ const cmsMiddlewarePlugin = () => ({
           return;
         }
 
-        const uploadsDir = path.resolve(__dirname, "public/uploads");
+        const uploadsDir = path.resolve(__dirname, "public/content/uploads");
         if (!fs.existsSync(uploadsDir)) {
           fs.mkdirSync(uploadsDir, { recursive: true });
         }
@@ -487,7 +524,7 @@ const cmsMiddlewarePlugin = () => ({
 
           const write = fs.createWriteStream(outPath);
           fileStream.pipe(write);
-          returnedUrl = `/uploads/${safe}`;
+          returnedUrl = `/content/uploads/${safe}`;
 
           // For audio files, convert to MP3 using ffmpeg
           if (isAudio) {
@@ -596,7 +633,7 @@ const cmsMiddlewarePlugin = () => ({
           // ignore
         }
 
-        // Sync cms-data.json → public/data.json before pushing
+        // Sync cms-data.json → public/content/data.json before pushing
         if (fs.existsSync(dataFilePath)) {
           fs.writeFileSync(publicDataFilePath, fs.readFileSync(dataFilePath, "utf8"));
         }
@@ -673,13 +710,13 @@ const cmsMiddlewarePlugin = () => ({
           const postMeta = metaFromRaw(meta, slug);
           const html = renderMarkdown(body);
           // Include audioUrl if TTS audio exists for this post
-          const devAudioDir = path.resolve(__dirname, "public", "blog", "audio");
+          const devAudioDir = path.resolve(__dirname, "public", "content", "blog", "audio");
           const devAudioMp3 = path.join(devAudioDir, `${slug}.mp3`);
           const devAudioWav = path.join(devAudioDir, `${slug}.wav`);
           const devAudioUrl = fs.existsSync(devAudioMp3)
-            ? `/blog/audio/${slug}.mp3`
+            ? `/content/blog/audio/${slug}.mp3`
             : fs.existsSync(devAudioWav)
-            ? `/blog/audio/${slug}.wav`
+            ? `/content/blog/audio/${slug}.wav`
             : undefined;
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ ...postMeta, content: body, html, ...(devAudioUrl ? { audioUrl: devAudioUrl } : {}) }));
@@ -760,7 +797,9 @@ const cmsMiddlewarePlugin = () => ({
               return;
             }
             const { data, body } = readCollectionFile(filePath, def.format);
-            const item: Record<string, unknown> = { ...data, slug: safeName };
+            let item: Record<string, unknown> = { ...data, slug: safeName };
+            const mc = getMigrationConfig(collectionKey);
+            if (mc) item = migrateItem(item, mc, filePath, def.format, body);
             if (def.format === "markdown" && body !== undefined) {
               item.content = body;
               item.html = renderMarkdown(body);
@@ -775,10 +814,14 @@ const cmsMiddlewarePlugin = () => ({
             fs.mkdirSync(dir, { recursive: true });
           }
           const files = fs.readdirSync(dir).filter((f: string) => f.endsWith(ext));
+          const mc = getMigrationConfig(collectionKey);
           const items = files.map((file: string) => {
             const slug = path.basename(file, ext);
-            const { data } = readCollectionFile(path.join(dir, file), def.format);
-            return { ...data, slug };
+            const fp = path.join(dir, file);
+            const { data, body } = readCollectionFile(fp, def.format);
+            let item: Record<string, unknown> = { ...data, slug };
+            if (mc) item = migrateItem(item, mc, fp, def.format, body);
+            return item;
           });
           // Sort
           if (def.sortField) {
@@ -847,7 +890,7 @@ const cmsMiddlewarePlugin = () => ({
       }
 
       // ── RSS feed (dev) ───────────────────────────────────────────
-      if (url === "/rss.xml" && req.method === "GET") {
+      if (url === "/content/rss.xml" && req.method === "GET") {
         if (!fs.existsSync(blogContentDir)) {
           fs.setHeader?.("Content-Type", "application/rss+xml");
           res.statusCode = 200;
@@ -929,13 +972,13 @@ const buildRssFeed = (
     <description>${siteDesc}</description>
     <language>${lang}</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <atom:link href="${escapeXml(siteUrl)}/${escapeXml(outputPath)}" rel="self" type="application/rss+xml" />
+    <atom:link href="${escapeXml(siteUrl)}/content/${escapeXml(outputPath)}" rel="self" type="application/rss+xml" />
 ${items.join("\n")}
   </channel>
 </rss>`;
 };
 
-/** Build plugin: generate static blog JSON files into public/blog/ at build time. */
+/** Build plugin: generate static blog JSON files into public/content/blog/ at build time. */
 const blogBuildPlugin = () => ({
   name: "blog-build",
   buildStart() {
@@ -943,7 +986,7 @@ const blogBuildPlugin = () => ({
     const files = fs.readdirSync(blogContentDir).filter((f: string) => f.endsWith(".md"));
     if (files.length === 0) return;
 
-    const publicBlogDir = path.resolve(__dirname, "public", pkConfig.paths?.blogOutput || "blog");
+    const publicBlogDir = path.resolve(__dirname, "public", "content", pkConfig.paths?.blogOutput || "blog");
     if (!fs.existsSync(publicBlogDir)) {
       fs.mkdirSync(publicBlogDir, { recursive: true });
     }
@@ -1027,7 +1070,7 @@ const blogBuildPlugin = () => ({
         const rssPosts = feedPosts.map(hydrateForRss);
         const rssXml = buildRssFeed(rssPosts, siteModel, feedCfg);
         const outputFile = feedCfg.output || "rss.xml";
-        const outputPath = path.resolve(__dirname, "public", outputFile);
+        const outputPath = path.resolve(__dirname, "public", "content", outputFile);
         const outputDir = path.dirname(outputPath);
         if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
         fs.writeFileSync(outputPath, rssXml);
@@ -1035,7 +1078,7 @@ const blogBuildPlugin = () => ({
       }
     }
 
-    console.log(`[blog-build] Generated ${files.length} blog post(s) into public/blog/`);
+    console.log(`[blog-build] Generated ${files.length} blog post(s) into public/content/blog/`);
   },
   /** After the full build, generate pre-rendered HTML for each blog post so
    *  crawlers (iMessage, Twitter, etc.) get post-specific OG meta tags. */
@@ -1044,7 +1087,7 @@ const blogBuildPlugin = () => ({
     const indexHtmlPath = path.join(distDir, "index.html");
     if (!fs.existsSync(indexHtmlPath)) return;
 
-    const blogIndexPath = path.join(distDir, "blog", "index.json");
+    const blogIndexPath = path.join(distDir, "content", "blog", "index.json");
     if (!fs.existsSync(blogIndexPath)) return;
 
     const siteModel = fs.existsSync(dataFilePath)
@@ -1066,7 +1109,7 @@ const blogBuildPlugin = () => ({
     let count = 0;
 
     for (const post of posts) {
-      const postJsonPath = path.join(distDir, "blog", `${post.slug}.json`);
+      const postJsonPath = path.join(distDir, "content", "blog", `${post.slug}.json`);
       if (!fs.existsSync(postJsonPath)) continue;
 
       const full = JSON.parse(fs.readFileSync(postJsonPath, "utf8"));
@@ -1135,17 +1178,20 @@ const collectionBuildPlugin = () => ({
       const files = fs.readdirSync(dir).filter((f: string) => f.endsWith(ext));
       if (files.length === 0) continue;
 
-      const outDir = path.resolve(__dirname, "public", "collections", def.key);
+      const outDir = path.resolve(__dirname, "public", "content", "collections", def.key);
       if (!fs.existsSync(outDir)) {
         fs.mkdirSync(outDir, { recursive: true });
       }
 
       const index: Record<string, unknown>[] = [];
+      const mc = getMigrationConfig(def.key);
 
       for (const file of files) {
         const slug = path.basename(file, ext);
-        const { data, body } = readCollectionFile(path.join(dir, file), def.format);
-        const item: Record<string, unknown> = { ...data, slug };
+        const fp = path.join(dir, file);
+        const { data, body } = readCollectionFile(fp, def.format);
+        let item: Record<string, unknown> = { ...data, slug };
+        if (mc) item = migrateItem(item, mc, fp, def.format, body);
 
         if (def.format === "markdown" && body !== undefined) {
           item.content = body;
@@ -1153,7 +1199,8 @@ const collectionBuildPlugin = () => ({
         }
 
         fs.writeFileSync(path.join(outDir, `${slug}.json`), JSON.stringify(item, null, 2));
-        index.push({ ...data, slug });
+        const { content: _c, html: _h, ...indexData } = item;
+        index.push(indexData);
       }
 
       // Sort index
@@ -1168,7 +1215,7 @@ const collectionBuildPlugin = () => ({
       }
 
       fs.writeFileSync(path.join(outDir, "index.json"), JSON.stringify(index, null, 2));
-      console.log(`[collection-build] Generated ${files.length} ${def.key} item(s) into public/collections/${def.key}/`);
+      console.log(`[collection-build] Generated ${files.length} ${def.key} item(s) into public/content/collections/${def.key}/`);
     }
   },
 });

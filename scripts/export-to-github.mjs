@@ -240,9 +240,9 @@ const run = async () => {
 
   // ── 2. Push uploaded files ─────────────────────────────────────────
 
-  const localUploadsDir = path.join(rootDir, "public", "uploads");
+  const localUploadsDir = path.join(rootDir, "public", "content", "uploads");
   if (!existsSync(localUploadsDir)) {
-    console.log(`  ⏭ No public/uploads directory — skipping uploads.`);
+    console.log(`  ⏭ No public/content/uploads directory — skipping uploads.`);
   } else {
     const files = readdirSync(localUploadsDir).filter((f) => {
       const full = path.join(localUploadsDir, f);
@@ -386,9 +386,9 @@ const run = async () => {
 
   // ── 4. Push audio files ────────────────────────────────────────────
 
-  const localAudioDir = path.join(rootDir, "public", "blog", "audio");
+  const localAudioDir = path.join(rootDir, "public", "content", "blog", "audio");
   if (!existsSync(localAudioDir)) {
-    console.log(`  ⏭ No public/blog/audio directory — skipping audio.`);
+    console.log(`  ⏭ No public/content/blog/audio directory — skipping audio.`);
   } else {
     const files = readdirSync(localAudioDir).filter((f) => {
       const full = path.join(localAudioDir, f);

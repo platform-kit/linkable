@@ -41,10 +41,10 @@ export default defineComponent({
 
     // Fallback for standalone usage where parent doesn't pass a model.
     if (!props.model) {
-      fetch("/data.json")
+      fetch("/content/data.json")
         .then((res) => {
           if (!res.ok) {
-            throw new Error(`Failed to fetch /data.json: ${res.status}`);
+            throw new Error(`Failed to fetch /content/data.json: ${res.status}`);
           }
           return res.json();
         })

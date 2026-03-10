@@ -11,7 +11,6 @@
 import type { FormKitSchemaNode } from "@formkit/core";
 import type { Component } from "vue";
 import type { ZodSchema } from "zod";
-import type { BioTheme } from "./model";
 
 export type LayoutVarType = "color" | "text";
 
@@ -195,54 +194,13 @@ export interface ContentCollectionDef {
   slugField: string;
   sortField?: string;
   sortOrder: "asc" | "desc";
+  /** Current schema version for items in this collection. */
+  version: number;
 }
 
-export interface LayoutManifest {
-  /** Display name for the layout */
-  name: string;
-  /**
-   * Theme presets this layout provides (e.g. "light", "dark").
-   * Each entry is a factory that returns a fresh BioTheme with the
-   * layout's preferred colours, radii, etc.
-   *
-   * The CMS preset selector is built dynamically from these keys,
-   * so a layout can offer arbitrary presets beyond light/dark.
-   */
-  presets: Record<string, () => BioTheme>;
-  /** Layout-specific CSS variables */
-  vars: LayoutVar[];
-  /**
-   * Content collections this layout consumes.
-   * Each layout declares which collections it renders; data lives globally
-   * in model.collections so it survives layout switches.
-   */
-  contentSchemas?: ContentSchema[];
-
-  /**
-   * Optional peer dependencies this layout needs (npm package names → semver).
-   * These are installed from the content repo's package.json at import time.
-   * Purely documentary on the manifest — the actual install is driven by
-   * the content repo's package.json.
-   */
-  peerDependencies?: Record<string, string>;
-  /**
-   * FormKit schema for layout settings rendered in the Theme panel.
-   * Data is stored at the root of `layoutData`.
-   */
-  schema?: FormKitSchemaNode[];
-  /**
-   * Optional Zod validation for the root-level layoutData written by `schema`.
-   */
-  validation?: ZodSchema;
-  /**
-   * Optional top-level CMS tabs contributed by this layout.
-   * Each tab stores data at `layoutData[tab.key]`.
-   */
-  cmsTabs?: LayoutCmsTab[];
-  /**
-   * Optional routes contributed by this layout.
-   * Registered with Vue Router when this layout is active;
-   * removed when the layout changes.
-   */
-  routes?: LayoutRoute[];
-}
+/**
+ * @deprecated Use `PlatformKitConfig` from `./config` instead.
+ * Kept as a backwards-compat alias — all UI/theme fields now live
+ * on PlatformKitConfig so there is one unified config type.
+ */
+export type { PlatformKitConfig as LayoutManifest } from "./config";

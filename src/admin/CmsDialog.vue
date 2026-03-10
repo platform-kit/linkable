@@ -213,7 +213,7 @@
 
                     <div class="grid gap-2">
                       <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Uploads directory</label>
-                      <InputText :model-value="githubForm.uploadsDir" placeholder="public/uploads" disabled />
+                      <InputText :model-value="githubForm.uploadsDir" placeholder="public/content/uploads" disabled />
                     </div>
 
                     <div class="grid gap-2">
@@ -223,7 +223,7 @@
 
                     <div class="grid gap-2">
                       <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Static data path</label>
-                      <InputText :model-value="githubForm.staticDataPath" placeholder="public/data.json" disabled />
+                      <InputText :model-value="githubForm.staticDataPath" placeholder="public/content/data.json" disabled />
                     </div>
 
                     <div class="grid gap-2">
@@ -817,8 +817,9 @@ import ImageUploadField from "./ImageUploadField.vue";
 import CollectionListEditor from "./CollectionListEditor.vue";
 import AnalyticsPanel from "./AnalyticsPanel.vue";
 import { icons as lucideIcons } from "lucide-vue-next";
-import { getAvailableLayouts, getLayoutManifest, getLayoutPresets } from "@/lib/component-resolver";
-import type { LayoutManifest, LayoutVar } from "@/lib/layout-manifest";
+import { getAvailableLayouts, getLayoutConfig, getLayoutPresets } from "@/lib/component-resolver";
+import type { PlatformKitConfig } from "@/lib/config";
+import type { LayoutVar } from "@/lib/layout-manifest";
 import type { BioModel, ThemePreset } from "@/lib/model";
 import {
   defaultModel,
@@ -872,8 +873,8 @@ export default defineComponent({
 
     const draft = ref<BioModel>(sanitizeModel(props.model));
 
-    const activeManifest = computed<LayoutManifest | null>(() =>
-      getLayoutManifest(draft.value.theme.layout || "default"),
+    const activeManifest = computed<PlatformKitConfig | null>(() =>
+      getLayoutConfig(draft.value.theme.layout || "default"),
     );
 
     const contentSubTabs = computed(() =>

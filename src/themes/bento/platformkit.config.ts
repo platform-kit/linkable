@@ -1,4 +1,4 @@
-import type { LayoutManifest } from "../../lib/layout-manifest";
+import type { PlatformKitConfig } from "../../lib/config";
 import routes from "./routes-manifest";
 import type { FormKitSchemaNode } from "@formkit/core";
 import type { BioTheme } from "../../lib/model";
@@ -493,7 +493,7 @@ export interface BentoGridData {
   items: BentoGridItem[];
 }
 
-const manifest: LayoutManifest = {
+const manifest: PlatformKitConfig = {
   name: "Bento",
   presets: {
     light: bentoLightTheme,

@@ -96,9 +96,10 @@ const run = async () => {
   }
 
   const dataContent = Buffer.from(dataMeta.content, "base64").toString("utf8");
-  const localDataPath = path.join(rootDir, "public", "data.json");
+  const localDataPath = path.join(rootDir, "public", "content", "data.json");
+  mkdirSync(path.dirname(localDataPath), { recursive: true });
   await writeFile(localDataPath, dataContent);
-  console.log(`  ✔ data.json → public/data.json`);
+  console.log(`  ✔ data.json → public/content/data.json`);
 
   // Also write to cms-data.json so the CMS picks it up locally
   const localCmsPath = path.join(rootDir, "cms-data.json");
@@ -122,7 +123,7 @@ const run = async () => {
   if (uploadFiles.length === 0) {
     console.log(`  ⏭ No uploaded files to import.`);
   } else {
-    const localUploadsDir = path.join(rootDir, "public", "uploads");
+    const localUploadsDir = path.join(rootDir, "public", "content", "uploads");
     mkdirSync(localUploadsDir, { recursive: true });
 
     let count = 0;
@@ -150,7 +151,7 @@ const run = async () => {
       count++;
     }
 
-    console.log(`  ✔ ${count} uploaded file(s) → public/uploads/`);
+    console.log(`  ✔ ${count} uploaded file(s) → public/content/uploads/`);
   }
 
   // ── 3. Fetch blog posts (markdown files) ───────────────────────────
@@ -206,7 +207,7 @@ const run = async () => {
   if (audioFiles.length === 0) {
     console.log(`  ⏭ No audio files to import.`);
   } else {
-    const localAudioDir = path.join(rootDir, "public", "blog", "audio");
+    const localAudioDir = path.join(rootDir, "public", "content", "blog", "audio");
     mkdirSync(localAudioDir, { recursive: true });
 
     let count = 0;
@@ -234,7 +235,7 @@ const run = async () => {
       count++;
     }
 
-    console.log(`  ✔ ${count} audio file(s) → public/blog/audio/`);
+    console.log(`  ✔ ${count} audio file(s) → public/content/blog/audio/`);
   }
 
   console.log(`✅  Import complete.`);

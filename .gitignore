@@ -36,13 +36,10 @@ nginx.pid
 # Generated Supabase types (regenerated via npm run supabase:types)
 src/lib/database.types.ts
 
-# User content (personal data, not part of the template)
+# User content (source & build output)
+content/
+public/content/
 cms-data.json
-public/data.json
-public/uploads/
-public/blog/
-public/rss.xml
-content/blog/*.md
 
 # User-provided layouts & overrides (staged from content repo at build time)
 src/layouts/user/

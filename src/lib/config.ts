@@ -3,9 +3,21 @@
 // content root. The config is loaded at Vite-config time and steers
 // site identity, RSS feeds, dev-server defaults, and build behaviour.
 
+import type { Component } from "vue";
+import type { FormKitSchemaNode } from "@formkit/core";
+import type { ZodSchema } from "zod";
+import type { BioTheme } from "./model";
+import type {
+  LayoutVar,
+  LayoutRoute,
+  LayoutCmsTab,
+  ContentSchema,
+} from "./layout-manifest";
+import type { CollectionMigrationEntry } from "./collection-migrations";
+
 /** A single RSS feed definition. */
 export interface RssFeedConfig {
-  /** Output file path relative to public/ (default: "rss.xml") */
+  /** Output file path relative to public/content/ (default: "rss.xml") */
   output?: string;
   /** Feed title — falls back to site name */
   title?: string;
@@ -26,6 +38,57 @@ export interface RssFeedConfig {
   tags?: string[];
 }
 
+/**
+ * Configuration for a single file-based content collection.
+ * Combines infrastructure fields (directory, format) with CMS UI fields
+ * (label, icon, itemSchema, etc.) so everything lives in one place.
+ */
+export interface ContentCollectionConfig {
+  // ── Infrastructure (used by server & build) ──────────────────────
+  /** Directory where content files live, relative to project root. */
+  directory: string;
+  /** File format: "markdown" (frontmatter + body), "json", or "yaml". Default: "markdown" */
+  format?: "markdown" | "json" | "yaml";
+  /** Schema field used to generate the filename slug. Default: "title" */
+  slugField?: string;
+  /** Field to sort by in list output. Default: "date" (if present) */
+  sortField?: string;
+  /** Sort direction. Default: "desc" */
+  sortOrder?: "asc" | "desc";
+
+  // ── CMS UI (used by the editor) ──────────────────────────────────
+  /** Human-visible label (e.g. "Projects"). Default: capitalized key */
+  label?: string;
+  /** Lucide icon name for the CMS tab (e.g. "Folder"). Default: "File" */
+  icon?: string;
+  /** Default enabled state for new users. Default: true */
+  defaultEnabled?: boolean;
+  /** Whether the searchbar is available on the public page. Default: false */
+  searchable?: boolean;
+  /** FormKit schema for editing a single item. */
+  itemSchema?: FormKitSchemaNode[] | ((item: Record<string, unknown>) => FormKitSchemaNode[]);
+  /** Factory function returning a new blank item with defaults. */
+  newItem?: () => Record<string, unknown>;
+  /** Extract a display label from an item for the list view. */
+  itemLabel?: (item: any) => string;
+  /** Extract a subtitle from an item for the list view. */
+  itemSublabel?: (item: any) => string;
+  /** Extract a thumbnail URL from an item for the list view. */
+  itemThumbnail?: (item: any) => string | undefined;
+  /** Custom Vue editor component — replaces the auto-generated editor entirely. */
+  editorComponent?: () => Promise<{ default: Component }>;
+
+  // ── Schema migration ─────────────────────────────────────────────
+  /** Current schema version for this collection's items. Default: 0 */
+  version?: number;
+  /** Declarative field renames: `{ newFieldName: "oldFieldName" }`. Idempotent — always applied. */
+  fieldRenames?: Record<string, string>;
+  /** Declarative field defaults: `{ fieldName: defaultValue }`. Fills missing fields. Idempotent — always applied. */
+  fieldDefaults?: Record<string, unknown>;
+  /** Imperative migration transforms, run in version order (version-gated, run once per item). */
+  migrations?: CollectionMigrationEntry[];
+}
+
 export interface PlatformKitConfig {
   /** Site identity — used in RSS, PWA manifest, OG meta fallbacks. */
   site?: {
@@ -43,7 +106,7 @@ export interface PlatformKitConfig {
   paths?: {
     /** Markdown blog post source directory (default: "content/blog") */
     blogContent?: string;
-    /** Blog JSON output directory relative to public/ (default: "blog") */
+    /** Blog JSON output directory relative to public/content/ (default: "blog") */
     blogOutput?: string;
   };
 
@@ -97,9 +160,13 @@ export interface PlatformKitConfig {
    * content files (markdown, JSON, or YAML) that get automatic CRUD
    * endpoints in dev and static JSON output at build time.
    *
+   * Besides the infrastructure fields (directory, format, etc.), each
+   * entry can include all the CMS UI fields (label, icon, itemSchema,
+   * newItem, etc.) so that users configure everything in one place —
+   * no separate manifest override file needed.
+   *
    * The key becomes the collection key in the data model and matches
-   * the `key` field in a ContentSchema, so the CMS can pair the UI
-   * schema with the file backend.
+   * the `key` field in a ContentSchema.
    *
    * @example
    * ```ts
@@ -107,25 +174,23 @@ export interface PlatformKitConfig {
    *   projects: {
    *     directory: 'content/projects',
    *     format: 'markdown',
+   *     label: 'Projects',
+   *     icon: 'Folder',
    *     slugField: 'title',
    *     sortField: 'date',
    *     sortOrder: 'desc',
+   *     defaultEnabled: true,
+   *     searchable: false,
+   *     itemSchema: [
+   *       { $formkit: 'text', name: 'title', label: 'Title' },
+   *       { $formkit: 'date', name: 'date', label: 'Date' },
+   *     ],
+   *     newItem: () => ({ title: '', date: '' }),
    *   },
    * }
    * ```
    */
-  contentCollections?: Record<string, {
-    /** Directory where content files live, relative to project root. */
-    directory: string;
-    /** File format: "markdown" (frontmatter + body), "json", or "yaml". Default: "markdown" */
-    format?: "markdown" | "json" | "yaml";
-    /** Schema field used to generate the filename slug. Default: "title" */
-    slugField?: string;
-    /** Field to sort by in list output. Default: "date" (if present) */
-    sortField?: string;
-    /** Sort direction. Default: "desc" */
-    sortOrder?: "asc" | "desc";
-  }>;
+  contentCollections?: Record<string, ContentCollectionConfig>;
 
   /**
    * CMS dev-server endpoint paths. Override these if your site is served
@@ -162,6 +227,58 @@ export interface PlatformKitConfig {
     /** Strip items outside their schedule window at build time */
     scheduleExclude?: boolean;
   };
+
+  // ── Theme / Layout UI ──────────────────────────────────────────────
+  // These fields were previously in LayoutManifest. They live here so
+  // that themes, the root config, and user overrides share one type.
+
+  /** Display name for this theme (e.g. "Bento"). */
+  name?: string;
+
+  /**
+   * Theme presets (e.g. "light", "dark"). Each entry is a factory
+   * returning a fresh BioTheme. The CMS preset selector is built
+   * dynamically from these keys.
+   */
+  presets?: Record<string, () => BioTheme>;
+
+  /** Layout-specific CSS variable definitions shown in the CMS Theme panel. */
+  vars?: LayoutVar[];
+
+  /**
+   * Content collections this config level declares.
+   * Themes list which collections they render; the root config can add more.
+   * Data lives globally in `model.collections` so it survives layout switches.
+   */
+  contentSchemas?: ContentSchema[];
+
+  /**
+   * Optional peer dependencies this theme needs (npm package names → semver).
+   * Purely documentary — actual install is driven by the theme's package.json.
+   */
+  peerDependencies?: Record<string, string>;
+
+  /**
+   * FormKit schema for layout settings rendered in the CMS Theme panel.
+   * Data is stored at the root of `layoutData`.
+   */
+  schema?: FormKitSchemaNode[];
+
+  /** Optional Zod validation for the root-level layoutData written by `schema`. */
+  validation?: ZodSchema;
+
+  /**
+   * Top-level CMS tabs contributed by this config level.
+   * Each tab stores data at `layoutData[tab.key]`.
+   */
+  cmsTabs?: LayoutCmsTab[];
+
+  /**
+   * Routes contributed by this config level.
+   * Registered with Vue Router when this layout is active;
+   * removed when the layout changes.
+   */
+  routes?: LayoutRoute[];
 
   /**
    * Raw Vite config to deep-merge with the core config.

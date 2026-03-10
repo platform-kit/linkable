@@ -47,29 +47,39 @@ Whenever you add, rename, or remove a field on `BioModel`, `BioProfile`, `BioLin
 ## Content file separation
 
 - `default-data.json` — committed to the repo; generic placeholder content for new users.
-- `cms-data.json` / `public/data.json` / `public/uploads/` — gitignored; personal content that lives locally or in a private repo.
+- `cms-data.json` — gitignored; local working copy of CMS data.
+- `content/` — gitignored; all user-owned source content (markdown blog posts, collection files, etc.).
+- `public/content/` — gitignored; all build output for user content:
+  - `public/content/data.json` — exported CMS data
+  - `public/content/uploads/` — uploaded images, audio, etc.
+  - `public/content/blog/` — built blog post JSON files
+  - `public/content/blog/audio/` — TTS-generated audio files
+  - `public/content/collections/{key}/` — built collection JSON files
+  - `public/content/rss.xml` — generated RSS feed(s)
 - `npm run push` exports local content to a private GitHub repo; `npm run import` pulls it back.
+- **All user content output MUST go under `public/content/`** to ensure it is gitignored and never contaminates the framework repo.
 
 ***
 
-# Theme Dependencies
+# Theme & Override Dependencies
 
-Each theme in `src/themes/` may have its own `package.json` declaring theme-specific dependencies. These dependencies are **not** listed in the root `package.json` — they live exclusively in the theme's own `package.json`.
+Themes in `src/themes/` and user overrides in `src/overrides/` may each have their own `package.json` declaring extra dependencies. These dependencies are **not** listed in the root `package.json` — they live exclusively in their own `package.json`.
 
-## How theme dependencies are installed
+## How dependencies are installed
 
 `scripts/install-layout-deps.mjs` runs automatically before `dev` and `build`. It:
 
-1. Scans every directory under `src/themes/` for a `package.json`.
-2. Collects all `dependencies` and `devDependencies` from each theme.
-3. Skips any package already present in `node_modules/`.
-4. Installs missing packages via `pnpm add`.
+1. Scans every directory under `src/themes/` **and** `src/overrides/` for a `package.json`.
+2. Collects all `dependencies` and `devDependencies` from each.
+3. Skips any package already present in local `node_modules/`.
+4. Installs missing packages via `npm install` (or `pnpm install` as fallback).
 
-## Rules for theme dependencies
+## Rules for theme/override dependencies
 
-- **Never add a theme-specific dependency to the root `package.json`**. Declare it in `src/themes/<theme>/package.json` instead.
+- **Never add a theme- or override-specific dependency to the root `package.json`**. Declare it in the relevant `package.json` instead.
 - The install script handles installation — no pnpm workspaces or manual install steps needed.
 - If you create a new theme that needs extra packages, create a `package.json` in its directory (e.g. `src/themes/newtheme/package.json`) with the dependencies. The script will discover and install them automatically.
+- User overrides can do the same: create `src/overrides/package.json` with any dependencies the override components need.
 - Example (`src/themes/bento/package.json`):
 
   ```json
@@ -81,6 +91,69 @@ Each theme in `src/themes/` may have its own `package.json` declaring theme-spec
     }
   }
   ```
+
+***
+
+# Collection Schema Migrations
+
+File-based content collections (defined in `platformkit.config.ts` under `contentCollections`) have their own migration system, separate from the system-level `BioModel` migrations. This lives in `src/lib/collection-migrations.ts`.
+
+## Two migration mechanisms
+
+1. **Declarative (idempotent, always runs):**
+   - `fieldRenames`: `{ newFieldName: "oldFieldName" }` — moves values from old keys to new ones.
+   - `fieldDefaults`: `{ fieldName: defaultValue }` — fills in missing fields with defaults.
+
+2. **Imperative (version-gated, runs once):**
+   - `migrations`: Array of `{ toVersion, transform }` — arbitrary JS transforms that run in version order when `_schemaVersion` is behind.
+
+Pipeline per item: read `_schemaVersion` (default 0) → run imperative migrations → apply declarative renames → apply declarative defaults → stamp `_schemaVersion`.
+
+When a migration modifies an item, it is written back to disk so the migration only runs once.
+
+## How to add a collection migration
+
+In `platformkit.config.ts`, on the collection's config object:
+
+1. **Bump `version`** (increment by 1).
+2. **(Optional) Add declarative entries** to `fieldRenames` and/or `fieldDefaults`.
+3. **(Optional) Add an imperative migration** to the `migrations` array.
+
+Example:
+
+```ts
+contentCollections: {
+  projects: {
+    directory: "content/projects",
+    format: "yaml",
+    version: 2,
+    fieldRenames: { coverImage: "thumbnail" },     // "thumbnail" was renamed to "coverImage"
+    fieldDefaults: { featured: false, tags: [] },   // new fields with defaults
+    migrations: [
+      {
+        toVersion: 2,
+        transform: (item) => {
+          // Imperative: split old "fullName" into "firstName" + "lastName"
+          if (typeof item.fullName === "string") {
+            const [first, ...rest] = item.fullName.split(" ");
+            item.firstName = first;
+            item.lastName = rest.join(" ");
+            delete item.fullName;
+          }
+          return item;
+        },
+      },
+    ],
+    // ... itemSchema, label, etc.
+  },
+},
+```
+
+## Rules
+
+- **Never delete a migration entry** — old items may jump multiple versions.
+- Declarative entries are idempotent and always run; imperative entries are version-gated and run once.
+- The `_schemaVersion` field on each item is an internal bookkeeping field — do not use it in schemas or editors.
 
 ***
 

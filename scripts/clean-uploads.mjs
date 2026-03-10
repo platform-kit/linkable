@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Deletes any files in public/uploads/ that are NOT referenced by the
+ * Deletes any files in public/content/uploads/ that are NOT referenced by the
  * CMS content JSON (cms-data.json or public/data.json) or by blog post
  * markdown files in content/blog/.
  *
@@ -17,9 +17,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
 
-const uploadsDir = path.join(rootDir, "public/uploads");
+const uploadsDir = path.join(rootDir, "public/content/uploads");
 const cmsDataPath = path.join(rootDir, "cms-data.json");
-const publicDataPath = path.join(rootDir, "public/data.json");
+const publicDataPath = path.join(rootDir, "public/content/data.json");
 const blogDir = path.join(rootDir, "content/blog");
 
 const dryRun = process.argv.includes("--dry-run");
@@ -37,20 +37,20 @@ const extractStrings = (value) => {
   return strings;
 };
 
-/** Extract /uploads/ references from a markdown blog post (frontmatter + body). */
+/** Extract /content/uploads/ or /uploads/ references from a markdown blog post. */
 const extractUploadsFromMarkdown = (content) => {
   const refs = [];
-  // frontmatter values like  coverImage: /uploads/foo.jpg
-  const fmRegex = /:\s*(\/uploads\/[^\s"']+)/g;
+  // frontmatter values like  coverImage: /content/uploads/foo.jpg
+  const fmRegex = /:\s*(\/(?:content\/)?uploads\/[^\s"']+)/g;
   let m;
   while ((m = fmRegex.exec(content))) refs.push(m[1]);
 
-  // inline markdown images  ![alt](/uploads/foo.jpg)
-  const imgRegex = /!\[[^\]]*\]\((\/uploads\/[^)]+)\)/g;
+  // inline markdown images  ![alt](/content/uploads/foo.jpg)
+  const imgRegex = /!\[[^\]]*\]\((\/(?:content\/)?uploads\/[^)]+)\)/g;
   while ((m = imgRegex.exec(content))) refs.push(m[1]);
 
-  // html <img src="/uploads/foo.jpg">
-  const htmlRegex = /src=["'](\/uploads\/[^"']+)["']/g;
+  // html <img src="/content/uploads/foo.jpg">
+  const htmlRegex = /src=["'](\/(?:content\/)?uploads\/[^"']+)["']/g;
   while ((m = htmlRegex.exec(content))) refs.push(m[1]);
 
   return refs;
@@ -72,8 +72,8 @@ const run = async () => {
   const allStrings = extractStrings(data);
   const referencedFiles = new Set(
     allStrings
-      .filter((s) => s.startsWith("/uploads/"))
-      .map((s) => s.replace(/^\/uploads\//, "")),
+      .filter((s) => s.startsWith("/content/uploads/") || s.startsWith("/uploads/"))
+      .map((s) => s.replace(/^\/(?:content\/)?uploads\//, "")),
   );
 
   // ── 2b. Scan blog markdown files for upload references ─────────
@@ -84,7 +84,7 @@ const run = async () => {
       const content = await readFile(path.join(blogDir, file), "utf8");
       const blogRefs = extractUploadsFromMarkdown(content);
       for (const ref of blogRefs) {
-        referencedFiles.add(ref.replace(/^\/uploads\//, ""));
+        referencedFiles.add(ref.replace(/^\/(?:content\/)?uploads\//, ""));
       }
     }
     if (mdFiles.length > 0) {
@@ -94,7 +94,7 @@ const run = async () => {
 
   // ── 3. List actual files on disk ───────────────────────────────
   if (!existsSync(uploadsDir)) {
-    console.log("public/uploads/ does not exist — nothing to clean.");
+    console.log("public/content/uploads/ does not exist — nothing to clean.");
     return;
   }
 
@@ -105,7 +105,7 @@ const run = async () => {
   const orphans = files.filter((f) => !referencedFiles.has(f));
 
   if (orphans.length === 0) {
-    console.log(`✓ All ${files.length} file(s) in public/uploads/ are referenced.`);
+    console.log(`✓ All ${files.length} file(s) in public/content/uploads/ are referenced.`);
     return;
   }
 

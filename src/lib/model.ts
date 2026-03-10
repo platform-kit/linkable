@@ -918,7 +918,7 @@ export const defaultScripts = (): BioScripts => ({
 });
 
 export const defaultModel = (): BioModel => ({
-  schemaVersion: 1,
+  schemaVersion: 0,
   profile: {
     displayName: "PlatformKit",
     tagline: "Design-forward links. Clean, fast, yours.",

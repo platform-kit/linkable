@@ -9,9 +9,9 @@ const rootDir = path.resolve(__dirname, "..");
 
 const cmsDataPath = path.join(rootDir, "cms-data.json");
 const defaultDataPath = path.join(rootDir, "default-data.json");
-const publicDataPath = path.join(rootDir, "public/data.json");
+const publicDataPath = path.join(rootDir, "public/content/data.json");
 const blogContentDir = path.join(rootDir, "content/blog");
-const publicBlogDir = path.join(rootDir, "public/blog");
+const publicBlogDir = path.join(rootDir, "public/content/blog");
 
 const ensureCmsData = async () => {
   if (existsSync(cmsDataPath)) {
@@ -45,9 +45,10 @@ const run = async () => {
   const formatted = JSON.stringify(parsed, null, 2);
 
   await writeFile(cmsDataPath, formatted);
+  await mkdir(path.dirname(publicDataPath), { recursive: true });
   await writeFile(publicDataPath, formatted);
 
-  console.log("Exported CMS data to public/data.json");
+  console.log("Exported CMS data to public/content/data.json");
 
   // ── Generate blog JSON files for production ──────────────────────
   if (existsSync(blogContentDir)) {
@@ -117,7 +118,7 @@ const run = async () => {
       index.sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0));
       await writeFile(path.join(publicBlogDir, "index.json"), JSON.stringify(index, null, 2));
 
-      console.log(`Exported ${mdFiles.length} blog post(s) to public/blog/`);
+      console.log(`Exported ${mdFiles.length} blog post(s) to public/content/blog/`);
     }
   }
 };

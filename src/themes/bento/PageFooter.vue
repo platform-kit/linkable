@@ -3,7 +3,7 @@
     <div class="flex items-center justify-center gap-3 text-xs text-[color:var(--color-ink-soft)]">
       <a
         v-if="showRss"
-        href="/rss.xml"
+        href="/content/rss.xml"
         target="_blank"
         class="hover:text-[color:var(--color-ink)] transition-colors"
       >

@@ -1,4 +1,4 @@
-import type { LayoutManifest, LayoutRoute } from "../../lib/layout-manifest";
+import type { LayoutRoute } from "../../lib/layout-manifest";
 import Root from "./Root.vue";
 
 const routes: LayoutRoute[] = [
@@ -58,9 +58,4 @@ const routes: LayoutRoute[] = [
   },
 ];
 
-const manifest: LayoutManifest = {
-  // ...existing manifest fields...
-  routes,
-};
-
-export default manifest;
+export default routes;

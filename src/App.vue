@@ -198,7 +198,7 @@ import CmsDialog from './admin/CmsDialog.vue';
 import CollectionItemDrawer from './admin/CollectionItemDrawer.vue';
 import GitCommitDialog from './admin/GitCommitDialog.vue';
 
-import { getLayoutManifest } from './lib/component-resolver';
+import { getLayoutConfig } from './lib/component-resolver';
 import { useLayoutRoutes } from './lib/component-resolver';
 import { defaultModel, type BioModel, sanitizeModel, stableStringify } from './lib/model';
 import { fetchModel, persistModel, getStagedData, clearStagedData } from './lib/persistence';
@@ -588,8 +588,8 @@ export default defineComponent({
     const itemEditorContentSchema = computed(() => {
       const key = itemEditorCollectionKey.value;
       if (!key) return null;
-      const manifest = getLayoutManifest(activeLayout.value);
-      return (manifest?.contentSchemas ?? []).find((s) => s.key === key) ?? null;
+      const config = getLayoutConfig(activeLayout.value);
+      return (config?.contentSchemas ?? []).find((s) => s.key === key) ?? null;
     });
 
     const itemEditorItem = computed(() => {

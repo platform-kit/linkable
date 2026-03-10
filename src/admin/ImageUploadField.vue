@@ -145,11 +145,11 @@ const showUrlInput = ref(false);
 
 const isDev = import.meta.env.DEV;
 const githubReady = ref(false);
-const githubUploadsDir = ref("public/uploads");
+const githubUploadsDir = ref("public/content/uploads");
 
 const refreshGithubState = () => {
   githubReady.value = canUseGithubSync();
-  githubUploadsDir.value = loadGithubSettings().uploadsDir || "public/uploads";
+  githubUploadsDir.value = loadGithubSettings().uploadsDir || "public/content/uploads";
 };
 
 onMounted(() => {
@@ -181,7 +181,7 @@ const helperCopy = computed(() => {
 });
 
 const displayUploadsDir = computed(() => {
-  const raw = githubUploadsDir.value || "public/uploads";
+  const raw = githubUploadsDir.value || "public/content/uploads";
   const normalized = raw.replace(/\\/g, "/").replace(/^\/+/, "");
   if (!normalized) return "/";
   if (normalized.startsWith("public/")) {
@@ -192,7 +192,7 @@ const displayUploadsDir = computed(() => {
 
 const defaultHelper = computed(() => {
   if (isDev) {
-    return "Files are saved to public/uploads while you iterate locally.";
+    return "Files are saved to public/content/uploads while you iterate locally.";
   }
   if (!githubReady.value) {
     return "Images will sync once GitHub settings are configured.";

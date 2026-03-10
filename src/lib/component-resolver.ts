@@ -6,17 +6,20 @@
  *   2. `src/themes/<layout>/<Name>.vue`   — active theme variant
  *   3. fallback                            — default component
  *
- * User-provided themes live under `src/themes/user/<name>/` and are
- * discovered as layout name `user/<name>`.
+ * Config merge chain (each level extends/overrides the previous):
+ *   1. Root `platformkit.config.ts`        — system / platform defaults
+ *   2. `src/themes/<name>/platformkit.config.ts` — theme-level config
+ *   3. `src/overrides/platformkit.config.ts`     — user-level overrides (final say)
  *
  * `layout` is a Ref<string> (e.g. `computed(() => model.theme.layout)`).
  * When the value changes the resolved component updates reactively.
  */
 import { type Component, computed, defineAsyncComponent, type Ref, ref, watch, onScopeDispose, type ShallowRef, shallowRef } from "vue";
-import type { LayoutManifest, LayoutRoute } from "./layout-manifest";
+import type { LayoutRoute, ContentSchema } from "./layout-manifest";
 import type { BioTheme } from "./model";
 import { THEME_PRESETS } from "./model";
 import type { Router } from "vue-router";
+import type { PlatformKitConfig } from "./config";
 
 const overrideModules = import.meta.glob<{ default: Component }>(
   "../overrides/*.vue",
@@ -26,10 +29,28 @@ const layoutModules = import.meta.glob<{ default: Component }>(
   "../themes/**/*.vue",
 );
 
-const manifestModules = import.meta.glob<{ default: LayoutManifest }>(
-  "../themes/**/manifest.ts",
+// ── Three-level config loading ──────────────────────────────────────
+// 1. System / root config
+const systemConfigModules = import.meta.glob<{ default: PlatformKitConfig }>(
+  ["../../platformkit.config.ts", "../../platformkit.config.js", "../../platformkit.config.mjs"],
   { eager: true },
 );
+const systemConfig: PlatformKitConfig =
+  Object.values(systemConfigModules)[0]?.default ?? {};
+
+// 2. Theme configs (loaded per-theme)
+const themeConfigModules = import.meta.glob<{ default: PlatformKitConfig }>(
+  "../themes/**/platformkit.config.ts",
+  { eager: true },
+);
+
+// 3. User overrides (final say)
+const userConfigModules = import.meta.glob<{ default: Partial<PlatformKitConfig> }>(
+  ["../overrides/platformkit.config.ts", "../overrides/platformkit.config.js"],
+  { eager: true },
+);
+const userConfig: Partial<PlatformKitConfig> | null =
+  Object.values(userConfigModules)[0]?.default ?? null;
 
 /**
  * List every layout name that ships at least one component override.
@@ -88,71 +109,128 @@ export function useComponent(
   }) as unknown as Component;
 }
 
-// ── User manifest override ──────────────────────────────────────────
-const userManifestModules = import.meta.glob<{ default: Partial<LayoutManifest> }>(
-  ["../overrides/manifest.ts", "../overrides/manifest.js"],
-  { eager: true },
-);
-const userManifestOverride: Partial<LayoutManifest> | null =
-  Object.values(userManifestModules)[0]?.default ?? null;
+// ── Config merge ────────────────────────────────────────────────────
+
+/** Convert contentCollections entries into ContentSchema objects. */
+function contentCollectionsToSchemas(config: PlatformKitConfig): ContentSchema[] {
+  const collections = config.contentCollections;
+  if (!collections) return [];
+  return Object.entries(collections).map(([key, cfg]) => ({
+    key,
+    label: cfg.label ?? key.charAt(0).toUpperCase() + key.slice(1),
+    icon: cfg.icon ?? "File",
+    defaultEnabled: cfg.defaultEnabled ?? true,
+    searchable: cfg.searchable ?? false,
+    external: true,
+    directory: cfg.directory,
+    format: cfg.format,
+    slugField: cfg.slugField,
+    sortField: cfg.sortField,
+    sortOrder: cfg.sortOrder,
+    itemSchema: cfg.itemSchema,
+    newItem: cfg.newItem,
+    itemLabel: cfg.itemLabel,
+    itemSublabel: cfg.itemSublabel,
+    itemThumbnail: cfg.itemThumbnail,
+    editorComponent: cfg.editorComponent,
+  }));
+}
 
 /**
- * Merge a user manifest override into a theme manifest.
- * - `contentSchemas` are union-merged by key (user wins on conflict).
- * - `routes` are concatenated.
- * - `cmsTabs` are union-merged by key.
- * - Other fields: user override wins if provided.
+ * Merge two PlatformKitConfig objects. The `override` wins on conflict.
+ * - `contentSchemas`: union-merged by key (override wins per-key)
+ * - `routes`: concatenated
+ * - `cmsTabs`: union-merged by key
+ * - `vars`: union-merged by cssVar
+ * - `presets`: shallow-merged (override wins per-key)
+ * - `contentCollections`: auto-converted to contentSchemas and merged
+ * - Scalar fields: override wins if present
  */
-function mergeManifests(base: LayoutManifest, override: Partial<LayoutManifest>): LayoutManifest {
-  const merged = { ...base };
+function mergeConfigs(base: PlatformKitConfig, override: Partial<PlatformKitConfig>): PlatformKitConfig {
+  const merged = { ...base, ...override };
 
-  // Merge contentSchemas: user schemas added, existing keys overridden
-  if (override.contentSchemas) {
-    const existing = new Map((base.contentSchemas ?? []).map((s) => [s.key, s]));
-    for (const s of override.contentSchemas) {
-      existing.set(s.key, s);
+  // Merge contentSchemas: base + override, override wins per-key
+  const baseSchemas = [
+    ...(base.contentSchemas ?? []),
+    ...contentCollectionsToSchemas(base),
+  ];
+  const overrideSchemas = [
+    ...(override.contentSchemas ?? []),
+    ...contentCollectionsToSchemas(override),
+  ];
+  if (baseSchemas.length > 0 || overrideSchemas.length > 0) {
+    const byKey = new Map(baseSchemas.map((s) => [s.key, s]));
+    for (const s of overrideSchemas) {
+      byKey.set(s.key, s);
     }
-    merged.contentSchemas = Array.from(existing.values());
+    merged.contentSchemas = Array.from(byKey.values());
   }
 
   // Merge routes: concatenate
-  if (override.routes) {
-    merged.routes = [...(base.routes ?? []), ...override.routes];
+  if (base.routes || override.routes) {
+    merged.routes = [...(base.routes ?? []), ...(override.routes ?? [])];
   }
 
   // Merge cmsTabs: union by key
-  if (override.cmsTabs) {
-    const existingTabs = new Map((base.cmsTabs ?? []).map((t) => [t.key, t]));
-    for (const t of override.cmsTabs) {
-      existingTabs.set(t.key, t);
+  if (base.cmsTabs || override.cmsTabs) {
+    const tabs = new Map((base.cmsTabs ?? []).map((t) => [t.key, t]));
+    for (const t of (override.cmsTabs ?? [])) {
+      tabs.set(t.key, t);
     }
-    merged.cmsTabs = Array.from(existingTabs.values());
+    merged.cmsTabs = Array.from(tabs.values());
   }
 
-  // Merge vars: concatenate (dedupe by cssVar)
-  if (override.vars) {
-    const existingVars = new Map((base.vars ?? []).map((v) => [v.cssVar, v]));
-    for (const v of override.vars) {
-      existingVars.set(v.cssVar, v);
+  // Merge vars: union by cssVar
+  if (base.vars || override.vars) {
+    const vars = new Map((base.vars ?? []).map((v) => [v.cssVar, v]));
+    for (const v of (override.vars ?? [])) {
+      vars.set(v.cssVar, v);
     }
-    merged.vars = Array.from(existingVars.values());
+    merged.vars = Array.from(vars.values());
+  }
+
+  // Merge presets: shallow-merge (override wins per preset key)
+  if (base.presets || override.presets) {
+    merged.presets = { ...(base.presets ?? {}), ...(override.presets ?? {}) };
   }
 
   return merged;
 }
 
 /**
- * Get the variable manifest for a layout, or null if none exists.
- * Merges user manifest overrides from `src/overrides/manifest.ts` if present.
+ * Get the merged config for a layout.
+ *
+ * Merge chain (each level extends/overrides the previous):
+ *   1. Root `platformkit.config.ts`        — system defaults
+ *   2. `src/themes/<name>/platformkit.config.ts` — theme config
+ *   3. `src/overrides/platformkit.config.ts`     — user overrides (final say)
  */
-export function getLayoutManifest(layoutName: string): LayoutManifest | null {
-  const key = `../themes/${layoutName}/manifest.ts`;
-  const mod = manifestModules[key];
-  const base = mod?.default ?? null;
-  if (!base) return userManifestOverride ? (userManifestOverride as LayoutManifest) : null;
-  if (!userManifestOverride) return base;
-  return mergeManifests(base, userManifestOverride);
+export function getLayoutConfig(layoutName: string): PlatformKitConfig | null {
+  // 1. Start with system config
+  let result: PlatformKitConfig = { ...systemConfig };
+
+  // 2. Merge theme config
+  const themeKey = `../themes/${layoutName}/platformkit.config.ts`;
+  const themeModule = themeConfigModules[themeKey];
+  if (themeModule?.default) {
+    result = mergeConfigs(result, themeModule.default);
+  } else if (!Object.keys(result).some(k => ["presets", "contentSchemas", "vars", "routes", "cmsTabs", "name"].includes(k) && (result as any)[k])) {
+    // No theme config and system config has no UI fields — nothing to return
+    if (!userConfig) return null;
+  }
+
+  // 3. Merge user overrides (final say)
+  if (userConfig) {
+    result = mergeConfigs(result, userConfig);
+  }
+
+  return result;
 }
+
+/**
+ * @deprecated Use `getLayoutConfig` instead. This is a backwards-compat alias.
+ */
+export const getLayoutManifest = getLayoutConfig;
 
 /**
  * Get the theme presets for a layout.
@@ -162,9 +240,9 @@ export function getLayoutManifest(layoutName: string): LayoutManifest | null {
  * or declares no presets.
  */
 export function getLayoutPresets(layoutName: string): Record<string, () => BioTheme> {
-  const manifest = getLayoutManifest(layoutName);
-  if (manifest?.presets && Object.keys(manifest.presets).length > 0) {
-    return manifest.presets;
+  const config = getLayoutConfig(layoutName);
+  if (config?.presets && Object.keys(config.presets).length > 0) {
+    return config.presets;
   }
   return THEME_PRESETS;
 }
@@ -203,7 +281,7 @@ export function useLayoutRoutes(
       router.addRoute({
         path: r.path,
         name,
-        component: defineAsyncComponent(r.component),
+        component: r.component,
         meta: { ...(r.meta ?? {}), layoutRoute: true },
       });
       names.push(name);
@@ -233,8 +311,8 @@ export function useLayoutRoutes(
     (layoutName) => {
       removeOldRoutes();
 
-      const manifest = getLayoutManifest(layoutName);
-      const routes = manifest?.routes ?? [];
+      const config = getLayoutConfig(layoutName);
+      const routes = config?.routes ?? [];
       if (routes.length > 0) {
         addNewRoutes(routes);
         void rematchCurrentLocationIfNeeded();

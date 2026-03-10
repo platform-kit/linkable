@@ -2,7 +2,7 @@
  * Generic client-side API for file-based content collections.
  *
  * In dev mode, talks to the Vite CMS middleware at `/__collection/{key}`.
- * In production, reads pre-built static JSON from `/collections/{key}/`.
+ * In production, reads pre-built static JSON from `/content/collections/{key}/`.
  */
 
 import type { ContentCollectionDef } from "./layout-manifest";
@@ -33,7 +33,7 @@ export const fetchCollectionItems = async (
     return res.json();
   }
 
-  const res = await fetch(`/collections/${encodeURIComponent(key)}/index.json`);
+  const res = await fetch(`/content/collections/${encodeURIComponent(key)}/index.json`);
   if (!res.ok) {
     if (res.status === 404) return [];
     throw new Error(`Failed to fetch collection ${key}: ${res.status}`);
@@ -56,7 +56,7 @@ export const fetchCollectionItem = async (
   }
 
   const res = await fetch(
-    `/collections/${encodeURIComponent(key)}/${encodeURIComponent(slug)}.json`,
+    `/content/collections/${encodeURIComponent(key)}/${encodeURIComponent(slug)}.json`,
   );
   if (!res.ok) return null;
   return res.json();

@@ -178,15 +178,15 @@ Options:
 
 | File                | Committed? | Purpose                         |
 | ------------------- | ---------- | ------------------------------- |
-| `default-data.json` | Yes        | Template data for new users     |
-| `cms-data.json`     | No         | Your personal CMS data          |
-| `public/data.json`  | No         | Production build content        |
-| `public/uploads/`   | No         | Uploaded images                 |
-| `public/rss.xml`    | No         | Generated RSS feed              |
-| `public/blog/`      | No         | Static blog JSON (build output) |
-| `content/blog/`     | No         | Blog post Markdown source files |
+| `default-data.json`         | Yes        | Template data for new users             |
+| `cms-data.json`             | No         | Your personal CMS data                  |
+| `public/content/data.json`  | No         | Production build content                |
+| `public/content/uploads/`   | No         | Uploaded images                         |
+| `public/content/rss.xml`    | No         | Generated RSS feed                      |
+| `public/content/blog/`      | No         | Static blog JSON (build output)         |
+| `content/blog/`             | No         | Blog post Markdown source files         |
 
-On first run, `default-data.json` is automatically copied to `cms-data.json` and `public/data.json` if they don't exist.
+On first run, `default-data.json` is automatically copied to `cms-data.json` and `public/content/data.json` if they don't exist.
 
 ***
 
