@@ -311,26 +311,35 @@ const run = async () => {
     }
   }
 
-  // ── 3. Push blog content (markdown files) ──────────────────────────
+  // ── 3. Push all content files recursively ──────────────────────────
+  const localContentDir = path.join(rootDir, "content");
+  const repoContentDir = "content";
+  const walkContent = (dir, relPath = "") => {
+    let files = [];
+    for (const entry of readdirSync(dir)) {
+      const full = path.join(dir, entry);
+      const repoRel = relPath ? `${relPath}/${entry}` : entry;
+      if (statSync(full).isDirectory()) {
+        files = files.concat(walkContent(full, repoRel));
+      } else if (!entry.startsWith(".") && !entry.endsWith(".DS_Store")) {
+        files.push({ full, repoRel });
+      }
+    }
+    return files;
+  };
 
-  const localBlogDir = path.join(rootDir, "content", "blog");
-  if (!existsSync(localBlogDir)) {
-    console.log(`  ⏭ No content/blog directory — skipping blog posts.`);
+  if (!existsSync(localContentDir)) {
+    console.log(`  ⏭ No content directory — skipping content export.`);
   } else {
-    const mdFiles = readdirSync(localBlogDir).filter((f) => {
-      const full = path.join(localBlogDir, f);
-      return statSync(full).isFile() && f.endsWith(".md");
-    });
-
-    if (mdFiles.length === 0) {
-      console.log(`  ⏭ No blog post files to push.`);
+    const allFiles = walkContent(localContentDir);
+    if (allFiles.length === 0) {
+      console.log(`  ⏭ No content files to push.`);
     } else {
       let count = 0;
-      for (const file of mdFiles) {
-        const filePath = path.join(localBlogDir, file);
-        const fileContent = readFileSync(filePath);
+      for (const { full, repoRel } of allFiles) {
+        const fileContent = readFileSync(full);
         const fileBase64 = fileContent.toString("base64");
-        const repoPath = `${blogDir}/${file}`;
+        const repoPath = `${repoContentDir}/${repoRel}`;
 
         // Get current sha if file exists
         let fileSha = null;
@@ -353,35 +362,14 @@ const run = async () => {
           repoPath,
           content: fileBase64,
           sha: fileSha,
-          message: `${commitMsg} (blog: ${file})`,
+          message: `${commitMsg} (content: ${repoRel})`,
         });
         count++;
       }
-      console.log(`  ✔ ${count} blog post(s) → ${blogDir}/`);
+      console.log(`  ✔ ${count} content file(s) → ${repoContentDir}/`);
     }
-
-    // Delete remote blog posts that no longer exist locally
-    const localBlogSet = new Set(mdFiles);
-    const remoteBlogFiles = await listRemoteDir({ owner, repo, branch, token, dirPath: blogDir });
-    const blogOrphans = remoteBlogFiles.filter((rf) => !localBlogSet.has(rf.name));
-
-    if (blogOrphans.length > 0) {
-      let deleted = 0;
-      for (const orphan of blogOrphans) {
-        const repoPath = `${blogDir}/${orphan.name}`;
-        await deleteFile({
-          owner,
-          repo,
-          branch,
-          token,
-          repoPath,
-          sha: orphan.sha,
-          message: `${commitMsg} (remove unused blog: ${orphan.name})`,
-        });
-        deleted++;
-      }
-      console.log(`  🗑 ${deleted} orphaned blog file(s) removed.`);
-    }
+    // Delete remote content files that no longer exist locally
+    // (optional: could be implemented similar to uploads/audio)
   }
 
   // ── 4. Push audio files ────────────────────────────────────────────
