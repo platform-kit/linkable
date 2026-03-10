@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 0,
+  "schemaVersion": 1,
   "profile": {
     "displayName": "PlatformKit",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -124,6 +124,13 @@
       "enabled": false,
       "label": "Voice",
       "icon": "Microphone",
+      "searchEnabled": false,
+      "items": []
+    },
+    "docs": {
+      "enabled": false,
+      "label": "Docs",
+      "icon": "BookMarked",
       "searchEnabled": false,
       "items": []
     }

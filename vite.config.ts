@@ -216,6 +216,7 @@ const collectionDefs: ContentCollectionDef[] = Object.entries(pkConfig.contentCo
     sortField: cfg.sortField,
     sortOrder: cfg.sortOrder ?? "desc",
     version: cfg.version ?? 0,
+    recursive: cfg.recursive ?? false,
   }),
 );
 
@@ -224,6 +225,78 @@ const COLLECTION_FORMAT_EXT: Record<string, string> = {
   markdown: ".md",
   json: ".json",
   yaml: ".yaml",
+};
+
+/**
+ * Read a _meta.json file if it exists. Returns an ordered array of child names
+ * (filenames without extensions, or subfolder names) and optional display labels.
+ * Format: { "order": ["getting-started", "configuration"], "labels": { "getting-started": "Getting Started" } }
+ * Or simply an array: ["getting-started", "configuration"]
+ */
+interface MetaFile {
+  order?: string[];
+  labels?: Record<string, string>;
+}
+const readMetaFile = (dir: string): MetaFile | null => {
+  const metaPath = path.join(dir, "_meta.json");
+  if (!fs.existsSync(metaPath)) return null;
+  try {
+    const raw = JSON.parse(fs.readFileSync(metaPath, "utf8"));
+    if (Array.isArray(raw)) return { order: raw };
+    return raw as MetaFile;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Recursively scan a directory for collection files, returning relative
+ * path-based slugs (e.g. "introduction/getting-started").
+ * Respects _meta.json ordering at each level.
+ */
+const scanCollectionDir = (
+  baseDir: string,
+  ext: string,
+  recursive: boolean,
+  relPrefix = "",
+): string[] => {
+  if (!fs.existsSync(baseDir)) return [];
+  const entries = fs.readdirSync(baseDir, { withFileTypes: true });
+  const meta = readMetaFile(baseDir);
+
+  // Separate files and directories
+  const files = entries.filter((e) => e.isFile() && e.name.endsWith(ext) && e.name !== "_meta.json");
+  const dirs = recursive ? entries.filter((e) => e.isDirectory() && !e.name.startsWith(".")) : [];
+
+  // Build name→type map for ordering
+  const childNames: Array<{ name: string; type: "file" | "dir" }> = [];
+  for (const f of files) childNames.push({ name: path.basename(f.name, ext), type: "file" });
+  for (const d of dirs) childNames.push({ name: d.name, type: "dir" });
+
+  // Apply _meta.json ordering if present, otherwise natural sort
+  if (meta?.order) {
+    const orderSet = new Set(meta.order);
+    const ordered = meta.order
+      .map((n) => childNames.find((c) => c.name === n))
+      .filter(Boolean) as typeof childNames;
+    const unordered = childNames.filter((c) => !orderSet.has(c.name));
+    childNames.length = 0;
+    childNames.push(...ordered, ...unordered);
+  } else {
+    childNames.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  const result: string[] = [];
+  for (const child of childNames) {
+    const slug = relPrefix ? `${relPrefix}/${child.name}` : child.name;
+    if (child.type === "file") {
+      result.push(slug);
+    } else {
+      // Recurse into subdirectory
+      result.push(...scanCollectionDir(path.join(baseDir, child.name), ext, true, slug));
+    }
+  }
+  return result;
 };
 
 /** Read a collection file and return its parsed data + slug. */
@@ -795,9 +868,18 @@ const cmsMiddlewarePlugin = () => ({
           const slug = fullUrl.searchParams.get("slug") ?? "";
 
           if (slug) {
-            // Single item
-            const safeName = path.basename(slug);
-            const filePath = path.join(dir, `${safeName}${ext}`);
+            // Single item — support path-based slugs for recursive collections
+            let safeName: string;
+            let filePath: string;
+            if (def.recursive && slug.includes("/")) {
+              // Path-based slug like "introduction/getting-started"
+              const parts = slug.split("/").map((p) => path.basename(p));
+              safeName = parts.join("/");
+              filePath = path.join(dir, ...parts) + ext;
+            } else {
+              safeName = path.basename(slug);
+              filePath = path.join(dir, `${safeName}${ext}`);
+            }
             if (!fs.existsSync(filePath)) {
               res.statusCode = 404;
               res.end("Not found");
@@ -805,6 +887,17 @@ const cmsMiddlewarePlugin = () => ({
             }
             const { data, body } = readCollectionFile(filePath, def.format);
             let item: Record<string, unknown> = { ...data, slug: safeName };
+            if (def.recursive && safeName.includes("/")) {
+              const slugParts = safeName.split("/");
+              const parentDirRel = slugParts.slice(0, -1).join("/");
+              const parentDir = path.join(dir, parentDirRel);
+              const meta = readMetaFile(parentDir);
+              const dirName = slugParts[slugParts.length - 2];
+              if (!item.section) {
+                item.section = meta?.labels?.[dirName] ?? dirName.charAt(0).toUpperCase() + dirName.slice(1);
+              }
+              item._path = slugParts.slice(0, -1).join("/");
+            }
             const mc = getMigrationConfig(collectionKey);
             if (mc) item = migrateItem(item, mc, filePath, def.format, body);
             if (def.format === "markdown" && body !== undefined) {
@@ -816,22 +909,40 @@ const cmsMiddlewarePlugin = () => ({
             return;
           }
 
-          // List all
+          // List all (recursive-aware)
           if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
           }
-          const files = fs.readdirSync(dir).filter((f: string) => f.endsWith(ext));
+          const slugs = scanCollectionDir(dir, ext, def.recursive);
           const mc = getMigrationConfig(collectionKey);
-          const items = files.map((file: string) => {
-            const slug = path.basename(file, ext);
-            const fp = path.join(dir, file);
+
+          // Read _meta.json cache for recursive
+          const metaCache = new Map<string, MetaFile | null>();
+          const getMetaForDir = (dirPath: string): MetaFile | null => {
+            if (!metaCache.has(dirPath)) metaCache.set(dirPath, readMetaFile(dirPath));
+            return metaCache.get(dirPath) ?? null;
+          };
+
+          const items = slugs.map((slug: string) => {
+            const fp = path.join(dir, `${slug}${ext}`);
             const { data, body } = readCollectionFile(fp, def.format);
             let item: Record<string, unknown> = { ...data, slug };
+            if (def.recursive && slug.includes("/")) {
+              const parts = slug.split("/");
+              const parentDirRel = parts.slice(0, -1).join("/");
+              const parentDir = path.join(dir, parentDirRel);
+              const meta = getMetaForDir(parentDir);
+              const dirName = parts[parts.length - 2];
+              if (!item.section) {
+                item.section = meta?.labels?.[dirName] ?? dirName.charAt(0).toUpperCase() + dirName.slice(1);
+              }
+              item._path = parts.slice(0, -1).join("/");
+            }
             if (mc) item = migrateItem(item, mc, fp, def.format, body);
             return item;
           });
-          // Sort
-          if (def.sortField) {
+          // Sort (skip for recursive — order comes from _meta.json / scanCollectionDir)
+          if (def.sortField && !def.recursive) {
             const sf = def.sortField;
             const dir = def.sortOrder === "asc" ? 1 : -1;
             items.sort((a, b) => {
@@ -1019,22 +1130,50 @@ const collectionBuildPlugin = () => ({
       if (!fs.existsSync(dir)) continue;
 
       const ext = COLLECTION_FORMAT_EXT[def.format];
-      const files = fs.readdirSync(dir).filter((f: string) => f.endsWith(ext));
-      if (files.length === 0) continue;
+      const slugs = scanCollectionDir(dir, ext, def.recursive);
+      if (slugs.length === 0) continue;
 
       const outDir = path.resolve(__dirname, "public", "content", "collections", def.key);
       if (!fs.existsSync(outDir)) {
         fs.mkdirSync(outDir, { recursive: true });
       }
 
+      // Read _meta.json files to provide section metadata
+      const metaCache = new Map<string, MetaFile | null>();
+      const getMetaForDir = (dirPath: string): MetaFile | null => {
+        if (!metaCache.has(dirPath)) metaCache.set(dirPath, readMetaFile(dirPath));
+        return metaCache.get(dirPath) ?? null;
+      };
+
       const allItems: Record<string, unknown>[] = [];
       const mc = getMigrationConfig(def.key);
 
-      for (const file of files) {
-        const slug = path.basename(file, ext);
-        const fp = path.join(dir, file);
+      for (const slug of slugs) {
+        const fp = path.join(dir, `${slug}${ext}`);
         const { data, body } = readCollectionFile(fp, def.format);
+
+        // Derive section from the parent directory path for recursive collections
         let item: Record<string, unknown> = { ...data, slug };
+        if (def.recursive && slug.includes("/")) {
+          const parts = slug.split("/");
+          const parentDirRel = parts.slice(0, -1).join("/");
+          const parentDir = path.join(dir, parentDirRel);
+          const meta = getMetaForDir(parentDir);
+          // Use meta label for the immediate parent dir, or capitalize the dir name
+          const dirName = parts[parts.length - 2];
+          if (!item.section) {
+            item.section = meta?.labels?.[dirName] ?? dirName.charAt(0).toUpperCase() + dirName.slice(1);
+          }
+          // Store the full path for hierarchical nav
+          item._path = parts.slice(0, -1).join("/");
+        }
+
+        // Ensure output subdirectories exist for nested slugs
+        const outFile = path.join(outDir, `${slug}.json`);
+        const outFileDir = path.dirname(outFile);
+        if (!fs.existsSync(outFileDir)) {
+          fs.mkdirSync(outFileDir, { recursive: true });
+        }
         if (mc) item = migrateItem(item, mc, fp, def.format, body);
 
         if (def.format === "markdown" && body !== undefined) {
@@ -1042,7 +1181,7 @@ const collectionBuildPlugin = () => ({
           item.html = renderMarkdown(body);
         }
 
-        fs.writeFileSync(path.join(outDir, `${slug}.json`), JSON.stringify(item, null, 2));
+        fs.writeFileSync(outFile, JSON.stringify(item, null, 2));
         const { content: _c, html: _h, ...indexData } = item;
         allItems.push(indexData);
       }
@@ -1051,8 +1190,8 @@ const collectionBuildPlugin = () => ({
       const indexFilter = cfg?.indexFilter;
       const index = indexFilter ? allItems.filter(indexFilter) : [...allItems];
 
-      // Sort index
-      if (def.sortField) {
+      // Sort index (skip for recursive collections — order comes from _meta.json / scanCollectionDir)
+      if (def.sortField && !def.recursive) {
         const sf = def.sortField;
         const sortDir = def.sortOrder === "asc" ? 1 : -1;
         index.sort((a, b) => {
@@ -1063,7 +1202,7 @@ const collectionBuildPlugin = () => ({
       }
 
       fs.writeFileSync(path.join(outDir, "index.json"), JSON.stringify(index, null, 2));
-      console.log(`[collection-build] Generated ${files.length} ${def.key} item(s) into public/content/collections/${def.key}/`);
+      console.log(`[collection-build] Generated ${slugs.length} ${def.key} item(s) into public/content/collections/${def.key}/`);
 
       // Store for closeBundle and call afterBuild hook
       builtCollectionData[def.key] = { items: index, allItems, outputDir: outDir, sourceDir: dir };

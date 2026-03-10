@@ -196,6 +196,8 @@ export interface ContentCollectionDef {
   sortOrder: "asc" | "desc";
   /** Current schema version for items in this collection. */
   version: number;
+  /** Recursively scan subdirectories for nested content. */
+  recursive: boolean;
 }
 
 /**

@@ -117,6 +117,15 @@ export interface ContentCollectionConfig {
     closeBundle?: (context: CollectionCloseBundleContext) => void;
   };
 
+  // ── Directory scanning ────────────────────────────────────────────
+  /**
+   * When true, recursively scan subdirectories. The slug will reflect
+   * the directory path (e.g. `introduction/getting-started`).
+   * Place a `_meta.json` file in any directory to control ordering
+   * and display names of its children.
+   */
+  recursive?: boolean;
+
   // ── Built-in build integrations ──────────────────────────────────
   /**
    * Enable RSS feed generation for this collection at build time.

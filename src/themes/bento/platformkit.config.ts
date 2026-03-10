@@ -609,6 +609,19 @@ const manifest: PlatformKitConfig = {
       defaultEnabled: false, searchable: true, external: true,
       editorComponent: () => import("../../admin/editors/NewsletterCollectionEditor.vue"),
     },
+    {
+      key: "docs", label: "Docs", icon: "BookMarked",
+      defaultEnabled: false, searchable: true, external: true,
+      editorComponent: () => import("../../admin/editors/FileCollectionEditor.vue"),
+      directory: "content/docs",
+      format: "markdown",
+      itemSchema: [
+        { $formkit: "text", name: "title", label: "Title", placeholder: "Page title" },
+      ] as FormKitSchemaNode[],
+      newItem: () => ({ title: "" }) as unknown as Record<string, unknown>,
+      itemLabel: (i: any) => i.title || i.slug || "Untitled",
+      itemSublabel: (i: any) => i.section || i._path || "(root)",
+    },
   ],
   schema: [
     {
@@ -626,6 +639,20 @@ const manifest: PlatformKitConfig = {
   cmsTabs: [],
   routes,
   contentCollections: {
+    docs: {
+      directory: "content/docs",
+      format: "markdown",
+      label: "Docs",
+      icon: "BookMarked",
+      recursive: true,
+      defaultEnabled: false,
+      searchable: true,
+      fieldDefaults: {
+        published: true,
+        title: "",
+      },
+      indexFilter: (item: Record<string, unknown>) => item.published !== false,
+    },
     blog: {
       directory: "content/blog",
       format: "markdown",

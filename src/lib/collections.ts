@@ -76,7 +76,7 @@ export const fetchCollectionItem = async (
   }
 
   const res = await fetch(
-    `/content/collections/${encodeURIComponent(key)}/${encodeURIComponent(slug)}.json`,
+    `/content/collections/${encodeURIComponent(key)}/${slug.split("/").map(encodeURIComponent).join("/")}.json`,
   );
   if (!res.ok) return null;
   return res.json();

@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-dvh bg-[var(--bg)] flex flex-col">
+  <div class="min-h-dvh flex flex-col">
     <ProfileHeader
       :displayName="model.profile.displayName"
       :tagline="model.profile.tagline"
@@ -60,6 +60,15 @@
         :availableTags="[]"
         :selectedTags="[]"
       />
+      <DocsSection
+        v-if="activeTab === 'docs'"
+        :docs="docItems"
+        :currentDoc="currentDoc"
+        :label="model.collections.docs?.label || 'Documentation'"
+        :searchEnabled="model.collections.docs?.searchEnabled || false"
+        @load-doc="openDoc"
+        @back="goBackFromDoc"
+      />
       <section
         v-if="activeTab === 'confirmed'"
         class="mx-auto flex w-full max-w-[var(--bento-grid-width,960px)] flex-col items-center justify-center px-6 py-16 text-center"
@@ -107,6 +116,7 @@ import LinksSection from "./LinksSection.vue";
 import ResumeSection from "./ResumeSection.vue";
 import GallerySection from "./GallerySection.vue";
 import BlogSection from "./BlogSection.vue";
+import DocsSection from "./DocsSection.vue";
 import EmbedSection from "./EmbedSection.vue";
 import NewsletterSection from "./NewsletterSection.vue";
 import PageFooter from "./PageFooter.vue";
@@ -128,6 +138,7 @@ export default defineComponent({
     ResumeSection,
     GallerySection,
     BlogSection,
+    DocsSection,
     EmbedSection,
     NewsletterSection,
     PageFooter,
@@ -141,6 +152,8 @@ export default defineComponent({
     if (path === '/about') initialTab = 'resume';
     else if (path === '/gallery') initialTab = 'gallery';
     else if (path === '/blog') initialTab = 'blog';
+    else if (path === '/docs') initialTab = 'docs';
+    else if (path.startsWith('/docs/')) initialTab = 'docs';
     else if (path === '/embeds') initialTab = 'embeds';
     else if (path === '/newsletter') initialTab = 'newsletter';
     else if (path === '/confirmed') initialTab = 'confirmed';
@@ -184,6 +197,8 @@ export default defineComponent({
       activeTab: initialTab,
       blogPosts: [] as any[],
       currentBlogPost: null as any,
+      docItems: [] as any[],
+      currentDoc: null as any,
       lightboxOpen: false,
       lightboxItem: null as GalleryItem | null,
       videoOpen: false,
@@ -195,6 +210,7 @@ export default defineComponent({
   },
   created() {
     void this.loadBlogPosts();
+    void this.loadDocItems();
     void this.syncRouteState();
   },
   watch: {
@@ -222,6 +238,20 @@ export default defineComponent({
         this.currentBlogPost = null;
       }
     },
+    async loadDocItems() {
+      try {
+        this.docItems = await fetchCollectionItems("docs");
+      } catch {
+        this.docItems = [];
+      }
+    },
+    async loadDoc(slug: string) {
+      try {
+        this.currentDoc = await fetchCollectionItem("docs", slug);
+      } catch {
+        this.currentDoc = null;
+      }
+    },
     async syncRouteState() {
       const path = this.route?.path || '/';
       if (path.startsWith('/content/')) {
@@ -231,6 +261,19 @@ export default defineComponent({
           await this.loadBlogPost(slug);
           return;
         }
+      }
+      if (path.startsWith('/docs/')) {
+        this.activeTab = 'docs';
+        const slug = decodeURIComponent(path.slice('/docs/'.length));
+        if (slug) {
+          await this.loadDoc(slug);
+          return;
+        }
+      }
+      if (path === '/docs') {
+        this.activeTab = 'docs';
+        this.currentDoc = null;
+        return;
       }
       if (path.startsWith('/newsletter/')) {
         this.activeTab = 'blog';
@@ -245,11 +288,22 @@ export default defineComponent({
       }
       this.confirmationStatus = '';
       this.currentBlogPost = null;
+      this.currentDoc = null;
     },
     openBlogPost(slug: string) {
       if (!slug || !this.router) return;
       void this.loadBlogPost(slug);
       this.router.push(`/content/${encodeURIComponent(slug)}`);
+    },
+    openDoc(slug: string) {
+      if (!slug || !this.router) return;
+      void this.loadDoc(slug);
+      this.router.push(`/docs/${slug}`);
+    },
+    goBackFromDoc() {
+      this.currentDoc = null;
+      if (!this.router) return;
+      this.router.push('/docs');
     },
     openLightbox(item: GalleryItem) {
       this.lightboxItem = item;
@@ -316,6 +370,9 @@ export default defineComponent({
       if (tabKey !== 'blog') {
         this.currentBlogPost = null;
       }
+      if (tabKey !== 'docs') {
+        this.currentDoc = null;
+      }
       if (tabKey !== 'confirmed') {
         this.confirmationStatus = '';
       }
@@ -325,6 +382,7 @@ export default defineComponent({
         else if (tabKey === 'resume') this.router.push('/about');
         else if (tabKey === 'gallery') this.router.push('/gallery');
         else if (tabKey === 'blog') this.router.push('/blog');
+        else if (tabKey === 'docs') this.router.push('/docs');
         else if (tabKey === 'embeds') this.router.push('/embeds');
         else if (tabKey === 'newsletter') this.router.push('/newsletter');
       }
@@ -342,9 +400,14 @@ export default defineComponent({
         { key: 'blog',       label: 'Blog',       icon: 'BookOpen' },
         { key: 'embeds',     label: 'Embeds',     icon: 'Code' },
         { key: 'newsletter', label: 'Newsletter', icon: 'Mail' },
+        { key: 'docs',       label: 'Docs',       icon: 'BookMarked' },
       ];
       return collectionOrder
-        .filter((def) => this.model?.collections?.[def.key]?.enabled === true)
+        .filter((def) => {
+          if (this.model?.collections?.[def.key]?.enabled !== true) return false;
+          if (def.key === 'docs' && (!this.docItems || this.docItems.length === 0)) return false;
+          return true;
+        })
         .map((def) => {
           const col = this.model?.collections?.[def.key];
           return {

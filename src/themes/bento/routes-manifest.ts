@@ -56,6 +56,18 @@ const routes: LayoutRoute[] = [
     label: "Blog Article",
     icon: "BookOpen",
   },
+  {
+    path: "/docs",
+    component: () => Promise.resolve({ default: Root }),
+    label: "Docs",
+    icon: "BookMarked",
+  },
+  {
+    path: "/docs/:slug(.*)",
+    component: () => Promise.resolve({ default: Root }),
+    label: "Doc Page",
+    icon: "BookMarked",
+  },
 ];
 
 export default routes;

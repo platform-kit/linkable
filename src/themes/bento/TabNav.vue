@@ -28,10 +28,11 @@ const BENTO_TAB_MAP: Record<string, string> = {
   resume: "About Me",
   gallery: "My Work",
   blog: "Articles",
+  docs: "Docs",
 };
 
 /** Only these tabs appear in the bento nav */
-const BENTO_TAB_ORDER = ["links", "resume", "gallery", "blog"];
+const BENTO_TAB_ORDER = ["links", "resume", "gallery", "blog", "docs"];
 
 export default defineComponent({
   name: "BentoTabNav",

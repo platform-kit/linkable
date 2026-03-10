@@ -205,6 +205,7 @@ export const defaultModel = (): SiteModel => ({
     widgets: defaultCollection(),
     newsletter: { ...defaultCollection(), label: "Newsletter", icon: "Mail" },
     voice: { ...defaultCollection(), label: "Voice", icon: "Microphone" },
+    docs: { ...defaultCollection(), label: "Docs", icon: "BookMarked" },
   },
   theme: defaultTheme(),
   layoutThemes: {
@@ -339,13 +340,13 @@ export const sanitizeModel = (input: unknown): SiteModel => {
   const externalKeys: ReadonlySet<string> =
     typeof __PK_EXTERNAL_COLLECTIONS__ !== "undefined"
       ? new Set(__PK_EXTERNAL_COLLECTIONS__)
-      : new Set(["blog", "newsletter"]);
+      : new Set(["blog", "newsletter", "docs"]);
 
   const allKeys = new Set([
     ...Object.keys(enabledByDefault),
     ...Object.keys(rawCollections as Record<string, unknown>),
     // Ensure well-known keys always exist even when absent from raw data
-    "gallery", "resume", "blog", "widgets", "newsletter",
+    "gallery", "resume", "blog", "widgets", "newsletter", "docs",
   ]);
 
   const collections: Record<string, ContentCollection> = {};

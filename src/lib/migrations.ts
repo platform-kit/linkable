@@ -23,7 +23,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 0;
+export const CURRENT_SCHEMA_VERSION = 1;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -39,6 +39,23 @@ type Migration = {
  * to `toVersion`.  They MUST be listed in ascending `toVersion` order.
  */
 const migrations: Migration[] = [
+  {
+    toVersion: 1,
+    migrate: (data) => {
+      if (!data.collections) data.collections = {};
+      if (!data.collections.docs) {
+        data.collections.docs = {
+          enabled: false,
+          label: "Docs",
+          icon: "BookMarked",
+          searchEnabled: false,
+          items: [],
+        };
+      }
+      data.schemaVersion = 1;
+      return data;
+    },
+  },
   // ── future migrations go here ──────────────────────────────────────
 ];
 
