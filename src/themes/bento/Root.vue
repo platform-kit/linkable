@@ -402,10 +402,18 @@ export default defineComponent({
         { key: 'newsletter', label: 'Newsletter', icon: 'Mail' },
         { key: 'docs',       label: 'Docs',       icon: 'BookMarked' },
       ];
+      const path = this.route?.path || '/';
       return collectionOrder
         .filter((def) => {
+          if (def.key === 'docs') {
+            // Always show docs pill on /docs or /docs/* routes
+            if (path === '/docs' || path.startsWith('/docs/')) return true;
+            // Otherwise, only show if enabled and has items
+            if (this.model?.collections?.docs?.enabled !== true) return false;
+            if (!this.docItems || this.docItems.length === 0) return false;
+            return true;
+          }
           if (this.model?.collections?.[def.key]?.enabled !== true) return false;
-          if (def.key === 'docs' && (!this.docItems || this.docItems.length === 0)) return false;
           return true;
         })
         .map((def) => {

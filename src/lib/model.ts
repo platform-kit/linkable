@@ -145,7 +145,7 @@ export const defaultModel = (): SiteModel => ({
   profile: {
     displayName: "PlatformKit",
     tagline: "Design-forward links. Clean, fast, yours.",
-    faviconUrl: "/pwa-logo.png",
+    faviconUrl: "/favicon.ico",
     ogImageUrl: "/pwa-logo.png",
   },
   collections: {
@@ -305,7 +305,7 @@ export const sanitizeModel = (input: unknown): SiteModel => {
   const profile: Profile = {
     displayName: asString(obj.profile?.displayName).slice(0, 80),
     tagline: asString(obj.profile?.tagline).slice(0, 140),
-    faviconUrl: sanitizeUrl(obj.profile?.faviconUrl) || "/pwa-logo.png",
+    faviconUrl: sanitizeUrl(obj.profile?.faviconUrl) || "/favicon.ico",
     ogImageUrl: sanitizeUrl(obj.profile?.ogImageUrl) || "/pwa-logo.png",
   };
 
