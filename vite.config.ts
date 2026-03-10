@@ -7,16 +7,19 @@ import { createRequire } from "node:module";
 
 import { defineConfig, loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
+import jsYaml from "js-yaml";
 
 import { sanitizeModel, stableStringify } from "./src/lib/model";
 import {
   parseFrontmatter,
   metaFromRaw,
   slugFromFilename,
+  serializeFrontmatter,
   renderMarkdown,
   hljs,
 } from "./src/lib/blog";
 import type { PlatformKitConfig, RssFeedConfig } from "./src/lib/config";
+import type { ContentCollectionDef } from "./src/lib/layout-manifest";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -111,6 +114,66 @@ const defaultDataFilePath = path.resolve(__dirname, "default-data.json");
 const publicDataFilePath = path.resolve(__dirname, "public/data.json");
 const blogContentDir = path.resolve(__dirname, pkConfig.paths?.blogContent || "content/blog");
 
+// ── File-based content collection definitions ───────────────────────
+const collectionDefs: ContentCollectionDef[] = Object.entries(pkConfig.contentCollections ?? {}).map(
+  ([key, cfg]) => ({
+    key,
+    label: key.charAt(0).toUpperCase() + key.slice(1),
+    directory: cfg.directory,
+    format: cfg.format ?? "markdown",
+    slugField: cfg.slugField ?? "title",
+    sortField: cfg.sortField,
+    sortOrder: cfg.sortOrder ?? "desc",
+  }),
+);
+
+// ── File-based collection helpers ───────────────────────────────────
+const COLLECTION_FORMAT_EXT: Record<string, string> = {
+  markdown: ".md",
+  json: ".json",
+  yaml: ".yaml",
+};
+
+/** Read a collection file and return its parsed data + slug. */
+const readCollectionFile = (
+  filePath: string,
+  format: "markdown" | "json" | "yaml",
+): { data: Record<string, unknown>; body?: string } => {
+  const raw = fs.readFileSync(filePath, "utf8");
+  switch (format) {
+    case "markdown": {
+      const { meta, body } = parseFrontmatter(raw);
+      return { data: meta as Record<string, unknown>, body };
+    }
+    case "json":
+      return { data: JSON.parse(raw) };
+    case "yaml":
+      return { data: (jsYaml.load(raw) as Record<string, unknown>) ?? {} };
+  }
+};
+
+/** Serialize collection item data to the appropriate file format. */
+const writeCollectionFile = (
+  filePath: string,
+  format: "markdown" | "json" | "yaml",
+  data: Record<string, unknown>,
+  body?: string,
+): void => {
+  switch (format) {
+    case "markdown": {
+      const { content: _c, body: _b, html: _h, slug: _s, ...meta } = data;
+      fs.writeFileSync(filePath, serializeFrontmatter(meta, body ?? (data.content as string) ?? ""));
+      break;
+    }
+    case "json":
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+      break;
+    case "yaml":
+      fs.writeFileSync(filePath, jsYaml.dump(data, { lineWidth: 120 }));
+      break;
+  }
+};
+
 /** Check if a schedulable item is currently visible based on its dates. */
 const isScheduleVisibleNow = (item: { publishDate?: string; expirationDate?: string }): boolean => {
   const today = new Date().toISOString().slice(0, 10);
@@ -124,8 +187,13 @@ const readDefaultModel = () => {
     return sanitizeModel({});
   }
 
-  const raw = fs.readFileSync(defaultDataFilePath, "utf8");
-  return sanitizeModel(JSON.parse(raw));
+  try {
+    const raw = fs.readFileSync(defaultDataFilePath, "utf8");
+    return sanitizeModel(JSON.parse(raw));
+  } catch (err) {
+    console.warn(`[platformkit] Failed to parse default-data.json, using empty fallback:`, err);
+    return sanitizeModel({});
+  }
 };
 
 const ensureSeedData = () => {
@@ -317,6 +385,21 @@ const CMS_ENDPOINTS = {
   blogPost: pkConfig.cms?.blogPostEndpoint || "/__blog-post",
 };
 
+// Allowed file extensions for uploads (R1)
+const ALLOWED_UPLOAD_EXTENSIONS = new Set([
+  // Images
+  ".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg", ".ico", ".bmp",
+  // Audio
+  ".mp3", ".wav", ".webm", ".m4a", ".ogg", ".flac", ".aac",
+  // Video
+  ".mp4", ".webm", ".mov", ".avi",
+  // Documents
+  ".pdf", ".json",
+]);
+
+// Max upload size: 50 MB (R2)
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+
 const cmsMiddlewarePlugin = () => ({
   name: "cms-middleware",
   configureServer: (server: any) => {
@@ -336,6 +419,14 @@ const cmsMiddlewarePlugin = () => ({
           return;
         }
 
+        // Enforce upload size limit (R2)
+        const contentLength = parseInt(req.headers["content-length"] || "0", 10);
+        if (contentLength > MAX_UPLOAD_BYTES) {
+          res.statusCode = 413;
+          res.end("File too large (max 50 MB)");
+          return;
+        }
+
         const uploadsDir = path.resolve(__dirname, "public/uploads");
         if (!fs.existsSync(uploadsDir)) {
           fs.mkdirSync(uploadsDir, { recursive: true });
@@ -343,11 +434,11 @@ const cmsMiddlewarePlugin = () => ({
 
         const requireCJS = createRequire(import.meta.url);
         const createBusboy = requireCJS("busboy");
-        const bb = createBusboy({ headers: req.headers });
+        const bb = createBusboy({ headers: req.headers, limits: { fileSize: MAX_UPLOAD_BYTES } });
         let returnedUrl = "";
+        let uploadError = "";
 
         bb.on("file", (_fieldname: string, fileStream: NodeJS.ReadableStream, filename: any) => {
-          // debug: inspect incoming filename argument and fileStream properties
           // incoming filename argument may already be an object produced by busboy
           // containing { filename, encoding, mimeType }
           let orig = filename;
@@ -365,15 +456,35 @@ const cmsMiddlewarePlugin = () => ({
             else orig = String(filename || "image.png");
           }
 
+          // R3: Strip path segments to prevent path traversal
+          orig = path.basename(orig);
+
+          // R1: Validate file extension against allowlist
+          const extRaw = orig.includes(".") ? orig.slice(orig.lastIndexOf(".")).toLowerCase() : "";
+          if (!extRaw || !ALLOWED_UPLOAD_EXTENSIONS.has(extRaw)) {
+            uploadError = `File type not allowed: ${extRaw || "(none)"}`;
+            fileStream.resume(); // drain the stream
+            return;
+          }
+
           // If the filename already looks like a deterministic target (e.g.
           // "avatar.jpg", "voice.mp3", "voice.wav") use it directly so re-uploads
           // overwrite the previous file instead of accumulating copies.
           const isDeterministic = /^[a-zA-Z0-9_-]+\.(jpg|jpeg|png|gif|webp|mp3|wav|webm|m4a)$/i.test(orig);
           const isAudio = mimeType.startsWith("audio/");
           const baseName = isDeterministic ? orig.replace(/\.[^.]+$/, "") : generateUploadFileName(orig).replace(/\.[^.]+$/, "");
-          const ext = isAudio ? ".mp3" : (orig.includes(".") ? orig.slice(orig.lastIndexOf(".")) : ".bin");
+          const ext = isAudio ? ".mp3" : extRaw;
           const safe = baseName + ext;
           const outPath = path.join(uploadsDir, safe);
+
+          // R3: Final check — ensure resolved path is inside uploadsDir
+          const resolved = path.resolve(outPath);
+          if (!resolved.startsWith(uploadsDir + path.sep) && resolved !== uploadsDir) {
+            uploadError = "Invalid filename";
+            fileStream.resume();
+            return;
+          }
+
           const write = fs.createWriteStream(outPath);
           fileStream.pipe(write);
           returnedUrl = `/uploads/${safe}`;
@@ -407,6 +518,12 @@ const cmsMiddlewarePlugin = () => ({
         });
 
         bb.on("finish", () => {
+          if (uploadError) {
+            res.statusCode = 400;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ error: uploadError }));
+            return;
+          }
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ url: returnedUrl }));
         });
@@ -444,7 +561,11 @@ const cmsMiddlewarePlugin = () => ({
         if (req.method === "POST") {
           const body = await collectRequestBody(req);
           const parsed = sanitizeModel(body ? JSON.parse(body) : {});
-          fs.writeFileSync(dataFilePath, stableStringify(parsed));
+          const serialized = stableStringify(parsed);
+          // R12: Atomic write via temp file + rename to prevent partial writes
+          const tmpFile = dataFilePath + "." + Math.random().toString(16).slice(2) + ".tmp";
+          fs.writeFileSync(tmpFile, serialized);
+          fs.renameSync(tmpFile, dataFilePath);
           res.statusCode = 204;
           res.end();
           return;
@@ -576,7 +697,13 @@ const cmsMiddlewarePlugin = () => ({
           if (!fs.existsSync(blogContentDir)) {
             fs.mkdirSync(blogContentDir, { recursive: true });
           }
-          const safeName = postSlug.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 120);
+          // R9: Strip path segments to prevent path traversal, then sanitize
+          const safeName = path.basename(postSlug).replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 120);
+          if (!safeName || safeName === "-") {
+            res.statusCode = 400;
+            res.end("Invalid slug");
+            return;
+          }
           const filePath = path.join(blogContentDir, `${safeName}.md`);
           fs.writeFileSync(filePath, markdown);
           res.statusCode = 204;
@@ -591,6 +718,121 @@ const cmsMiddlewarePlugin = () => ({
             return;
           }
           const filePath = path.join(blogContentDir, `${slug}.md`);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+          res.statusCode = 204;
+          res.end();
+          return;
+        }
+
+        res.statusCode = 405;
+        res.end("Method Not Allowed");
+        return;
+      }
+
+      // ── Generic file collection CRUD ─────────────────────────────
+      const collectionMatch = url.match(/^\/__collection\/([a-zA-Z0-9_-]+)$/);
+      if (collectionMatch) {
+        const collectionKey = collectionMatch[1];
+        const def = collectionDefs.find((d) => d.key === collectionKey);
+        if (!def) {
+          res.statusCode = 404;
+          res.end(`Unknown collection: ${collectionKey}`);
+          return;
+        }
+
+        const ext = COLLECTION_FORMAT_EXT[def.format];
+        const dir = path.resolve(__dirname, def.directory);
+
+        // GET — list all items or single item by ?slug=
+        if (req.method === "GET") {
+          const fullUrl = new URL(req.url ?? "", "http://localhost");
+          const slug = fullUrl.searchParams.get("slug") ?? "";
+
+          if (slug) {
+            // Single item
+            const safeName = path.basename(slug);
+            const filePath = path.join(dir, `${safeName}${ext}`);
+            if (!fs.existsSync(filePath)) {
+              res.statusCode = 404;
+              res.end("Not found");
+              return;
+            }
+            const { data, body } = readCollectionFile(filePath, def.format);
+            const item: Record<string, unknown> = { ...data, slug: safeName };
+            if (def.format === "markdown" && body !== undefined) {
+              item.content = body;
+              item.html = renderMarkdown(body);
+            }
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify(item));
+            return;
+          }
+
+          // List all
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+          const files = fs.readdirSync(dir).filter((f: string) => f.endsWith(ext));
+          const items = files.map((file: string) => {
+            const slug = path.basename(file, ext);
+            const { data } = readCollectionFile(path.join(dir, file), def.format);
+            return { ...data, slug };
+          });
+          // Sort
+          if (def.sortField) {
+            const sf = def.sortField;
+            const dir = def.sortOrder === "asc" ? 1 : -1;
+            items.sort((a, b) => {
+              const av = (a as any)[sf] ?? "";
+              const bv = (b as any)[sf] ?? "";
+              return av > bv ? dir : av < bv ? -dir : 0;
+            });
+          }
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify(items));
+          return;
+        }
+
+        // POST — create / update item
+        if (req.method === "POST") {
+          const rawBody = await collectRequestBody(req);
+          const payload = JSON.parse(rawBody);
+          const slugValue: string = payload.slug ?? "";
+          if (!slugValue) {
+            res.statusCode = 400;
+            res.end("Missing slug");
+            return;
+          }
+          const safeName = path.basename(slugValue).replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 120);
+          if (!safeName || safeName === "-") {
+            res.statusCode = 400;
+            res.end("Invalid slug");
+            return;
+          }
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+          const filePath = path.join(dir, `${safeName}${ext}`);
+          const { slug: _s, html: _h, ...itemData } = payload;
+          writeCollectionFile(filePath, def.format, itemData, payload.content);
+          res.statusCode = 204;
+          res.end();
+          return;
+        }
+
+        // DELETE — remove item by ?slug=
+        if (req.method === "DELETE") {
+          const fullUrl = new URL(req.url ?? "", "http://localhost");
+          const slug = fullUrl.searchParams.get("slug") ?? "";
+          if (!slug) {
+            res.statusCode = 400;
+            res.end("Missing slug parameter");
+            return;
+          }
+          const safeName = path.basename(slug);
+          const filePath = path.join(dir, `${safeName}${ext}`);
           if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
           }
@@ -875,6 +1117,58 @@ const blogBuildPlugin = () => ({
 
     if (count > 0) {
       console.log(`[blog-build] Pre-rendered ${count} blog post HTML file(s) into dist/content/`);
+    }
+  },
+});
+
+/** Build plugin: generate static JSON files for all file-based content collections. */
+const collectionBuildPlugin = () => ({
+  name: "collection-build",
+  buildStart() {
+    if (collectionDefs.length === 0) return;
+
+    for (const def of collectionDefs) {
+      const dir = path.resolve(__dirname, def.directory);
+      if (!fs.existsSync(dir)) continue;
+
+      const ext = COLLECTION_FORMAT_EXT[def.format];
+      const files = fs.readdirSync(dir).filter((f: string) => f.endsWith(ext));
+      if (files.length === 0) continue;
+
+      const outDir = path.resolve(__dirname, "public", "collections", def.key);
+      if (!fs.existsSync(outDir)) {
+        fs.mkdirSync(outDir, { recursive: true });
+      }
+
+      const index: Record<string, unknown>[] = [];
+
+      for (const file of files) {
+        const slug = path.basename(file, ext);
+        const { data, body } = readCollectionFile(path.join(dir, file), def.format);
+        const item: Record<string, unknown> = { ...data, slug };
+
+        if (def.format === "markdown" && body !== undefined) {
+          item.content = body;
+          item.html = renderMarkdown(body);
+        }
+
+        fs.writeFileSync(path.join(outDir, `${slug}.json`), JSON.stringify(item, null, 2));
+        index.push({ ...data, slug });
+      }
+
+      // Sort index
+      if (def.sortField) {
+        const sf = def.sortField;
+        const sortDir = def.sortOrder === "asc" ? 1 : -1;
+        index.sort((a, b) => {
+          const av = (a[sf] as string) ?? "";
+          const bv = (b[sf] as string) ?? "";
+          return av > bv ? sortDir : av < bv ? -sortDir : 0;
+        });
+      }
+
+      fs.writeFileSync(path.join(outDir, "index.json"), JSON.stringify(index, null, 2));
+      console.log(`[collection-build] Generated ${files.length} ${def.key} item(s) into public/collections/${def.key}/`);
     }
   },
 });
@@ -1342,6 +1636,7 @@ const prerenderBuildPlugin = () => ({
           ...userPlugins,
           cmsMiddlewarePlugin(),
           blogBuildPlugin(),
+          collectionBuildPlugin(),
           scheduleBuildPlugin(),
           prerenderBuildPlugin(),
           manifestBuildPlugin(),
@@ -1359,7 +1654,11 @@ const prerenderBuildPlugin = () => ({
           "import.meta.env.VITE_GITHUB_REPO": JSON.stringify(readEnvVar("GITHUB_REPO")),
           "import.meta.env.VITE_GITHUB_BRANCH": JSON.stringify(readEnvVar("GITHUB_BRANCH")),
           "import.meta.env.VITE_SCHEDULE_EXCLUDE_BUILD": JSON.stringify(readEnvVar("VITE_SCHEDULE_EXCLUDE_BUILD")),
-          "__PK_EXTERNAL_COLLECTIONS__": JSON.stringify(pkConfig.externalCollections ?? ["blog", "newsletter"]),
+          "__PK_EXTERNAL_COLLECTIONS__": JSON.stringify([
+            ...(pkConfig.externalCollections ?? ["blog", "newsletter"]),
+            ...collectionDefs.map((d) => d.key),
+          ]),
+          "__PK_CONTENT_COLLECTIONS__": JSON.stringify(collectionDefs),
           "__PK_CMS_DATA_ENDPOINT__": JSON.stringify(CMS_ENDPOINTS.data),
           "__PK_CMS_PUSH_ENDPOINT__": JSON.stringify(CMS_ENDPOINTS.push),
           "__PK_CMS_UPLOAD_ENDPOINT__": JSON.stringify(CMS_ENDPOINTS.upload),

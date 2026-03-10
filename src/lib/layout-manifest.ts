@@ -114,6 +114,38 @@ export interface ContentSchema {
    * and items[] stays empty.
    */
   external?: boolean;
+
+  // ── File-based collection fields ─────────────────────────────────
+  /**
+   * Directory where content files live, relative to project root.
+   * When set, this collection is treated as a file-based collection
+   * with automatic CRUD endpoints and build-time JSON generation.
+   * Example: "content/projects"
+   */
+  directory?: string;
+  /**
+   * File format for file-based collections.
+   * - "markdown": YAML frontmatter + body (like blog posts)
+   * - "json": Single JSON object per file
+   * - "yaml": Single YAML document per file
+   * Defaults to "markdown" when directory is set.
+   */
+  format?: "markdown" | "json" | "yaml";
+  /**
+   * Which schema field to use for generating the filename/slug.
+   * Defaults to "title". The value is slugified (lowercase, dashes).
+   */
+  slugField?: string;
+  /**
+   * Field name to sort by in list views and build output.
+   * Defaults to "date" if the field exists, otherwise insertion order.
+   */
+  sortField?: string;
+  /**
+   * Sort direction. Defaults to "desc".
+   */
+  sortOrder?: "asc" | "desc";
+
   /**
    * FormKit schema for editing a single item (or the singleton object).
    * When provided, the CMS auto-renders this form in a drawer (list mode)
@@ -147,6 +179,22 @@ export interface ContentSchema {
    * Extract a thumbnail URL from an item for the list view.
    */
   itemThumbnail?: (item: any) => string | undefined;
+}
+
+/**
+ * Serializable subset of ContentSchema for file-based collections.
+ * Injected at build time via Vite `define` so the server and build
+ * plugins know which directories to scan and what format to use.
+ * Functions and components are NOT included — only data.
+ */
+export interface ContentCollectionDef {
+  key: string;
+  label: string;
+  directory: string;
+  format: "markdown" | "json" | "yaml";
+  slugField: string;
+  sortField?: string;
+  sortOrder: "asc" | "desc";
 }
 
 export interface LayoutManifest {

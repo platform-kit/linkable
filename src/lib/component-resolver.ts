@@ -88,13 +88,70 @@ export function useComponent(
   }) as unknown as Component;
 }
 
+// ── User manifest override ──────────────────────────────────────────
+const userManifestModules = import.meta.glob<{ default: Partial<LayoutManifest> }>(
+  ["../overrides/manifest.ts", "../overrides/manifest.js"],
+  { eager: true },
+);
+const userManifestOverride: Partial<LayoutManifest> | null =
+  Object.values(userManifestModules)[0]?.default ?? null;
+
+/**
+ * Merge a user manifest override into a theme manifest.
+ * - `contentSchemas` are union-merged by key (user wins on conflict).
+ * - `routes` are concatenated.
+ * - `cmsTabs` are union-merged by key.
+ * - Other fields: user override wins if provided.
+ */
+function mergeManifests(base: LayoutManifest, override: Partial<LayoutManifest>): LayoutManifest {
+  const merged = { ...base };
+
+  // Merge contentSchemas: user schemas added, existing keys overridden
+  if (override.contentSchemas) {
+    const existing = new Map((base.contentSchemas ?? []).map((s) => [s.key, s]));
+    for (const s of override.contentSchemas) {
+      existing.set(s.key, s);
+    }
+    merged.contentSchemas = Array.from(existing.values());
+  }
+
+  // Merge routes: concatenate
+  if (override.routes) {
+    merged.routes = [...(base.routes ?? []), ...override.routes];
+  }
+
+  // Merge cmsTabs: union by key
+  if (override.cmsTabs) {
+    const existingTabs = new Map((base.cmsTabs ?? []).map((t) => [t.key, t]));
+    for (const t of override.cmsTabs) {
+      existingTabs.set(t.key, t);
+    }
+    merged.cmsTabs = Array.from(existingTabs.values());
+  }
+
+  // Merge vars: concatenate (dedupe by cssVar)
+  if (override.vars) {
+    const existingVars = new Map((base.vars ?? []).map((v) => [v.cssVar, v]));
+    for (const v of override.vars) {
+      existingVars.set(v.cssVar, v);
+    }
+    merged.vars = Array.from(existingVars.values());
+  }
+
+  return merged;
+}
+
 /**
  * Get the variable manifest for a layout, or null if none exists.
+ * Merges user manifest overrides from `src/overrides/manifest.ts` if present.
  */
 export function getLayoutManifest(layoutName: string): LayoutManifest | null {
   const key = `../themes/${layoutName}/manifest.ts`;
   const mod = manifestModules[key];
-  return mod?.default ?? null;
+  const base = mod?.default ?? null;
+  if (!base) return userManifestOverride ? (userManifestOverride as LayoutManifest) : null;
+  if (!userManifestOverride) return base;
+  return mergeManifests(base, userManifestOverride);
 }
 
 /**

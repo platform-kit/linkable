@@ -725,6 +725,7 @@
                 <component
                   :is="resolvedEditorComponents[cs.key]"
                   :collection="draft.collections[cs.key]"
+                  :schema="cs"
                   :model="draft"
                   @reauth="$emit('reauth')"
                   @blog-posts-updated="$emit('blog-posts-updated')"
@@ -896,6 +897,10 @@ export default defineComponent({
         schemas.map(async (s) => {
           if (s.editorComponent) {
             const mod = await s.editorComponent();
+            resolved[s.key] = markRaw(mod.default);
+          } else if (s.directory) {
+            // Auto-wire generic file collection editor
+            const mod = await import("./editors/FileCollectionEditor.vue");
             resolved[s.key] = markRaw(mod.default);
           }
         }),

@@ -93,6 +93,41 @@ export interface PlatformKitConfig {
   externalCollections?: string[];
 
   /**
+   * File-based content collections. Each entry declares a directory of
+   * content files (markdown, JSON, or YAML) that get automatic CRUD
+   * endpoints in dev and static JSON output at build time.
+   *
+   * The key becomes the collection key in the data model and matches
+   * the `key` field in a ContentSchema, so the CMS can pair the UI
+   * schema with the file backend.
+   *
+   * @example
+   * ```ts
+   * contentCollections: {
+   *   projects: {
+   *     directory: 'content/projects',
+   *     format: 'markdown',
+   *     slugField: 'title',
+   *     sortField: 'date',
+   *     sortOrder: 'desc',
+   *   },
+   * }
+   * ```
+   */
+  contentCollections?: Record<string, {
+    /** Directory where content files live, relative to project root. */
+    directory: string;
+    /** File format: "markdown" (frontmatter + body), "json", or "yaml". Default: "markdown" */
+    format?: "markdown" | "json" | "yaml";
+    /** Schema field used to generate the filename slug. Default: "title" */
+    slugField?: string;
+    /** Field to sort by in list output. Default: "date" (if present) */
+    sortField?: string;
+    /** Sort direction. Default: "desc" */
+    sortOrder?: "asc" | "desc";
+  }>;
+
+  /**
    * CMS dev-server endpoint paths. Override these if your site is served
    * behind a reverse proxy that rewrites paths.
    */

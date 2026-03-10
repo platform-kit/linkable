@@ -1026,8 +1026,10 @@ const sanitizeUrl = (v: unknown) => {
 
   try {
     const u = new URL(raw);
+    // R6: Case-insensitive protocol check to block JaVaScRiPt: etc.
+    const protocol = u.protocol.toLowerCase();
     const allowed = ["http:", "https:", "mailto:", "tel:", "sms:", "ftp:", "ftps:", "webcal:", "geo:"];
-    if (allowed.includes(u.protocol)) return u.toString();
+    if (allowed.includes(protocol)) return u.toString();
     return "";
   } catch {
     return "";  

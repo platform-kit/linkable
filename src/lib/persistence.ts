@@ -61,8 +61,14 @@ export const persistModel = async (input: BioModel): Promise<PersistResult> => {
   // production: stage changes in localStorage until user commits
   try {
     window.localStorage.setItem(PENDING_CMS_KEY, serialized);
-  } catch {
-    // ignore if storage unavailable
+  } catch (err) {
+    // R8: Surface quota errors instead of silently losing edits
+    if (err instanceof DOMException && err.name === "QuotaExceededError") {
+      console.error("[platformkit] localStorage quota exceeded — edits were NOT saved. Clear browser data or reduce content size.");
+      throw new Error("Storage quota exceeded. Your changes could not be saved.");
+    }
+    // Other storage errors (e.g. private browsing) — still log
+    console.warn("[platformkit] localStorage unavailable:", err);
   }
   return "staged";
 };
