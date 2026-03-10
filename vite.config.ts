@@ -474,6 +474,8 @@ const cmsMiddlewarePlugin = () => ({
         const bb = createBusboy({ headers: req.headers, limits: { fileSize: MAX_UPLOAD_BYTES } });
         let returnedUrl = "";
         let uploadError = "";
+        let conversionWarning = "";
+        let writeComplete: Promise<void> = Promise.resolve();
 
         bb.on("file", (_fieldname: string, fileStream: NodeJS.ReadableStream, filename: any) => {
           // incoming filename argument may already be an object produced by busboy
@@ -529,36 +531,47 @@ const cmsMiddlewarePlugin = () => ({
           fileStream.pipe(write);
           returnedUrl = `/content/uploads/${safe}`;
 
-          // For audio files, convert to MP3 using ffmpeg
+          // For audio files, convert to MP3 using ffmpeg after write completes
           if (isAudio) {
-            write.on("finish", () => {
-              const mp3Path = outPath; // Already .mp3
-              // If input was not mp3, convert
-              if (!orig.toLowerCase().endsWith(".mp3")) {
-                const tempPath = outPath + ".temp";
-                fs.renameSync(outPath, tempPath);
-                try {
-                  const { spawnSync } = require("child_process");
-                  const result = spawnSync("ffmpeg", ["-y", "-i", tempPath, "-b:a", "128k", "-ac", "1", outPath], {
-                    stdio: "inherit",
-                    timeout: 60_000,
-                  });
-                  if (result.status === 0) {
-                    fs.unlinkSync(tempPath);
-                  } else {
-                    // Conversion failed, keep original
+            writeComplete = new Promise<void>((resolveWrite) => {
+              write.on("finish", () => {
+                // If input was not mp3, convert
+                if (!orig.toLowerCase().endsWith(".mp3")) {
+                  const tempPath = outPath + ".temp";
+                  fs.renameSync(outPath, tempPath);
+                  try {
+                    const { spawnSync } = require("child_process");
+                    const result = spawnSync("ffmpeg", ["-y", "-i", tempPath, "-b:a", "128k", "-ac", "1", outPath], {
+                      stdio: "inherit",
+                      timeout: 120_000,
+                    });
+                    if (result.status === 0) {
+                      fs.unlinkSync(tempPath);
+                    } else {
+                      console.error(`ffmpeg conversion failed (exit ${result.status})`);
+                      // Conversion failed, keep original
+                      fs.renameSync(tempPath, outPath);
+                      conversionWarning = "Audio conversion failed; file saved in original format";
+                    }
+                  } catch (err) {
+                    console.error("ffmpeg not available or errored:", err);
+                    // ffmpeg not available, keep original
                     fs.renameSync(tempPath, outPath);
+                    conversionWarning = "Audio conversion unavailable; file saved in original format";
                   }
-                } catch (err) {
-                  // ffmpeg not available, keep original
-                  fs.renameSync(tempPath, outPath);
                 }
-              }
+                resolveWrite();
+              });
+            });
+          } else {
+            writeComplete = new Promise<void>((resolveWrite) => {
+              write.on("finish", () => resolveWrite());
             });
           }
         });
 
-        bb.on("finish", () => {
+        bb.on("finish", async () => {
+          await writeComplete;
           if (uploadError) {
             res.statusCode = 400;
             res.setHeader("Content-Type", "application/json");
@@ -566,7 +579,9 @@ const cmsMiddlewarePlugin = () => ({
             return;
           }
           res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ url: returnedUrl }));
+          const body: Record<string, string> = { url: returnedUrl };
+          if (conversionWarning) body.warning = conversionWarning;
+          res.end(JSON.stringify(body));
         });
 
         req.pipe(bb);

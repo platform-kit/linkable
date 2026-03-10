@@ -216,9 +216,19 @@ export default defineComponent({
         emit("update:modelValue", uploadPath);
       } catch (error) {
         console.error("Upload failed:", error);
-        alert("Upload failed. Please try again.");
+        const detail = error instanceof Error ? error.message : "Unknown error";
+        alert(`Upload failed: ${detail}`);
       } finally {
         uploading.value = false;
+      }
+    };
+
+    let durationInterval: ReturnType<typeof setInterval> | null = null;
+
+    const cleanupDurationInterval = () => {
+      if (durationInterval !== null) {
+        clearInterval(durationInterval);
+        durationInterval = null;
       }
     };
 
@@ -230,15 +240,6 @@ export default defineComponent({
         recordingStartTime.value = Date.now();
         recordingDuration.value = 0;
 
-        // Start duration timer
-        const durationInterval = setInterval(() => {
-          if (recording.value) {
-            recordingDuration.value = Math.floor((Date.now() - recordingStartTime.value) / 1000);
-          } else {
-            clearInterval(durationInterval);
-          }
-        }, 1000);
-
         mediaRecorder.value.ondataavailable = (event) => {
           if (event.data.size > 0) {
             recordedChunks.value.push(event.data);
@@ -246,6 +247,7 @@ export default defineComponent({
         };
 
         mediaRecorder.value.onstop = async () => {
+          cleanupDurationInterval();
           const finalDuration = Math.floor((Date.now() - recordingStartTime.value) / 1000);
           
           if (recordedChunks.value.length === 0) {
@@ -287,8 +289,24 @@ export default defineComponent({
           stream.getTracks().forEach(track => track.stop());
         };
 
-        mediaRecorder.value.start();
+        try {
+          mediaRecorder.value.start();
+        } catch (startErr) {
+          // Clean up stream if start() fails
+          stream.getTracks().forEach(track => track.stop());
+          throw startErr;
+        }
+
         recording.value = true;
+
+        // Start duration timer only after successful start
+        durationInterval = setInterval(() => {
+          if (recording.value) {
+            recordingDuration.value = Math.floor((Date.now() - recordingStartTime.value) / 1000);
+          } else {
+            cleanupDurationInterval();
+          }
+        }, 1000);
       } catch (error) {
         console.error("Recording failed:", error);
         alert("Recording failed. Please check microphone permissions.");
@@ -296,6 +314,7 @@ export default defineComponent({
     };
 
     const stopRecording = () => {
+      cleanupDurationInterval();
       if (mediaRecorder.value && recording.value) {
         mediaRecorder.value.stop();
         recordingDuration.value = 0;

@@ -37,21 +37,28 @@ export class AudioRecorder {
   async stopRecording() {
     if (!this.isRecording) return null
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       this.mediaRecorder.onstop = async () => {
-        const blob = new Blob(this.chunks, { type: 'audio/webm' })
-        const arrayBuffer = await blob.arrayBuffer()
-        const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
+        try {
+          const blob = new Blob(this.chunks, { type: 'audio/webm' })
+          const arrayBuffer = await blob.arrayBuffer()
+          const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
 
-        // Convert to Float32Array at target sample rate
-        const float32Array = audioBuffer.getChannelData(0)
+          // Convert to Float32Array at target sample rate
+          const float32Array = audioBuffer.getChannelData(0)
 
-        // Clean up
-        this.stream.getTracks().forEach(track => track.stop())
-        this.audioContext.close()
-        this.isRecording = false
+          // Clean up
+          this.stream.getTracks().forEach(track => track.stop())
+          this.audioContext.close()
+          this.isRecording = false
 
-        resolve(float32Array)
+          resolve(float32Array)
+        } catch (err) {
+          this.stream.getTracks().forEach(track => track.stop())
+          this.audioContext.close()
+          this.isRecording = false
+          reject(err)
+        }
       }
 
       this.mediaRecorder.stop()
@@ -74,8 +81,11 @@ export class AudioRecorder {
 export async function loadAudioFile(file) {
   const audioContext = new AudioContext({ sampleRate: SAMPLE_RATE })
   const arrayBuffer = await file.arrayBuffer()
-  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-  const float32Array = audioBuffer.getChannelData(0)
-  audioContext.close()
-  return float32Array
+  try {
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+    const float32Array = audioBuffer.getChannelData(0)
+    return float32Array
+  } finally {
+    audioContext.close()
+  }
 }
