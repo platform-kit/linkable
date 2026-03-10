@@ -39,7 +39,6 @@
     "serve:nginx": "./scripts/serve-nginx.sh",
     "supabase:start": "npx supabase start",
     "supabase:stop": "npx supabase stop",
-    "supabase:reset": "npx supabase db reset",
     "supabase:migrate": "npx supabase migration new",
     "supabase:migrate:up": "npx supabase migration up --local && node scripts/sync-vault-local.mjs",
     "supabase:status": "npx supabase status",
@@ -76,6 +75,7 @@
     "@vueuse/core": "^14.2.1",
     "autoprefixer": "^10.4.20",
     "busboy": "^1.6.0",
+    "dompurify": "^3.3.2",
     "echarts": "^6.0.0",
     "grid-layout-plus": "^1.1.1",
     "gsap": "^3.14.2",
@@ -101,6 +101,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/dompurify": "^3.2.0",
     "@types/js-yaml": "^4.0.9",
     "prettier": "^3.8.1",
     "puppeteer": "^24.38.0",

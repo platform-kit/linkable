@@ -294,7 +294,7 @@
               />
             </template>
             <template v-else>
-              <div v-html="activeEmbed.html" class="w-full h-full" style="max-width:90vw; max-height:90vh;" />
+              <div v-html="sanitizeHtml(activeEmbed.html)" class="w-full h-full" style="max-width:90vw; max-height:90vh;" />
             </template>
           </div>
         </div>
@@ -313,6 +313,7 @@ import type { MasonryItem } from "./components/MasonryGrid.vue";
 import { Link, Image, BookOpen, Code, User, Sparkles } from "lucide-vue-next";
 import { GridLayout, GridItem } from "grid-layout-plus";
 import BentoCell from "./BentoCell.vue";
+import { sanitizeHtml } from "../../lib/sanitize-html";
 import Drawer from "primevue/drawer";
 export type { LinksSectionProps, LinksSectionEmits } from "../../lib/component-contracts";
 
@@ -834,6 +835,7 @@ export default defineComponent({
       isUrlOrUrlString,
       extractUrl,
       layoutReady,
+      sanitizeHtml,
     };
   },
 });

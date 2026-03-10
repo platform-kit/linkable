@@ -10,7 +10,6 @@ import FingerprintJS from "@fingerprintjs/fingerprintjs";
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || "";
 const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || "";
 
-let visitorId: string | null = null;
 let fpPromise: Promise<string> | null = null;
 
 /** Returns true if analytics tracking is available (Supabase configured). */
@@ -24,8 +23,7 @@ function getVisitorId(): Promise<string> {
     fpPromise = FingerprintJS.load()
       .then((fp) => fp.get())
       .then((result) => {
-        visitorId = result.visitorId;
-        return visitorId;
+        return result.visitorId;
       });
   }
   return fpPromise;

@@ -40,7 +40,7 @@
         >
           {{ currentPost.title }}
         </h1>
-        <div class="prose-content text-[color:var(--color-ink)]" v-html="currentPost.html" />
+        <div class="prose-content text-[color:var(--color-ink)]" v-html="sanitizeHtml(currentPost.html)" />
       </div>
 
       <!-- Edit article button -->
@@ -117,7 +117,7 @@
           >
             {{ nlData.subject }}
           </h1>
-          <div class="prose-content text-[color:var(--color-ink)]" v-html="nlData.body_html" />
+          <div class="prose-content text-[color:var(--color-ink)]" v-html="sanitizeHtml(nlData.body_html)" />
         </article>
       </div>
 
@@ -272,6 +272,7 @@ import SearchBar from './components/SearchBar.vue';
 import BlogEditorDrawer from '../../admin/BlogEditorDrawer.vue';
 import NewsletterComposeDrawer from '../../admin/NewsletterComposeDrawer.vue';
 import AudioPlayer from './components/AudioPlayer.vue';
+import { sanitizeHtml } from '../../lib/sanitize-html';
 export type { BlogSectionProps, BlogSectionEmits } from '../../lib/component-contracts';
 
 interface UnifiedItem {
@@ -533,6 +534,7 @@ export default defineComponent({
       openNlEditor,
       onNlSaved,
       formatDate,
+      sanitizeHtml,
     };
   },
 });

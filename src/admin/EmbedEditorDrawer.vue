@@ -160,6 +160,7 @@ import ToggleSwitch from "primevue/toggleswitch";
 import { icons } from "lucide-vue-next";
 
 import type { EmbedItem } from "@/themes/bento/collection-types";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 const FEATURED_ICONS = [
   "Code",
@@ -252,7 +253,7 @@ export default defineComponent({
       return table[name] ?? table["Globe"];
     };
 
-    const resolvedHtml = computed(() => resolveEmbedHtml(draft.value.html));
+    const resolvedHtml = computed(() => sanitizeHtml(resolveEmbedHtml(draft.value.html)));
     const isAutoIframe = computed(() => {
       const trimmed = draft.value.html.trim();
       return trimmed && !(trimmed.includes("<") && trimmed.includes(">")) && resolvedHtml.value !== trimmed;

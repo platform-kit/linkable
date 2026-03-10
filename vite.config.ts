@@ -481,8 +481,8 @@ const cmsMiddlewarePlugin = () => ({
           let orig = filename;
           let mimeType = "";
           if (orig && typeof orig === "object" && typeof orig.filename === "string") {
-            orig = orig.filename;
             mimeType = orig.mimeType || "";
+            orig = orig.filename;
           }
 
           if (!orig || typeof orig !== "string") {
@@ -523,6 +523,9 @@ const cmsMiddlewarePlugin = () => ({
           }
 
           const write = fs.createWriteStream(outPath);
+          write.on("error", (err) => {
+            uploadError = `Write failed: ${(err as Error).message}`;
+          });
           fileStream.pipe(write);
           returnedUrl = `/content/uploads/${safe}`;
 
@@ -537,7 +540,8 @@ const cmsMiddlewarePlugin = () => ({
                 try {
                   const { spawnSync } = require("child_process");
                   const result = spawnSync("ffmpeg", ["-y", "-i", tempPath, "-b:a", "128k", "-ac", "1", outPath], {
-                    stdio: "inherit"
+                    stdio: "inherit",
+                    timeout: 60_000,
                   });
                   if (result.status === 0) {
                     fs.unlinkSync(tempPath);
@@ -699,7 +703,13 @@ const cmsMiddlewarePlugin = () => ({
             res.end("Missing slug parameter");
             return;
           }
-          const filePath = path.join(blogContentDir, `${slug}.md`);
+          const safeSlug = path.basename(slug).replace(/[^a-zA-Z0-9_-]/g, "-");
+          if (!safeSlug || safeSlug === "-") {
+            res.statusCode = 400;
+            res.end("Invalid slug");
+            return;
+          }
+          const filePath = path.join(blogContentDir, `${safeSlug}.md`);
           if (!fs.existsSync(filePath)) {
             res.statusCode = 404;
             res.end("Not found");
@@ -707,16 +717,16 @@ const cmsMiddlewarePlugin = () => ({
           }
           const raw = fs.readFileSync(filePath, "utf8");
           const { meta, body } = parseFrontmatter(raw);
-          const postMeta = metaFromRaw(meta, slug);
+          const postMeta = metaFromRaw(meta, safeSlug);
           const html = renderMarkdown(body);
           // Include audioUrl if TTS audio exists for this post
           const devAudioDir = path.resolve(__dirname, "public", "content", "blog", "audio");
-          const devAudioMp3 = path.join(devAudioDir, `${slug}.mp3`);
-          const devAudioWav = path.join(devAudioDir, `${slug}.wav`);
+          const devAudioMp3 = path.join(devAudioDir, `${safeSlug}.mp3`);
+          const devAudioWav = path.join(devAudioDir, `${safeSlug}.wav`);
           const devAudioUrl = fs.existsSync(devAudioMp3)
-            ? `/content/blog/audio/${slug}.mp3`
+            ? `/content/blog/audio/${safeSlug}.mp3`
             : fs.existsSync(devAudioWav)
-            ? `/content/blog/audio/${slug}.wav`
+            ? `/content/blog/audio/${safeSlug}.wav`
             : undefined;
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ ...postMeta, content: body, html, ...(devAudioUrl ? { audioUrl: devAudioUrl } : {}) }));
@@ -754,7 +764,13 @@ const cmsMiddlewarePlugin = () => ({
             res.end("Missing slug parameter");
             return;
           }
-          const filePath = path.join(blogContentDir, `${slug}.md`);
+          const safeSlug = path.basename(slug).replace(/[^a-zA-Z0-9_-]/g, "-");
+          if (!safeSlug || safeSlug === "-") {
+            res.statusCode = 400;
+            res.end("Invalid slug");
+            return;
+          }
+          const filePath = path.join(blogContentDir, `${safeSlug}.md`);
           if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
           }

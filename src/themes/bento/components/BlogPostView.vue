@@ -59,6 +59,7 @@
 import { computed, defineComponent, type PropType } from "vue";
 import type { BlogPost } from "@/lib/blog";
 import { resolveUploadUrl } from "@/lib/github";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 import AudioPlayer from "./AudioPlayer.vue";
 
 export default defineComponent({
@@ -85,10 +86,10 @@ export default defineComponent({
     const resolvedHtml = computed(() => {
       const html = props.post?.html;
       if (!html) return "";
-      return html.replace(
+      return sanitizeHtml(html.replace(
         /(<img\s[^>]*?\bsrc=")([^"]+)(")/g,
         (_match: string, before: string, src: string, after: string) => before + resolveUploadUrl(src) + after,
-      );
+      ));
     });
 
     return { formattedDate, resolveUploadUrl, resolvedHtml };

@@ -894,18 +894,22 @@ export default defineComponent({
       const manifest = activeManifest.value;
       const schemas = manifest?.contentSchemas ?? [];
       const resolved: Record<string, Component> = {};
-      await Promise.all(
-        schemas.map(async (s) => {
-          if (s.editorComponent) {
-            const mod = await s.editorComponent();
-            resolved[s.key] = markRaw(mod.default);
-          } else if (s.directory) {
-            // Auto-wire generic file collection editor
-            const mod = await import("./editors/FileCollectionEditor.vue");
-            resolved[s.key] = markRaw(mod.default);
-          }
-        }),
-      );
+      try {
+        await Promise.all(
+          schemas.map(async (s) => {
+            if (s.editorComponent) {
+              const mod = await s.editorComponent();
+              resolved[s.key] = markRaw(mod.default);
+            } else if (s.directory) {
+              // Auto-wire generic file collection editor
+              const mod = await import("./editors/FileCollectionEditor.vue");
+              resolved[s.key] = markRaw(mod.default);
+            }
+          }),
+        );
+      } catch (err) {
+        console.error("Failed to resolve editor components", err);
+      }
       resolvedEditorComponents.value = resolved;
     });
 
@@ -1079,17 +1083,22 @@ export default defineComponent({
       const manifest = activeManifest.value;
       // Resolve CMS tabs (component-based ones need async resolution)
       if (manifest?.cmsTabs?.length) {
-        const tabs = await Promise.all(
-          manifest.cmsTabs.map(async (t) => {
-            let comp: Component | undefined;
-            if (t.component) {
-              const mod = await t.component();
-              comp = markRaw(mod.default);
-            }
-            return { key: t.key, label: t.label, icon: t.icon, component: comp, schema: t.schema };
-          }),
-        );
-        layoutCmsTabs.value = tabs;
+        try {
+          const tabs = await Promise.all(
+            manifest.cmsTabs.map(async (t) => {
+              let comp: Component | undefined;
+              if (t.component) {
+                const mod = await t.component();
+                comp = markRaw(mod.default);
+              }
+              return { key: t.key, label: t.label, icon: t.icon, component: comp, schema: t.schema };
+            }),
+          );
+          layoutCmsTabs.value = tabs;
+        } catch (err) {
+          console.error("Failed to resolve CMS tabs", err);
+          layoutCmsTabs.value = [];
+        }
       } else {
         layoutCmsTabs.value = [];
       }

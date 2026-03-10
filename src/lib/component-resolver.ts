@@ -230,7 +230,7 @@ export function getLayoutConfig(layoutName: string): PlatformKitConfig | null {
 /**
  * @deprecated Use `getLayoutConfig` instead. This is a backwards-compat alias.
  */
-export const getLayoutManifest = getLayoutConfig;
+
 
 /**
  * Get the theme presets for a layout.

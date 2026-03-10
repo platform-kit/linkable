@@ -203,4 +203,4 @@ export interface ContentCollectionDef {
  * Kept as a backwards-compat alias — all UI/theme fields now live
  * on PlatformKitConfig so there is one unified config type.
  */
-export type { PlatformKitConfig as LayoutManifest } from "./config";
+

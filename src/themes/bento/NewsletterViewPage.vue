@@ -32,7 +32,7 @@
         <h1 class="mb-6 text-2xl font-extrabold leading-tight text-[color:var(--color-ink)] sm:text-3xl">
           {{ newsletter.subject }}
         </h1>
-        <div class="prose-content text-[color:var(--color-ink)]" v-html="newsletter.body_html" />
+        <div class="prose-content text-[color:var(--color-ink)]" v-html="sanitizeHtml(newsletter.body_html)" />
       </article>
     </div>
   </section>
@@ -40,6 +40,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted, watch, computed } from "vue";
+import { sanitizeHtml } from "../../lib/sanitize-html";
 export type { NewsletterViewPageProps, NewsletterViewPageEmits } from "../../lib/component-contracts";
 
 interface NewsletterData {
@@ -96,7 +97,7 @@ export default defineComponent({
     onMounted(fetchNewsletter);
     watch(() => props.sendId, fetchNewsletter);
 
-    return { newsletter, loading, error, formatDate };
+    return { newsletter, loading, error, formatDate, sanitizeHtml };
   },
 });
 </script>

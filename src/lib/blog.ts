@@ -233,7 +233,7 @@ export const metaFromRaw = (
   date: asString(raw.date) || new Date().toISOString().slice(0, 10),
   excerpt: asString(raw.excerpt),
   coverImage: asString(raw.coverImage),
-  published: raw.published !== false, // default true
+  published: raw.published === true || raw.published === undefined, // explicit true or absent
   tags: Array.isArray(raw.tags)
     ? raw.tags.map(String).filter(Boolean)
     : [],

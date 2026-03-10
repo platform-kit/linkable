@@ -217,6 +217,7 @@ import type { BioLink, GalleryItem, EmbedItem, SocialLink, WidgetItem } from "./
 import type { BlogPostMeta } from "../../lib/blog";
 import { icons as lucideIcons } from "lucide-vue-next";
 import { resolveEmbedHtml } from "../../lib/utils";
+import { sanitizeHtml } from "../../lib/sanitize-html";
 import WidgetAnimatedTextCard from "./WidgetAnimatedTextCard.vue";
 
 export default defineComponent({
@@ -249,7 +250,7 @@ export default defineComponent({
     const embedData = computed(() =>
       props.item.type === "embed" ? props.embeds.find((e) => e.id === props.item.refId) ?? null : null,
     );
-    const embedHtml = computed(() => resolveEmbedHtml(embedData.value?.html ?? ""));
+    const embedHtml = computed(() => sanitizeHtml(resolveEmbedHtml(embedData.value?.html ?? "")));
     const widgetCellStyle = computed<Record<string, string>>(() => {
       const bg = widgetData.value?.backgroundColor?.trim() ?? "";
       if (!bg) return {};
