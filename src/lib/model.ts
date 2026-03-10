@@ -98,7 +98,7 @@ export type BioGallery = {
 
 export type ThemePreset = string;
 
-export type BioTheme = {
+export type ThemeConfig = {
   layout: string;
   preset: ThemePreset;
   colorBrand: string;
@@ -452,8 +452,8 @@ export type BioModel = {
   schemaVersion: number;
   profile: BioProfile;
   collections: Record<string, ContentCollection>;
-  theme: BioTheme;
-  layoutThemes: Record<string, BioTheme>;
+  theme: ThemeConfig;
+  layoutThemes: Record<string, ThemeConfig>;
   scripts: BioScripts;
 };
 
@@ -561,7 +561,7 @@ export const defaultCollection = (enabled = false): ContentCollection => ({
   items: [],
 });
 
-export const defaultTheme = (): BioTheme => ({
+export const defaultTheme = (): ThemeConfig => ({
   layout: "default",
   preset: "light",
   colorBrand: "#3b82f6",
@@ -587,7 +587,7 @@ export const defaultTheme = (): BioTheme => ({
   layoutData: {},
 });
 
-export const darkTheme = (): BioTheme => ({
+export const darkTheme = (): ThemeConfig => ({
   layout: "default",
   preset: "dark",
   colorBrand: "#60a5fa",
@@ -613,7 +613,7 @@ export const darkTheme = (): BioTheme => ({
   layoutData: {},
 });
 
-export const THEME_PRESETS: Record<string, () => BioTheme> = {
+export const THEME_PRESETS: Record<string, () => ThemeConfig> = {
   light: defaultTheme,
   dark: darkTheme,
 };
@@ -1038,7 +1038,7 @@ const sanitizeUrl = (v: unknown) => {
 
 import { migrateToLatest, CURRENT_SCHEMA_VERSION } from "./migrations";
 
-const sanitizeTheme = (raw: unknown, fallback: BioTheme): BioTheme => {
+const sanitizeTheme = (raw: unknown, fallback: ThemeConfig): ThemeConfig => {
   const t = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   const presetVal = asString(t.preset);
   const preset: ThemePreset = presetVal || fallback.preset;
@@ -1141,8 +1141,8 @@ export const sanitizeModel = (input: unknown): BioModel => {
 
   // Sanitize per-layout theme storage
   const layoutThemesRaw = obj.layoutThemes && typeof obj.layoutThemes === "object" ? obj.layoutThemes : {};
-  const layoutDefaults: Record<string, () => BioTheme> = { default: defaultTheme };
-  const layoutThemes: Record<string, BioTheme> = {};
+  const layoutDefaults: Record<string, () => ThemeConfig> = { default: defaultTheme };
+  const layoutThemes: Record<string, ThemeConfig> = {};
   for (const [key, factory] of Object.entries(layoutDefaults)) {
     layoutThemes[key] = sanitizeTheme((layoutThemesRaw as any)[key], factory());
   }

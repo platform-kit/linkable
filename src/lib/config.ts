@@ -6,7 +6,7 @@
 import type { Component } from "vue";
 import type { FormKitSchemaNode } from "@formkit/core";
 import type { ZodSchema } from "zod";
-import type { BioTheme } from "./model";
+import type { ThemeConfig } from "./model";
 import type {
   LayoutVar,
   LayoutRoute,
@@ -237,10 +237,10 @@ export interface PlatformKitConfig {
 
   /**
    * Theme presets (e.g. "light", "dark"). Each entry is a factory
-   * returning a fresh BioTheme. The CMS preset selector is built
+   * returning a fresh ThemeConfig. The CMS preset selector is built
    * dynamically from these keys.
    */
-  presets?: Record<string, () => BioTheme>;
+  presets?: Record<string, () => ThemeConfig>;
 
   /** Layout-specific CSS variable definitions shown in the CMS Theme panel. */
   vars?: LayoutVar[];

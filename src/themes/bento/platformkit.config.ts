@@ -1,12 +1,12 @@
 import type { PlatformKitConfig } from "../../lib/config";
 import routes from "./routes-manifest";
 import type { FormKitSchemaNode } from "@formkit/core";
-import type { BioTheme } from "../../lib/model";
+import type { ThemeConfig } from "../../lib/model";
 import { newLink, newGalleryItem, newEmbed, newSocial, newWidget } from "./collection-types";
 
 /* ── Theme presets ──────────────────────────────────────────────── */
 
-const bentoLightTheme = (): BioTheme => ({
+const bentoLightTheme = (): ThemeConfig => ({
   layout: "bento",
   preset: "light",
   colorBrand: "#6366f1",

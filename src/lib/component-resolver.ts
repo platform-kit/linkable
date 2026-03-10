@@ -16,7 +16,7 @@
  */
 import { type Component, computed, defineAsyncComponent, type Ref, ref, watch, onScopeDispose, type ShallowRef, shallowRef } from "vue";
 import type { LayoutRoute, ContentSchema } from "./layout-manifest";
-import type { BioTheme } from "./model";
+import type { ThemeConfig } from "./model";
 import { THEME_PRESETS } from "./model";
 import type { Router } from "vue-router";
 import type { PlatformKitConfig } from "./config";
@@ -239,7 +239,7 @@ export const getLayoutManifest = getLayoutConfig;
  * to THEME_PRESETS (generic light/dark) if the layout has no manifest
  * or declares no presets.
  */
-export function getLayoutPresets(layoutName: string): Record<string, () => BioTheme> {
+export function getLayoutPresets(layoutName: string): Record<string, () => ThemeConfig> {
   const config = getLayoutConfig(layoutName);
   if (config?.presets && Object.keys(config.presets).length > 0) {
     return config.presets;
