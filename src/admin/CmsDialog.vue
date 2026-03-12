@@ -340,7 +340,7 @@
               <div class="cms__form">
                 <div class="cms__field">
                   <ImageUploadField
-                    :modelValue="(draft.theme.layoutData.bannerUrl as string) ?? ''"
+                    :modelValue="typeof draft.theme.layoutData.bannerUrl === 'string' ? draft.theme.layoutData.bannerUrl : ''"
                     @update:modelValue="draft.theme.layoutData = { ...draft.theme.layoutData, bannerUrl: $event }"
                     label="Banner image"
                     description="A wide image displayed above your profile card."
@@ -353,7 +353,7 @@
                 </div>
                 <div class="cms__field">
                   <ImageUploadField
-                    :modelValue="(draft.theme.layoutData.avatarUrl as string) ?? ''"
+                    :modelValue="typeof draft.theme.layoutData.avatarUrl === 'string' ? draft.theme.layoutData.avatarUrl : ''"
                     @update:modelValue="draft.theme.layoutData = { ...draft.theme.layoutData, avatarUrl: $event }"
                     label="Avatar image"
                     description="Square image for your profile."
@@ -433,35 +433,35 @@
                 <div class="cms__color-field">
                   <label class="cms__label">Glass <button v-if="isOverridden('glass')" class="cms__reset-btn" @click="resetField('glass')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                   <div class="cms__color-input-wrap">
-                    <input type="color" :value="toHex(draft.theme.glass)" @input="draft.theme.glass = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                    <input type="color" :value="toHex(draft.theme.glass)" @input="draft.theme.glass = $event.target.value" class="cms__color-swatch" />
                     <InputText v-model="draft.theme.glass" class="cms__color-hex" placeholder="rgba(255,255,255,0.66)" />
                   </div>
                 </div>
                 <div class="cms__color-field">
                   <label class="cms__label">Glass 2 <button v-if="isOverridden('glass2')" class="cms__reset-btn" @click="resetField('glass2')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                   <div class="cms__color-input-wrap">
-                    <input type="color" :value="toHex(draft.theme.glass2)" @input="draft.theme.glass2 = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                    <input type="color" :value="toHex(draft.theme.glass2)" @input="draft.theme.glass2 = $event.target.value" class="cms__color-swatch" />
                     <InputText v-model="draft.theme.glass2" class="cms__color-hex" placeholder="rgba(255,255,255,0.52)" />
                   </div>
                 </div>
                 <div class="cms__color-field">
                   <label class="cms__label">Glass Strong <button v-if="isOverridden('glassStrong')" class="cms__reset-btn" @click="resetField('glassStrong')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                   <div class="cms__color-input-wrap">
-                    <input type="color" :value="toHex(draft.theme.glassStrong)" @input="draft.theme.glassStrong = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                    <input type="color" :value="toHex(draft.theme.glassStrong)" @input="draft.theme.glassStrong = $event.target.value" class="cms__color-swatch" />
                     <InputText v-model="draft.theme.glassStrong" class="cms__color-hex" placeholder="rgba(255,255,255,0.82)" />
                   </div>
                 </div>
                 <div class="cms__color-field">
                   <label class="cms__label">Border <button v-if="isOverridden('colorBorder')" class="cms__reset-btn" @click="resetField('colorBorder')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                   <div class="cms__color-input-wrap">
-                    <input type="color" :value="toHex(draft.theme.colorBorder)" @input="draft.theme.colorBorder = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                    <input type="color" :value="toHex(draft.theme.colorBorder)" @input="draft.theme.colorBorder = $event.target.value" class="cms__color-swatch" />
                     <InputText v-model="draft.theme.colorBorder" class="cms__color-hex" placeholder="rgba(255,255,255,0.62)" />
                   </div>
                 </div>
                 <div class="cms__color-field">
                   <label class="cms__label">Border 2 <button v-if="isOverridden('colorBorder2')" class="cms__reset-btn" @click="resetField('colorBorder2')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                   <div class="cms__color-input-wrap">
-                    <input type="color" :value="toHex(draft.theme.colorBorder2)" @input="draft.theme.colorBorder2 = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                    <input type="color" :value="toHex(draft.theme.colorBorder2)" @input="draft.theme.colorBorder2 = $event.target.value" class="cms__color-swatch" />
                     <InputText v-model="draft.theme.colorBorder2" class="cms__color-hex" placeholder="rgba(11,18,32,0.10)" />
                   </div>
                 </div>
@@ -480,14 +480,14 @@
                 <div class="cms__color-field">
                   <label class="cms__label">Card Background <button v-if="isOverridden('cardBg')" class="cms__reset-btn" @click="resetField('cardBg')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                   <div class="cms__color-input-wrap">
-                    <input type="color" :value="toHex(draft.theme.cardBg)" @input="draft.theme.cardBg = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                    <input type="color" :value="toHex(draft.theme.cardBg)" @input="draft.theme.cardBg = $event.target.value" class="cms__color-swatch" />
                     <InputText v-model="draft.theme.cardBg" class="cms__color-hex" placeholder="rgba(255,255,255,0.66)" />
                   </div>
                 </div>
                 <div class="cms__color-field">
                   <label class="cms__label">Card Border <button v-if="isOverridden('cardBorder')" class="cms__reset-btn" @click="resetField('cardBorder')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
                   <div class="cms__color-input-wrap">
-                    <input type="color" :value="toHex(draft.theme.cardBorder)" @input="draft.theme.cardBorder = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                    <input type="color" :value="toHex(draft.theme.cardBorder)" @input="draft.theme.cardBorder = $event.target.value" class="cms__color-swatch" />
                     <InputText v-model="draft.theme.cardBorder" class="cms__color-hex" placeholder="rgba(255,255,255,0.62)" />
                   </div>
                 </div>
@@ -584,12 +584,12 @@
                         v-if="v.type === 'color'"
                         type="color"
                         :value="toHex(getLayoutVar(v))"
-                        @input="setLayoutVar(v.cssVar, ($event.target as HTMLInputElement).value)"
+                        @input="setLayoutVar(v.cssVar, $event.target.value)"
                         class="cms__color-swatch"
                       />
                       <InputText
                         :modelValue="getLayoutVar(v)"
-                        @update:modelValue="setLayoutVar(v.cssVar, $event as string)"
+                        @update:modelValue="setLayoutVar(v.cssVar, $event)"
                         class="cms__color-hex"
                         :class="{ 'cms__color-hex--full': v.type !== 'color' }"
                         :placeholder="draft.theme.preset === 'dark' ? v.defaultDark : v.defaultLight"
@@ -813,7 +813,10 @@ import { useToast } from "primevue/usetoast";
 import LayoutSchemaRenderer from "./LayoutSchemaRenderer.vue";
 import GoogleFontPicker from "./GoogleFontPicker.vue";
 
-import ImageUploadField from "./ImageUploadField.vue";
+// ...existing code...
+// Register ImageUploadField for <script setup> usage
+import { defineAsyncComponent } from "vue";
+const ImageUploadField = defineAsyncComponent(() => import("./ImageUploadField.vue"));
 import CollectionListEditor from "./CollectionListEditor.vue";
 import AnalyticsPanel from "./AnalyticsPanel.vue";
 import { icons as lucideIcons } from "lucide-vue-next";
@@ -916,6 +919,7 @@ export default defineComponent({
     function resolveInitialTab(val: string): { main: string; sub: string } {
       const schemas = activeManifest.value?.contentSchemas ?? [];
       const keys = schemas.map((s) => s.key);
+      if (val === 'shop') return { main: 'content', sub: 'products' };
       if (keys.includes(val)) return { main: "content", sub: val };
       if (val === "analytics") return { main: "analytics", sub: keys[0] || "links" };
       return { main: "site", sub: keys[0] || "links" };

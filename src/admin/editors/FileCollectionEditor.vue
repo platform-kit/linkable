@@ -23,10 +23,10 @@
       <div v-else class="cms__list">
         <button
           v-for="item in items"
-          :key="item.slug as string"
+          :key="item.slug"
           type="button"
           class="cms__row"
-          @click="openExisting(item.slug as string)"
+          @click="openExisting(item.slug)"
         >
           <span v-if="schema.itemThumbnail?.(item)" class="cms__row-thumb">
             <img :src="schema.itemThumbnail(item)" class="h-8 w-8 rounded object-cover" />
@@ -144,8 +144,13 @@ export default defineComponent({
       drawerItem.value = value;
 
       // Auto-save on change
-      const slugField = props.schema.slugField ?? "title";
-      const slug = drawerSlug.value || slugify(String(value[slugField] ?? "untitled"));
+      // Always use 'name' for products slug
+      let slugField = props.schema.slugField ?? "title";
+      if (props.schema.key === "products") slugField = "name";
+      let slugValue = String(value[slugField] || "");
+      // If slugValue is empty, fallback to a timestamp
+      if (!slugValue.trim()) slugValue = `product-${Date.now()}`;
+      const slug = drawerSlug.value || slugify(slugValue);
 
       try {
         await saveCollectionItem(props.schema.key, slug, value);

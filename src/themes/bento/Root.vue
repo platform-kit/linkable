@@ -162,6 +162,7 @@ export default defineComponent({
     else if (path === '/confirmed') initialTab = 'confirmed';
     else if (path.startsWith('/newsletter/')) initialTab = 'blog';
     else if (path.startsWith('/content/')) initialTab = 'blog';
+    else if (path === '/shop') initialTab = 'shop';
 
     const confirmationMap: Record<string, { icon: string; title: string; message: string }> = {
       success: {
@@ -388,6 +389,7 @@ export default defineComponent({
         else if (tabKey === 'docs') this.router.push('/docs');
         else if (tabKey === 'embeds') this.router.push('/embeds');
         else if (tabKey === 'newsletter') this.router.push('/newsletter');
+        else if (tabKey === 'shop') this.router.push('/shop');
       }
     },
     confirmationInfo() {

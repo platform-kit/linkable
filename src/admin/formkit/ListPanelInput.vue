@@ -26,7 +26,14 @@ watch(() => props.context._value, v => {
 
 function add() {
   const empty = {};
-  (props.context.schema?.children || []).forEach(f => { empty[f.name] = ''; });
+  (props.context.schema?.children || []).forEach(f => {
+    // If the input is imageUpload, initialize as null
+    if (f.$formkit === 'imageUpload') {
+      empty[f.name] = null;
+    } else {
+      empty[f.name] = '';
+    }
+  });
   items.value.push(empty);
   emitChange();
 }

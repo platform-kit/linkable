@@ -150,38 +150,50 @@ const loadPlatformKitConfig = async (): Promise<PlatformKitConfig> => {
   return config;
 };
 
-const pkConfig: PlatformKitConfig = await loadPlatformKitConfig();
 
-// ── Register extra highlight.js languages from config ────────────────
-if (pkConfig.markdown?.highlightLanguages?.length) {
-  const requireCJS = createRequire(import.meta.url);
-  for (const lang of pkConfig.markdown.highlightLanguages) {
-    try {
-      const langDef = requireCJS(`highlight.js/lib/languages/${lang}`);
-      hljs.registerLanguage(lang, langDef);
-    } catch {
-      console.warn(`[platformkit] highlight.js language not found: ${lang}`);
-    }
-  }
+// ── Hot config reload: watch all platformkit.config.ts files and reload config/collections on change ──
+import chokidar from "chokidar";
+let pkConfig: PlatformKitConfig = await loadPlatformKitConfig();
+let collectionDefs: ContentCollectionDef[] = Object.entries(pkConfig.contentCollections ?? {}).map(
+  ([key, cfg]) => ({
+    key,
+    label: cfg.label ?? key.charAt(0).toUpperCase() + key.slice(1),
+    directory: cfg.directory,
+    format: cfg.format ?? "markdown",
+    slugField: cfg.slugField ?? "title",
+    sortField: cfg.sortField,
+    sortOrder: cfg.sortOrder ?? "desc",
+    version: cfg.version ?? 0,
+    recursive: cfg.recursive ?? false,
+  }),
+);
+
+const configFilesToWatch = [
+  path.resolve(__dirname, "platformkit.config.ts"),
+  path.resolve(__dirname, "src/themes/bento/platformkit.config.ts"),
+  path.resolve(__dirname, "src/overrides/platformkit.config.ts"),
+];
+
+if (process.env.NODE_ENV === "development") {
+  chokidar.watch(configFilesToWatch, { ignoreInitial: true }).on("change", async (file) => {
+    console.log(`[platformkit] Detected config change in ${file}, reloading config...`);
+    pkConfig = await loadPlatformKitConfig();
+    collectionDefs = Object.entries(pkConfig.contentCollections ?? {}).map(
+      ([key, cfg]) => ({
+        key,
+        label: cfg.label ?? key.charAt(0).toUpperCase() + key.slice(1),
+        directory: cfg.directory,
+        format: cfg.format ?? "markdown",
+        slugField: cfg.slugField ?? "title",
+        sortField: cfg.sortField,
+        sortOrder: cfg.sortOrder ?? "desc",
+        version: cfg.version ?? 0,
+        recursive: cfg.recursive ?? false,
+      }),
+    );
+    console.log(`[platformkit] Config and collections reloaded.`);
+  });
 }
-
-// ── Deep-merge utility for Vite config ───────────────────────────────
-const deepMergeConfig = (target: Record<string, any>, source: Record<string, any>): Record<string, any> => {
-  const result = { ...target };
-  for (const key of Object.keys(source)) {
-    if (key === "plugins" && Array.isArray(source[key])) {
-      result[key] = [...(result[key] || []), ...source[key]];
-    } else if (
-      source[key] && typeof source[key] === "object" && !Array.isArray(source[key]) &&
-      target[key] && typeof target[key] === "object" && !Array.isArray(target[key])
-    ) {
-      result[key] = deepMergeConfig(target[key], source[key]);
-    } else {
-      result[key] = source[key];
-    }
-  }
-  return result;
-};
 
 // ── Load user Vite config (staged by CLI as vite.user.config.js) ─────
 const loadUserViteConfig = async (): Promise<Record<string, any>> => {
@@ -205,20 +217,7 @@ const defaultDataFilePath = path.resolve(__dirname, "default-data.json");
 const publicDataFilePath = path.resolve(__dirname, "public/content/data.json");
 
 
-// ── File-based content collection definitions ───────────────────────
-const collectionDefs: ContentCollectionDef[] = Object.entries(pkConfig.contentCollections ?? {}).map(
-  ([key, cfg]) => ({
-    key,
-    label: cfg.label ?? key.charAt(0).toUpperCase() + key.slice(1),
-    directory: cfg.directory,
-    format: cfg.format ?? "markdown",
-    slugField: cfg.slugField ?? "title",
-    sortField: cfg.sortField,
-    sortOrder: cfg.sortOrder ?? "desc",
-    version: cfg.version ?? 0,
-    recursive: cfg.recursive ?? false,
-  }),
-);
+// ...existing code...
 
 // ── File-based collection helpers ───────────────────────────────────
 const COLLECTION_FORMAT_EXT: Record<string, string> = {
@@ -1882,3 +1881,21 @@ const prerenderBuildPlugin = () => ({
       );
       return merged;
     });
+
+// ── Deep-merge utility for Vite config ───────────────────────────────
+const deepMergeConfig = (target: Record<string, any>, source: Record<string, any>): Record<string, any> => {
+  const result = { ...target };
+  for (const key of Object.keys(source)) {
+    if (key === "plugins" && Array.isArray(source[key])) {
+      result[key] = [...(result[key] || []), ...source[key]];
+    } else if (
+      source[key] && typeof source[key] === "object" && !Array.isArray(source[key]) &&
+      target[key] && typeof target[key] === "object" && !Array.isArray(target[key])
+    ) {
+      result[key] = deepMergeConfig(target[key], source[key]);
+    } else {
+      result[key] = source[key];
+    }
+  }
+  return result;
+};

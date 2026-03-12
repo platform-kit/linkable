@@ -2,6 +2,12 @@ import type { LayoutRoute } from "../../lib/layout-manifest";
 import Root from "./Root.vue";
 
 const routes: LayoutRoute[] = [
+    {
+      path: "/shop",
+      component: () => Promise.resolve({ default: Root }),
+      label: "Shop",
+      icon: "ShoppingCart",
+    },
   {
     path: "/",
     component: () => Promise.resolve({ default: Root }),

@@ -1,3 +1,5 @@
+# Agent QA Policy Update
+Do not tell the user that you are done unless you have checked your work and made sure the code builds and server starts without errors.
 # Tech Stack
 
 - You are building a Vue application.

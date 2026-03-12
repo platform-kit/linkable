@@ -167,21 +167,11 @@ function contentCollectionsToSchemas(config: PlatformKitConfig): ContentSchema[]
 function mergeConfigs(base: PlatformKitConfig, override: Partial<PlatformKitConfig>): PlatformKitConfig {
   const merged = { ...base, ...override };
 
-  // Merge contentSchemas: base + override, override wins per-key
-  const baseSchemas = [
-    ...(base.contentSchemas ?? []),
-    ...contentCollectionsToSchemas(base),
-  ];
-  const overrideSchemas = [
-    ...(override.contentSchemas ?? []),
-    ...contentCollectionsToSchemas(override),
-  ];
-  if (baseSchemas.length > 0 || overrideSchemas.length > 0) {
-    const byKey = new Map(baseSchemas.map((s) => [s.key, s]));
-    for (const s of overrideSchemas) {
-      byKey.set(s.key, s);
-    }
-    merged.contentSchemas = Array.from(byKey.values());
+  // Merge contentSchemas: preserve explicit array order, override wins if present
+  if (override.contentSchemas && override.contentSchemas.length > 0) {
+    merged.contentSchemas = [...override.contentSchemas];
+  } else if (base.contentSchemas && base.contentSchemas.length > 0) {
+    merged.contentSchemas = [...base.contentSchemas];
   }
 
   // Merge routes: concatenate

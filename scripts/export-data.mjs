@@ -13,6 +13,10 @@ const publicDataPath = path.join(rootDir, "public/content/data.json");
 const blogContentDir = path.join(rootDir, "content/blog");
 const publicBlogDir = path.join(rootDir, "public/content/blog");
 
+// Products collection paths
+const productsContentDir = path.join(rootDir, "content/products");
+const publicProductsDir = path.join(rootDir, "public/content/collections/products");
+
 const ensureCmsData = async () => {
   if (existsSync(cmsDataPath)) {
     return;
@@ -55,6 +59,33 @@ const run = async () => {
     const mdFiles = readdirSync(blogContentDir).filter((f) => f.endsWith(".md"));
 
     if (mdFiles.length > 0) {
+  }
+
+  // ── Generate products JSON files from YAML ──────────────────────
+  if (existsSync(productsContentDir)) {
+    const yamlFiles = readdirSync(productsContentDir).filter((f) => f.endsWith(".yaml"));
+    if (yamlFiles.length > 0) {
+      await mkdir(publicProductsDir, { recursive: true });
+      const { load: loadYaml } = await import('js-yaml');
+      const index = [];
+      for (const file of yamlFiles) {
+        const raw = await readFile(path.join(productsContentDir, file), "utf8");
+        let data;
+        try {
+          data = loadYaml(raw);
+        } catch (e) {
+          console.warn(`Failed to parse YAML for product: ${file}`);
+          continue;
+        }
+        if (!data || typeof data !== 'object') continue;
+        const slug = data.slug || file.replace(/\.yaml$/i, "");
+        const productJson = JSON.stringify({ ...data, slug }, null, 2);
+        await writeFile(path.join(publicProductsDir, `${slug}.json`), productJson);
+        index.push({ ...data, slug });
+      }
+      await writeFile(path.join(publicProductsDir, "index.json"), JSON.stringify(index, null, 2));
+      console.log(`Exported ${yamlFiles.length} product(s) to public/content/collections/products/`);
+    }
       await mkdir(publicBlogDir, { recursive: true });
 
       // Simple frontmatter parser (mirrors src/lib/blog.ts)
